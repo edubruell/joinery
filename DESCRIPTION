@@ -1,0 +1,15 @@
+Package: joinery
+Type: Package
+Title: Heuristic Index-Based Record Linkage in R
+Version: 0.1.0
+Authors@R: person("Eduard", "Brüll", email = "eduard.bruell@zew.de", role = c("aut", "cre"))
+Description: Index-based heuristic record linkage for R.
+License: MIT
+Encoding: UTF-8
+Imports: 
+    data.table,
+    igraph,
+    stringi,
+    phonics,
+    rlang (>= 1.1.0)
+RoxygenNote: 7.3.2
