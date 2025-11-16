@@ -7,9 +7,22 @@ Description: Index-based heuristic record linkage for R.
 License: MIT
 Encoding: UTF-8
 Imports: 
+    S7,
+    rlang (>= 1.1.0),
     data.table,
     igraph,
     stringi,
-    phonics,
-    rlang (>= 1.1.0)
+    phonics
+Collate: 
+    'joinery-package.R'
+    'import-standalone-purrr.R'
+    'import-standalone-types-check.R'
+    'import-standalone-obj-type.R'
+    'utilities.R'
+    'search_strategy.R'
+    'backend_datatable.R'
+    'data.R'
 RoxygenNote: 7.3.2
+Depends: 
+    R (>= 3.5)
+LazyData: true
