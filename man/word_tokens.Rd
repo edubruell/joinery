@@ -4,12 +4,12 @@
 \alias{word_tokens}
 \title{Return a list of word tokens for the .text separated by spaces.}
 \usage{
-word_tokens(text, min_length = 0)
+word_tokens(text, min_nchar = 0)
 }
 \arguments{
 \item{text}{A character string from which words will be extracted.}
 
-\item{min_length}{An integer specifying the minimum length of words to keep. Defaults to 0.}
+\item{min_nchar}{An integer specifying the minimum length of words to keep. Defaults to 0.}
 }
 \value{
 Returns a vector of words extracted from the input text.

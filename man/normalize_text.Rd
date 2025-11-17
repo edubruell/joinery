@@ -4,7 +4,7 @@
 \alias{normalize_text}
 \title{Normalize text string}
 \usage{
-normalize_text(.text, .transliteration = "De-ASCII")
+normalize_text(text, transliteration = "De-ASCII")
 }
 \arguments{
 \item{.text}{A character string or vector to be normalized.}

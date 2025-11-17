@@ -1,39 +1,271 @@
 
 DT_tbl <- new_S3_class("data.table")
-method(prepare_search_data,
-       list(DT_tbl, Search_Strategy)) <- function(data, strategy) {
-         browser()
-         
-         # Make a safe working copy
-         dt <- data.table::copy(data)
-         
-         preparers <- strategy@preparers   # named list: column → preparer function
-         
-         # For each preparer, apply its function to the column
-         out <- data.table::rbindlist(
-           lapply(names(preparers), function(col) {
-             
-             prep_fun <- preparers[[col]]   # R function produced by parse_formula()
-             
-             if (!col %in% names(dt)) {
-               stop(sprintf("Column '%s' not found in data", col), call. = FALSE)
-             }
-             
-             # Apply the preparer to the column value
-             processed <- prep_fun(dt[[col]])
-             
-             # Output a standard long format table
-             data.table::data.table(
-               column = col,
-               value  = processed
-             )
-           }),
-           use.names = TRUE,
-           fill = TRUE
-         )
-         
-         out[]
-       }
+
+# Method: prepare_search_data for data.table, character ID, and Search_Strategy
+#------------------------------------------------------------------------------
+method(
+   prepare_search_data,
+    list(DT_tbl, class_character, Search_Strategy)
+  ) <- function(data, id, strategy) {
+  dt <- data.table::copy(data)
+  
+  if (!id %in% names(dt)) {
+    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+  }
+  
+  preparers <- strategy@preparers
+  block_by  <- strategy@block_by
+  
+  # Helper: apply one Step (R backend)
+  apply_step_r <- function(acc, step) {
+    fn <- get(step@name, mode = "function")
+    args <- c(list(acc), step@args)
+    do.call(fn, args)
+  }
+  
+  # One token table per prepared column -----------------------------------
+  token_list <- map(preparers, function(prep) {
+    col <- prep@column
+    
+    if (!col %in% names(dt)) {
+      stop(sprintf("Column '%s' not found in data", col), call. = FALSE)
+    }
+    
+    # Run pipeline on vector dt[[col]]
+    tokens <- Reduce(
+      f = apply_step_r,
+      x = prep@steps,
+      init = dt[[col]]
+    )
+    
+    # Ensure list-of-character per row
+    if (!is.list(tokens)) {
+      tokens <- as.list(tokens)
+    }
+    
+    lens <- lengths(tokens)
+    
+    # Build long token table WITHOUT any := or !!
+    out <- data.table::data.table(
+      column = col,
+      token  = unlist(tokens, use.names = FALSE),
+      row_id = rep(seq_len(nrow(dt)), times = lens)
+    )
+    
+    # Add ID column with correct *name* (id is a character scalar)
+    out[[id]] <- rep(dt[[id]], times = lens)
+    
+    # Reorder columns to have ID first
+    data.table::setcolorder(out, c(id, "column", "token", "row_id"))
+    
+    out
+  })
+  
+  tokens <- data.table::rbindlist(token_list, use.names = TRUE, fill = TRUE)
+  
+  # Attach blocking columns (if any) --------------------------------------
+  if (!is.null(block_by)) {
+    missing <- setdiff(block_by, names(dt))
+    if (length(missing) > 0) {
+      stop(
+        "Blocking columns not found in data: ",
+        paste(missing, collapse = ", "),
+        call. = FALSE
+      )
+    }
+    
+    block_dt <- dt[, c(id, block_by), with = FALSE]
+    tokens   <- merge(tokens, block_dt, by = id, all.x = TRUE)
+  }
+  
+  tokens[]
+}
+
+
+# Method: compute_rarity for data.table and Search_Strategy
+#------------------------------------------------------------------------------
+method(
+  compute_rarity,
+  list(DT_tbl, Search_Strategy)
+) <- function(tokens, strategy) {
+  
+  dt <- data.table::copy(tokens)
+  rarity_method <- strategy@rarity
+  block_by      <- strategy@block_by
+  
+  # Grouping keys: block + column + token
+  by_keys <- c(block_by, "column", "token")
+  
+  # Ensure block columns exist if block_by was specified
+  if (!is.null(block_by)) {
+    missing <- setdiff(block_by, names(dt))
+    if (length(missing) > 0) {
+      stop("Block columns missing: ", paste(missing, collapse = ", "))
+    }
+  }
+  
+  # Compute freq + df + N per block/column/token ---------------------------
+  dt[, freq := .N, by = by_keys]
+  
+  # df = number of distinct rows in this block/column where token appears
+  dt[, df := uniqueN(row_id), by = by_keys]
+  
+  # N = total rows in this block/column
+  # (we attach once per group; downstream summed over matches)
+  dt[, N := uniqueN(row_id), by = c(block_by, "column")]
+  
+  # Apply rarity formula ---------------------------------------------------
+  dt[, rarity := {
+    f  <- freq
+    d  <- df
+    n  <- N
+    
+    switch(
+      rarity_method,
+      "inverse_freq" = 1 / f,
+      "tfidf" = {
+        tf <- f / sum(f)
+        idf <- log(1 + n / d)
+        tf * idf
+      },
+      "smoothed_inverse_freq" = 1 / (f + 1),
+      "bm25"         = log((n - d + 0.5) / (d + 0.5)),
+      stop("Unknown rarity method: ", rarity_method)
+    )
+  }]
+  
+  dt[]
+}
+
+
+# Method: detect_duplicates for data.table, character ID, Search_Strategy, and numeric threshold
+#------------------------------------------------------------------------------
+method(
+  detect_duplicates,
+  list(DT_tbl, class_character ,Search_Strategy, class_numeric)
+) <- function(base_table, id, strategy, threshold, weights = NULL) {
+  
+  dt <- data.table::copy(base_table)
+  
+  # --- 1. Prepare token table ---------------------------------------------
+  tokens <- prepare_search_data(
+    data     = dt,
+    id       = id,
+    strategy = strategy
+  )
+  
+  # --- 2. Compute rarity ---------------------------------------------------
+  tokens <- compute_rarity(tokens, strategy)
+  
+  # --- 3. Determine weights -----------------------------------------------
+  if (is.null(weights)) {
+    if (length(strategy@weights) > 0) {
+      weights <- strategy@weights
+    } else {
+      cols <- names(strategy@preparers)
+      weights <- rep(1 / length(cols), length(cols))
+      names(weights) <- cols
+    }
+  }
+  
+  # Guarantee weight coverage
+  missing_w <- setdiff(unique(tokens$column), names(weights))
+  if (length(missing_w) > 0) {
+    stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
+  }
+  
+  # Add weight column
+  tokens[, weight := weights[column]]
+  
+  #Compute Identification Potential based on rarity metric
+  tokens[, rIP := rarity / sum(rarity), by = .(get(id), column)]
+  
+  # --- 4. Self-join on shared tokens (within blocks) -----------------------
+  
+  block_by <- strategy@block_by %||% character()
+  by_cols  <- c("column", "token", block_by)
+  
+  rhs <- tokens[, c(id, "row_id", "column", "token", block_by), with = FALSE]
+  
+  id2  <- paste0(id, "_2")
+  row2 <- "row_id_2"
+  
+  data.table::setnames(rhs, id,  id2)
+  data.table::setnames(rhs, "row_id", row2)
+  
+  joined <- tokens[
+    rhs,
+    on = by_cols,
+    allow.cartesian = TRUE,
+    nomatch = 0
+  ]
+  
+  # Remove self matches
+  joined <- joined[get(id) != get(id2)]
+  
+  scored <- joined[
+    , .(score = sum(rIP * weight, na.rm = TRUE)),
+    by = c(id, id2)
+  ]
+  
+  # Apply threshold
+  scored <- scored[score >= threshold]
+  
+  if (nrow(scored) == 0L) {
+    return(data.table(
+      duplicate_group = integer(),
+      id              = character(),
+      score           = numeric(),
+      rank            = integer()
+    ))
+  }
+  
+  # --- 6. Build connected components (robust edges) ------------------------
+  edges <- scored[, .(from = get(id), to = get(id2))]
+  
+  # Mirror edges for safety
+  edges <- rbind(edges, edges[, .(from = to, to = from)])
+  
+  # Ensure all nodes included
+  all_ids <- unique(c(tokens[[id]]))
+  
+  g <- igraph::graph_from_data_frame(edges, directed = FALSE, vertices = all_ids)
+  comp <- igraph::components(g)
+  
+  membership_dt <- data.table(
+    id              = names(comp$membership),
+    duplicate_group = unname(comp$membership)
+  )
+  
+  # --- 7. Insert scores & ranks -------------------------------------------
+  scored_long <- rbindlist(list(
+    scored[, .(id = get(id),  score)],
+    scored[, .(id = get(id2), score)]
+  ))
+  
+  best <- scored_long[
+    , .(score = max(score, na.rm = TRUE)),
+    by = id
+  ]
+  
+  result <- membership_dt[best, on = "id"]
+  
+  result[, rank := rank(-score, ties.method = "first"), by = duplicate_group]
+  
+  data.table::setkeyv(result, c("duplicate_group", "rank"))
+  
+  # ---8. Attach original data -----------------------------------------------
+  result <- merge(
+    result,
+    dt,
+    by.x = "id",
+    by.y = id,
+    all.x = TRUE,
+    sort = FALSE
+  )
+  
+  result[]
+}
 
 
 #' Normalize text string
@@ -53,23 +285,23 @@ method(prepare_search_data,
 #' normalize_text("Straße", .transliteration = "Latin-ASCII")
 #' @export
 #' @import stringi
-normalize_text <- function(.text, .transliteration = "De-ASCII") {
+normalize_text <- function(text, transliteration = "De-ASCII") {
   #Validate inputes to the generate_ngrams function
-  c("Input .text must be a string" = is.character(.text),
-    "Input .transliteration must be a string" = is.character(.transliteration)
+  c("Input text must be a string" = is.character(text),
+    "Input transliteration must be a string" = is.character(transliteration)
   ) |>
     validate_inputs()
   
   # String to upper case characters
-  .text <- stri_trans_toupper(.text)
+  text <- stri_trans_toupper(text)
   # Transliterate other language specific characters
-  .text <- stri_trans_general(.text, .transliteration)
+  text <- stri_trans_general(text, transliteration)
   # Keep only alphanumeric characters and spaces
-  .text <- stri_replace_all_regex(.text, "[^A-Za-z0-9 ]", "")
+  text <- stri_replace_all_regex(text, "[^A-Za-z0-9 ]", "")
   # Remove additional spaces if they exist
-  .text <- stri_trim_both(.text)
-  .text <- stri_replace_all_regex(.text, "\\s+", " ")
-  return(.text)
+  text <- stri_trim_both(text)
+  text <- stri_replace_all_regex(text, "\\s+", " ")
+  return(text)
 }
 
 #' Convert Text to Metaphone Encoding
@@ -109,14 +341,14 @@ as_metaphone <- function(text) {
 #' as_soundex("Straße")
 #' @export
 #' @import phonics
-as_soundex <- function(.text){
+as_soundex <- function(text){
   # Validate inputs to the function
-  c("Input text must be a string" = is.character(.text)
+  c("Input text must be a string" = is.character(text)
   ) |>
     validate_inputs()
   
   # Normalize accents: Café → Cafe
-  x_norm <- iconv(.text, from = "", to = "ASCII//TRANSLIT")
+  x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
   
   # Handle ß separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
   x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
@@ -131,7 +363,7 @@ as_soundex <- function(.text){
 #' is used to encode words phonetically by reducing them to a simplified representation based on their
 #' pronunciation, particularly suited for German language.
 #'
-#' @param .text A character string or vector to be converted to Cologne Phonetic encoding.
+#' @param text A character string or vector to be converted to Cologne Phonetic encoding.
 #'
 #' @return Returns the Cologne Phonetic encoded version of the input text.
 #' @examples
@@ -139,11 +371,11 @@ as_soundex <- function(.text){
 #' as_cologne("Straße")
 #' @export
 #' @import phonics
-as_cologne <- function(.text){
-  c("Input text must be a string" = is.character(.text)) |>
+as_cologne <- function(text){
+  c("Input text must be a string" = is.character(text)) |>
     validate_inputs()
   
-  x_norm <- iconv(.text, from = "", to = "ASCII//TRANSLIT")
+  x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
   x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
   
   phonics::cologne(x_norm, clean = FALSE)
@@ -157,7 +389,7 @@ as_cologne <- function(.text){
 #' manipulation of text is required.
 #'
 #' @param text A character string from which words will be extracted.
-#' @param min_length An integer specifying the minimum length of words to keep. Defaults to 0.
+#' @param min_nchar An integer specifying the minimum length of words to keep. Defaults to 0.
 #'
 #' @return Returns a vector of words extracted from the input text.
 #'
@@ -165,22 +397,22 @@ as_cologne <- function(.text){
 #' word_tokens("This is an example.")
 #' word_tokens("Another, test; string.")
 #' @export
-word_tokens <- function(text,min_length=0){
+word_tokens <- function(text,min_nchar=0){
   # Validate inputs to the function
   c("Input text must be a string" = is.character(text),
-    "Input min_length must be a integer valued numeric" = min_length == as.integer(min_length)
+    "Input min_nchar must be a integer valued numeric" = min_nchar == as.integer(min_nchar)
   ) |>
     validate_inputs()
   
   # Split the text into words based on spaces
   words <- strsplit(text, "\\s+")
   # Remove empty elements if any (this can happen with multiple spaces)
-  words <- words[nzchar(words)]
+  words <- map(words, function(x) x[nzchar(x)])
   
   # Filter out words shorter than .min_length
-  if (min_length > 0) {
+  if (min_nchar > 0) {
     words <- map(words,function(x){
-      filter <- nchar(x)>=min_length
+      filter <- nchar(x)>=min_nchar
       x[filter]
     })
   }

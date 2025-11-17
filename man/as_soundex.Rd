@@ -4,7 +4,7 @@
 \alias{as_soundex}
 \title{Convert Text to Soundex Encoding}
 \usage{
-as_soundex(.text)
+as_soundex(text)
 }
 \arguments{
 \item{text}{A character string or vector to be converted to Soundex encoding.}

@@ -4,10 +4,10 @@
 \alias{as_cologne}
 \title{Convert Text to Cologne Phonetic Encoding}
 \usage{
-as_cologne(.text)
+as_cologne(text)
 }
 \arguments{
-\item{.text}{A character string or vector to be converted to Cologne Phonetic encoding.}
+\item{text}{A character string or vector to be converted to Cologne Phonetic encoding.}
 }
 \value{
 Returns the Cologne Phonetic encoded version of the input text.

@@ -1,6 +1,5 @@
 test_that("search_strategy() creates valid Search_Strategy objects", {
   
-  # Example strategy -----------------------------------
   strat <- search_strategy(
     Nachname   ~ normalize_text + word_tokens(min_nchar = 3),
     Vorname    ~ normalize_text + word_tokens(min_nchar = 3),
@@ -28,16 +27,17 @@ test_that("search_strategy() creates valid Search_Strategy objects", {
   expect_true(S7::S7_inherits(p, Search_Preparer))
   expect_identical(p@column, "Nachname")
   
-  # Steps should be calls, not symbols or functions -----
-  expect_true(is.call(p@steps[[1]]))
-  expect_true(is.call(p@steps[[2]]))
+  # Steps should be Step IR objects ---------------------
+  expect_true(S7::S7_inherits(p@steps[[1]], Step))
+  expect_true(S7::S7_inherits(p@steps[[2]], Step))
   
   # Step 1: normalize_text()
-  expect_identical(as.character(p@steps[[1]][[1]]), "normalize_text")
+  expect_identical(p@steps[[1]]@name, "normalize_text")
+  expect_identical(p@steps[[1]]@args, list())
   
   # Step 2: word_tokens(min_nchar = 3)
-  expect_identical(as.character(p@steps[[2]][[1]]), "word_tokens")
-  expect_identical(p@steps[[2]]$min_nchar, 3)
+  expect_identical(p@steps[[2]]@name, "word_tokens")
+  expect_identical(p@steps[[2]]@args$min_nchar, 3)
   
   # Blocking --------------------------------------------
   expect_identical(strat@block_by, "kreis")
@@ -53,3 +53,4 @@ test_that("search_strategy() creates valid Search_Strategy objects", {
   expect_no_error(capture.output(print(strat)))
   expect_no_error(capture.output(print(p)))
 })
+

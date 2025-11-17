@@ -4,19 +4,42 @@
 \alias{detect_duplicates}
 \title{Detect Duplicate Records}
 \usage{
-detect_duplicates(base_table, id, strategy, ...)
+detect_duplicates(base_table, id, strategy, threshold, ...)
 }
 \arguments{
-\item{base_table}{A data frame, tibble, or database table.}
+\item{base_table}{A data.frame, tibble, data.table, or backend-specific
+table to deduplicate.}
 
 \item{id}{Character scalar naming the ID column in `base_table`.}
 
-\item{strategy}{A `Search_Strategy` object defining matching criteria.}
+\item{strategy}{A `Search_Strategy` object defining preprocessing steps,
+blocking variables, rarity metric, and optional column weights.}
+
+\item{threshold}{Numeric scalar specifying the minimum similarity score
+required for two records to be considered duplicates.}
+
+\item{weights}{Optional named numeric vector overriding the weights stored
+in `strategy`. If `NULL`, the strategy's weights (or uniform weights) are used.}
 }
 \value{
-A data frame of duplicate pairs with similarity scores.
+A backend-specific table containing at least:
+\describe{
+  \item{duplicate_group}{Integer cluster label.}
+  \item{id}{Record ID.}
+  \item{score}{Similarity score for the record within its cluster.}
+  \item{rank}{Rank of the record within its duplicate group.}
+  \item{<original columns>}{All additional columns from `base_table`.}
+}
 }
 \description{
-Generic function that identifies duplicate records within a single table
-based on token-based similarity scoring defined in a `Search_Strategy`.
+Identify likely duplicate records within a single table using
+token-based similarity scoring defined in a `Search_Strategy`.
+
+Backends must:
+- preprocess data using `prepare_search_data()`,
+- compute token rarity using the strategy's rarity method,
+- join records on shared tokens (respecting `block_by`),
+- aggregate rarity × column-weight contributions into a similarity score,
+- return only pairs with `score >= threshold`,
+- group connected pairs into duplicate clusters.
 }

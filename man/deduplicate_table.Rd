@@ -7,7 +7,7 @@
 deduplicate_table(base_table, duplicates, id, ...)
 }
 \arguments{
-\item{base_table}{A data frame, tibble, or database table.}
+\item{base_table}{A data.frame / tibble / data.table (or db table in other backends).}
 
 \item{duplicates}{A data frame of duplicate pairs.}
 

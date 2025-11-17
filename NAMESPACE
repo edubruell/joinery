@@ -3,6 +3,7 @@
 export(as_cologne)
 export(as_metaphone)
 export(as_soundex)
+export(compute_rarity)
 export(deduplicate_table)
 export(detect_duplicates)
 export(generate_ngrams)

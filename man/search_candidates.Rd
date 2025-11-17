@@ -7,9 +7,9 @@
 search_candidates(base_table, target_table, base_id, target_id, strategy, ...)
 }
 \arguments{
-\item{base_table}{A data frame, tibble, or database table.}
+\item{base_table}{A data.frame / tibble / data.table (or db table in other backends).}
 
-\item{target_table}{A data frame, tibble, or database table to search against.}
+\item{target_table}{A data.frame / tibble / data.table (or db table in other backends) to search against.}
 
 \item{base_id}{Character scalar naming the ID column in `base_table`.}
 
@@ -18,7 +18,7 @@ search_candidates(base_table, target_table, base_id, target_id, strategy, ...)
 \item{strategy}{A `Search_Strategy` object defining matching criteria.}
 }
 \value{
-A data frame of candidate matches with similarity scores.
+Data with candidate matches
 }
 \description{
 Generic function that finds candidate record matches between two tables

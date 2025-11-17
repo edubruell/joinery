@@ -4,18 +4,15 @@
 \alias{prepare_search_data}
 \title{Prepare Data for Record Linkage Search}
 \usage{
-prepare_search_data(data, strategy, ...)
+prepare_search_data(data, id, strategy, ...)
 }
 \arguments{
-\item{.data}{A data frame, tibble, or database table.}
+\item{data}{A data.frame / tibble / data.table (or db table in other backends).}
 
-\item{.strategy}{A `Search_Strategy` object defining preprocessing steps.}
-}
-\value{
-A prepared version of `.data` with preprocessing applied.
+\item{id}{Character scalar naming the ID column in `data`.}
+
+\item{strategy}{A `Search_Strategy` object.}
 }
 \description{
-Generic function that applies preprocessing steps defined in a 
-`Search_Strategy` to a data frame or database table. The method dispatches
-based on the class of `.data` to handle in-memory and database backends.
+Prepare Data for Record Linkage Search
 }

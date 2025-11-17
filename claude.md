@@ -1,118 +1,320 @@
-# joinery
+# 📦 joinery — Developer / Coding-Agent Guide
 
-## Package info
+## Overview
 
-This project is a heuristic identification based record linkage utility for R
-that should integrate nicely in tidyverse style workflows. Its goal is to 
-support both `tibbles`, `data.table`, and `duckdb` databases with different join 
-backends. Code for an earlier `data.table`-only prototype called `Matchmaker`
-is in the `oldMatchmakerCode` folder in the root directory of the repo.  
-You can use this as reference for future functionality.
+**joinery** is a heuristic, token-based record linkage system for R.
+It is designed to integrate cleanly with tidyverse workflows while also supporting:
 
-The new package should use the new S7 object-system in R and 
-should separate the actual linkage workflow from the search strategy 
-definitions for linkage. See the search_strategy class allready implemented.
+- **tibbles** (dplyr)
+- **data.table**
+- **DuckDB tables** (future work: SQL backend)
 
-Below is an example of how  the MatchMakeR prototype works: 
-```R
-library(MatchMakeR)
+The package is built on the **new S7 class system** to keep the linkage workflow cleanly separated into:
 
-# Load base and target tables
-yp_base <- readstata13::read.dta13("yellow_pages_hausaerzte.dta")) |> as.data.table()
-base_table <- copy(yp_base[year == 2016 & entry_line == 1][, key_base := entry])
-target_table <- copy(yp_base[year == 2017 & entry_line == 1][, key_target := entry])
+### 1. A **declarative search strategy**
 
-# Define normalization and tokenization strategy
-preparers <- search_preparers(
-  Nachname ~ normalize_text + word_tokens(.min_length = 3),
-  Vorname ~ normalize_text + word_tokens(.min_length = 3),
-  Strasse ~ normalize_text + word_tokens,
-  Hausnummer ~ normalize_text + word_tokens,
-  Ort ~ normalize_text + word_tokens
-)
-# Prepare search data
-search_table_base <- preapare_search_data(preparers, base_table, "key_base")
-search_table_target <- preapare_search_data(preparers, target_table, "key_target")
+Defines *how* text fields should be normalized, tokenized, encoded, weighted, and blocked.
 
-# Detect duplicates within the base table
-likely_duplicates <- detect_duplicates(
-  .base_table = search_table_base,
-  .base_key = "key_base",
-  .threshold = 0.8
-)
+### 2. Backend-specific execution
 
-# Deduplicate the base table
-deduplicated_base_table <- deduplicate_table(base_table, likely_duplicates, "key_base")
+Defines *how* data is prepared and matched depending on whether the user works with:
 
-# Search for matching candidates between base and target tables (Please deduplicate and inspect before doing this)
-candidates <- search_candidates(
-  .base_table = search_table_base,
-  .target_table = search_table_target,
-  .base_key = "key_base",
-  .target_key = "key_target",
-  .threshold = 0.6,
-  .weights = c(Hausnummer = 0.1, Nachname = 0.5, Vorname = 0.2, Strasse = 0.1, Ort = 0.1),
-  .chunksize = 10000
+- in-memory data.table,
+- tibble,
+- or DuckDB relations (future).
+
+The S7 classes give joinery a **backend-agnostic intermediate representation (IR)** for preprocessing steps.
+
+
+# Core S7 Classes
+
+## `Step`
+
+Represents **one preprocessing step**, e.g.:
+
+- `normalize_text()`
+- `word_tokens(min_nchar = 3)`
+- `generate_ngrams(n = 3)`
+- etc.
+
+A `Step` stores:
+
+- `name` – function name as string
+- `args` – list of expressions (unevaluated)
+
+## `Search_Preparer`
+
+Represents preprocessing for **one column** in the dataset.
+
+Holds:
+
+- `column` – the column name
+- `steps` – an *ordered list* of `Step` objects
+
+This mirrors how pipelines work in dplyr, except it’s deferred until a backend executes it.
+
+## `Search_Strategy`
+
+Top-level IR object.
+
+Contains:
+
+- `preparers` – named list of `Search_Preparer`
+- `weights` – named numeric vector (optional)
+- `block_by` – character vector of blocking vars (optional)
+- `rarity` – method name: `"inverse_freq"` (default) or `"tfidf"`
+
+Created via:
+
+```r
+search_strategy(
+  column ~ step1 + step2 + step3,
+  ...,
+  weights = c(),
+  block_by = NULL,
+  rarity = "inverse_freq"
 )
 ```
 
-## Core Search Utility
 
-The core function of the linkage utility was `search_candidates()`. In the old code it
-implements a token-based heuristic record linkage. It identifies potential matches between two tables (base and target) by:
+# Backend generics
 
-1. **Tokenizing**: Using pre-tokenized records coming from `preapare_search_data` function and a search strategy
-2. **Calculating rarity**: Each token's rarity is computed as the inverse of its frequency in the base table
-3. **Computing identification potential**: For each base-target record pair, shared tokens contribute to an identification score based on their rarity, weighted by column importance
-4. **Filtering**: Only pairs exceeding a specified threshold are returned as candidates
+All generics dispatch on backend class (data.table, tibble, duckdb):
 
-The function operates on long-format token tables (with columns: key, column, tokens). 
-Column weights allow prioritizing certain fields (e.g., surname over street) in the matching score.
+```r
+prepare_search_data(data, id, strategy)
+detect_duplicates(base_table, id, strategy, threshold)
+search_candidates(base_table, target_table, base_id, target_id, strategy, threshold, weights = NULL)
+deduplicate_table(base_table, duplicates, id)
+```
+
+`prepare_search_data()` is the **core**, and every other function depends on its output.
 
 
-## Original prepare functionality
+# How the data.table backend works (actual implementation)
 
-The original code had implementations of the following functions:
+### `prepare_search_data()` (data.table version):
 
-- **`normalize_text()`**: Normalize a text string by converting to uppercase, transliterating special characters, retaining only alphanumeric characters and spaces, and removing extra spaces.
-- **`as_metaphone()`**: Convert a text string to its Metaphone encoding.
-- **`as_soundex()`**: Convert a text string to its Soundex encoding.
-- **`word_tokens()`**: Return a list of word tokens for the input text.
-- **`use_dictionary()`**: Group similar tokens together using a pre-defined dictionary.
-- **`generate_ngrams()`**: Generate n-gram tokens from a text string.
-- **`search_preparers()`**: Create a list of preparer functions based on a formula syntax.
-- **`preapare_search_data()`**: Apply the preparer functions to the specified columns in the input data frame to create a search table
-- **`search_candidates()`**: Search for matching candidates between a base table and a target table using token-based heuristic linkage.
-- **`detect_duplicates()`**: Detect duplicate records within a base table using token-based heuristic linkage.
-- **`deduplicate_table()`**: Use the results of `detect_duplicates` to remove duplicate records from a data table.
-- **`build_similarity_dict()`**: Build a dicionary of similar tokens for a base and a target table.
+- Applies each `Search_Preparer` pipeline to its column.
+- Produces a **long token table** with these columns:
 
-## Desired Interface
+```
+id               # actual id column name (e.g., "id_base")
+column           # which column tokens came from (e.g. "Nachname")
+token            # token value
+row_id           # original row index
+<block_by vars>  # e.g. "Kreis"
+```
+
+Example output:
+
+```
+   id_base   column     token   row_id    Kreis
+   B0001     Nachname   MUELLER     1      Region Hannover
+   B0001     Vorname    MICHAEL     1      Region Hannover
+   ...
+```
+
+This  table is then used for both duplication detection and cross-table candidate search.
+
+# Search workflow description (aligned with actual code)
+
+The pipeline operates as:
+
+###  1. Preprocessing (backend-specific)
+
+`prepare_search_data()` interprets the IR and builds a token table and is the internal core function for each backend.
+It is exported but rarely needed for the end-user, but is instead called by the `detect_duplciates()` and `search_candidates()`
+functions. 
+
+### 2. Rarity computation (block/column-aware)
+
+Rarity measures how informative a token is when scoring matches.  
+In **joinery**, rarity is always computed:
+
+- using **one global rarity metric per run**, and  
+- **within each block** (`block_by`),  
+- **per column**, so that each field has its own frequency profile.
+
+Formally:
+
+```
+rarity(token, column, block) → numeric
+```
+
+**Supported metrics (planned):**
+- **inverse_freq** *(default)*  
+```
+freq = count(token within block AND column)
+rarity = 1 / freq
+
+```
+- **tfidf** *(block-local IDF)*  
+```
+df = number of rows in block/column containing token
+N  = number of rows in block/column
+rarity = log(N / df)
+```
+- **smoothed_inverse_freq**  
+```
+rarity = 1 / (freq + α)
+```
+- **bm25**  
+```
+rarity = log((N - df + 0.5) / (df + 0.5))
+```
+All columns and all blocks share the same **metric** during a run  
+(but the computation is always **column-specific and block-specific**)
+
+
+###  3. Token overlap join
+
+- Duplicates → self-join on (`column`, `token`, `block_by`)
+- Cross-year matches → join `base_tokens` with `target_tokens`
+
+###  4. Scoring
+
+Similarity score between two records is:
+
+```
+sum_over_shared_tokens( rarity(token) * column_weight(column) )
+```
+
+Column weights come from:
+
+- `weights` arg
+- or `strategy@weights` if none supplied
+
+### 5. Threshold filtering
+
+Only record pairs where:
+
+```
+score >= threshold
+```
+
+are returned.
+
+
+### 6. Residual generation (planned)
+
+After producing matches, joinery creates **residual tables**:
+
+```
+residual_base = base_table \ matched_base_ids
+residual_target = target_table \ matched_target_ids
+```
+
+- Run a **strict** strategy first,
+- Then run a **phonetic** or **n-gram** strategy on residuals,
+- Continue until no rows remain or no further matches are found.
+
+This enables flexible, multi-pass matching without embedding recursion or
+fallback logic inside a single strategy definition.
+
+A minimal API for this functionality is:
+
+```r
+extract_unmatched(data, id, matches)
+```
+For cross-table matching, it would be called separately for base and target:
+```r
+residual_base   <- extract_unmatched(base_table,   base_id,   matches)
+residual_target <- extract_unmatched(target_table, target_id, matches)
+```
+### 7. Multi-stage matching pipeline (planned)
+
+Joinery will support *multi-stage* linkage by running several strategies in
+sequence. Each stage produces matches and then removes the matched records
+before the next stage runs.
+
+The workflow is:
+
+1. Run `search_candidates()` with Strategy A  
+2. `extract_unmatched()` removes all matched rows  
+3. Run `search_candidates()` on the remaining rows with Strategy B  
+4. Repeat for Strategy C, D, … until no unmatched rows remain
+
+Example sketch:
+
+```r
+# Stage 1: strict normalization + words
+matches1 <- search_candidates(base, target, ..., strategy = strat_strict)
+base1   <- extract_unmatched(base,   "id_base",   matches1)
+target1 <- extract_unmatched(target, "id_target", matches1)
+
+# Stage 2: phonetic fallback
+matches2 <- search_candidates(base1, target1, ..., strategy = strat_phonetic)
+```
+
+### 8. Proposed interface for multi-stage strategies (planned)
+
+To simplify multi-stage linkage, joinery may support passing a **list of
+strategies** that are executed in order. Each stage runs normally, and
+`extract_unmatched()` is applied automatically between stages.
+
+Proposed interface:
+
+```r
+multi_stage_match(
+  base_table,
+  target_table,
+  base_id,
+  target_id,
+  strategies,   # named list of search_strategy() objects
+  ...
+)
+```
+Example:
+
+```r
+strategies <- list(
+  strict   = strat_normalized_words,
+  phonetic = strat_metaphone,
+  ngrams   = strat_ngrams
+)
+
+results <- multi_stage_match(
+  base, target,
+  base_id   = "id_base",
+  target_id = "id_target",
+  strategies = strategies
+)
+```
+
+The function would:
+
+1. run each strategy in sequence,
+2. collect matches per stage,
+3. remove matched rows automatically using `extract_unmatched()`,
+4. stop early if no unmatched rows remain.
+
+This provides a concise wrapper for strict → phonetic → fuzzy matching workflows
+
+# Desired User Interface (aligned with actual code) for the next-to-implement part
 
 ```r
 library(joinery)
 
-# Load base and target tables (merge yellow pages across years)
-yellow_pages <- readstata13::read.dta13("yellow_pages_hausaerzte.dta")) 
+yellow_pages <- readstata13::read.dta13("yellow_pages_hausaerzte.dta")
 
 base_table <- yellow_pages |>
-  filter(year==2016, entry_line==1) |>
+  filter(year == 2016, entry_line == 1) |>
   rename(id_base = entry)
 
 target_table <- yellow_pages |>
-  filter(year==2017, entry_line==1) |>
+  filter(year == 2017, entry_line == 1) |>
   rename(id_target = entry)
 
 yp_strategy <- search_strategy(
-  Nachname ~ normalize_text + word_tokens(.min_length = 3),
-  Vorname ~ normalize_text + word_tokens(.min_length = 3),
-  Strasse ~ normalize_text + word_tokens,
-  Hausnummer ~ normalize_text + word_tokens,
-  Ort ~ normalize_text + word_tokens,
-  block_by = "kreis" #New blocking functionality (Only search within a block)
+  Nachname   ~ normalize_text + word_tokens(min_nchar = 3),
+  Vorname    ~ normalize_text + word_tokens(min_nchar = 3),
+  Strasse    ~ normalize_text + word_tokens(),
+  Hausnummer ~ normalize_text + word_tokens(),
+  Ort        ~ normalize_text + word_tokens(),
+  block_by   = "kreis"
 )
 
-# Detect duplicates within the base table 
 likely_duplicates <- detect_duplicates(
   base_table = base_table,
   id         = "id_base",
@@ -120,27 +322,45 @@ likely_duplicates <- detect_duplicates(
   threshold  = 0.8
 )
 
-# Deduplicate the base table
-deduplicated_base_table <- deduplicate_table(base_table, likely_duplicates, "id_base")
+deduped <- deduplicate_table(base_table, likely_duplicates, "id_base")
 
-# Search for matching candidates between base and target tables 
 candidates <- search_candidates(
-  base_table = base_table,
+  base_table  = base_table,
   target_table = target_table,
-  base_id = "id_base",
-  target_id = "id_target",
-  strategy   = yp_strategy,
-  threshold = 0.6,
-  weights = c(Hausnummer = 0.1, Nachname = 0.5, Vorname = 0.2, Strasse = 0.1, Ort = 0.1)
+  base_id     = "id_base",
+  target_id   = "id_target",
+  strategy    = yp_strategy,
+  threshold   = 0.6,
+  weights     = c(Hausnummer = 0.1, Nachname = 0.5,
+                  Vorname    = 0.2, Strasse = 0.1, Ort = 0.1)
 )
-
-
 ```
 
-In future the preapre step should be done automatically by candidte search and duplicate detection
-functions.
 
-The desired output for the above functions, should look somewhat like this: 
+# Expected Output Schemas
+
+### Duplicate detection:
+
+```
+duplicate_group  
+score
+id
+<original columns>
+rank
+```
+
+### Cross-table candidate matches:
+
+```
+match_id
+score
+direction   # "base" or "target"
+id
+<original columns>
+rank
+```
+
+### tibble-Output for these steps:
 
 ```r
 likely_duplicates
@@ -176,7 +396,36 @@ candidates
 11       6  0.83 base      2016-008  2016          1 C     Kowalski   Joanna       Bahnhofstr.     1          Kleinstadt   82000     1
 12       6  0.83 target    2017-015  2017          1 C     Kowalski   J.           Bahnhofstrasse  1          Kleinstadt   82000     1
 ```
- For `duckdb` the equivalent should be output tables in the database specified in the duplciate detection and search candidate functions.
- 
 
- 
+
+# DuckDB backend (future extension)
+
+The coding agent should note:
+
+- The IR is backend-agnostic.
+- Only the interpreter (`prepare_search_data()`, joins, scoring) differ.
+- For DuckDB, output should be **database tables**, not in-memory data.tables.
+
+# Summary for the agent
+
+When writing new joinery code:
+
+- **Do not rewrite preprocessing logic directly.**
+  Always use the S7 IR (`Step`, `Search_Preparer`, `Search_Strategy`).
+
+- **Never assume a specific backend.**
+  Always write generic methods that dispatch on `data` or implement new backends as needed.
+
+- **Work from token tables.**
+  All linkage logic uses the long form:
+
+  ```
+  id | column | token | row_id | <block_by>
+  ```
+
+-  **Similarity scoring = sum(rarity * weight).**
+
+- **Thresholding happens after scoring.**
+
+- **Output must match the schemas above.**
+

@@ -159,19 +159,26 @@ streets <- c(
 # ==============================================================================
 
 # Approximate real distributions
-german_first <- c("Anna","Marie","Sophie","Laura","Julia",
-                  "Peter","Michael","Thomas","Karl","Heinz",
-                  "Uwe","Jürgen","Stefan","Lukas","Tim")
+german_first <- c("Anna","Marie","Sophie","Laura","Julia","Lena","Emma","Hannah","Lea","Sarah",
+                  "Mia","Emilia","Clara","Charlotte","Johanna","Amelie","Franziska","Isabella",
+                  "Peter","Michael","Thomas","Karl","Heinz","Andreas","Christian","Martin",
+                  "Uwe","Jürgen","Stefan","Lukas","Tim","Klaus","Hans","Werner","Helmut",
+                  "Wolfgang","Matthias","Sebastian","Daniel","Alexander","Markus","Florian")
 
-german_first_w <- c(0.11,0.10,0.08,0.07,0.07,
-                    0.10,0.09,0.08,0.05,0.04,
-                    0.03,0.03,0.03,0.04,0.03)
+german_first_w <- c(0.055,0.050,0.045,0.040,0.038,0.035,0.033,0.030,0.028,0.027,
+                    0.025,0.024,0.023,0.022,0.021,0.020,0.019,0.018,
+                    0.048,0.045,0.042,0.028,0.025,0.024,0.023,0.022,
+                    0.018,0.017,0.016,0.020,0.017,0.016,0.015,0.014,0.013,
+                    0.012,0.019,0.018,0.021,0.020,0.019,0.017)
 
-german_last <- c("Schmidt","Müller","Weber","Schneider","Fischer",
-                 "Wagner","Becker","Hoffmann","Koch","Bauer")
+german_last <- c("Schmidt","Müller","Weber","Schneider","Fischer","Wagner","Becker",
+                 "Hoffmann","Koch","Bauer","Schulz","Meyer","Richter","Klein","Wolf",
+                 "Schröder","Neumann","Braun","Zimmermann","Krüger","Schmitt","Lange",
+                 "Hofmann","Krause","Meier","Lehmann","Huber","Mayer","Herrmann","König")
 
-german_last_w <- c(0.12,0.11,0.10,0.09,0.08,
-                   0.10,0.09,0.08,0.07,0.06)
+german_last_w <- c(0.070,0.065,0.060,0.055,0.050,0.058,0.052,0.048,0.045,0.042,
+                   0.040,0.038,0.036,0.034,0.032,0.038,0.036,0.034,0.032,0.030,
+                   0.031,0.029,0.028,0.027,0.026,0.025,0.024,0.023,0.022,0.021)
 
 # Turkish names (approx 3-4% of German population)
 turkish_first <- c("Mehmet","Ali","Fatma","Hassan","Aylin","Ahmet","Emine","Hasan","Zeynep","Mustafa")
@@ -359,7 +366,7 @@ target_example <- bind_rows(target_matches, target_new)
 # ==============================================================================
 
 
-dup_idx <- sample(n, round(0.05 * n))
+dup_idx <- sample(n, round(0.10 * n))
 
 base_dups <- base[dup_idx, ] |>
   mutate(
@@ -370,13 +377,13 @@ base_dups <- base[dup_idx, ] |>
     ),
     id_base = sprintf("B%04d", (n + 1):(n + length(dup_idx))),
     Vorname = map2_chr(Vorname, ethnic, ~ {
-      if (runif(1) < 0.6) {
-        if (runif(1) < 0.5) initialize_first(.x) else add_or_remove_middle(.x, .y)
-      } else {
-        typo(.x)
-      }
+      .x |> 
+        vary_title() |>
+        add_or_remove_middle(.y) %>%
+        { if (runif(1) < 0.25) initialize_first(.) else . } %>%
+        { if (runif(1) < 0.10) initial_middle(.) else . }
     }),
-    Nachname = map_chr(Nachname, typo),
+    ,
     Hausnummer = map_chr(Hausnummer, house_distort)
   ) |>
   select(-ethnic)

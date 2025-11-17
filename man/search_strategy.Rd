@@ -22,7 +22,7 @@ Candidate searches will be restricted to records sharing the same blocking
 key values. Default is `NULL` (no blocking).}
 
 \item{weights}{Optional named numeric vector of weights for similarity scoring.
-Names should correspond to columns. Default is `numeric()` (no weights).}
+Names should correspond to columns.}
 
 \item{rarity}{Character scalar specifying the rarity computation method.
 Default is `"inverse_freq"`.}
@@ -32,6 +32,6 @@ A `Search_Strategy`
 }
 \description{
 Creates a `Search_Strategy` object that specifies how columns should be
-preprocessed for token-based record linkage, along with optional weights,
+preprocessed for token-index-based record linkage, along with optional weights,
 blocking variables, and rarity computation method.
 }
