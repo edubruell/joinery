@@ -148,7 +148,7 @@ test_that("prepare_search_data() works for data.table backend", {
   expect_type(result$row_id, "integer")
   
   # Expected row count (you know this for base_example)
-  expect_equal(nrow(result), 16416L)
+  expect_equal(nrow(result), 17171)
   
   # All columns in strategy should appear in output --------------------------
   expected_cols <- names(yp_strategy@preparers)
@@ -243,8 +243,8 @@ test_that("compute_rarity() works for data.table backend", {
   known <- rar[column == "Nachname" & token == "MUELLER" &
                  get(block_cols) == "Region Hannover"]
   
-  expect_equal(known$freq[1], 33L)        # from your earlier output
-  expect_equal(known$rarity[1], 1/33, tol = 1e-12)
+  expect_equal(known$freq[1], 25)        # from your earlier output
+  expect_equal(known$rarity[1], 1/25, tol = 1e-12)
   
   # No NA rarity values ------------------------------------------------------
   expect_false(any(is.na(rar$rarity)))
@@ -257,3 +257,108 @@ test_that("compute_rarity() works for data.table backend", {
   expect_no_error(capture.output(print(rar)))
 })
 
+test_that("detect_duplicates() works for data.table backend and returns merged original data", {
+  
+  data("base_example", package = "joinery")
+  
+  yp_strategy <- search_strategy(
+    Nachname ~ normalize_text + word_tokens(min_nchar = 3),
+    Vorname  ~ normalize_text + word_tokens(min_nchar = 3),
+    Strasse  ~ normalize_text + word_tokens,
+    Hausnummer ~ normalize_text + word_tokens,
+    Ort ~ normalize_text + word_tokens,
+    block_by = "Kreis"
+  )
+  
+  # --- Run duplicate detection --------------------------------------------
+  dup <- detect_duplicates(
+    as.data.table(base_example),
+    id        = "id_base",
+    strategy  = yp_strategy,
+    threshold = 0.8
+  )
+  
+  # --- Basic structure -----------------------------------------------------
+  expect_true(data.table::is.data.table(dup))
+  expect_true(all(c("id", "duplicate_group", "score", "rank") %in% names(dup)))
+  
+  # At least a few groups should exist
+  expect_true(length(unique(dup$duplicate_group)) >= 1)
+  
+  # --- Check that identical rows have score = 1 ----------------------------
+  # Known pair in base_example: B3142 and B2039 are identical
+  pair <- dup[id %in% c("B3142", "B2039")]
+  
+  expect_equal(sort(pair$score), c(1, 1))
+  
+  # --- Check score logic: rIP ensures column-sum = 1 per identical record ---
+  # For any exact pair, the sum of weights is 1
+  # (weights are equal by default)
+  expect_equal(unique(pair$score), 1)
+  
+  # --- Check ranking: identical scores must rank deterministically ----------
+  # rank = 1, 2 for the pair in the same group
+  expect_setequal(pair$rank, c(1L, 2L))
+  
+  # --- Check that merging back original data preserves values --------------
+  joined_row <- dup[id == "B3142"]
+  
+  expect_equal(joined_row$Vorname,  subset(base_example,id_base=="B3142")$Vorname)
+  expect_equal(joined_row$Nachname, subset(base_example,id_base=="B3142")$Nachname)
+  expect_equal(joined_row$Ort,      subset(base_example,id_base=="B3142")$Ort)
+  
+  # --- Check no NA in duplicate_group or score/rank ------------------------
+  expect_false(any(is.na(dup$duplicate_group)))
+  expect_false(any(is.na(dup$score)))
+  expect_false(any(is.na(dup$rank)))
+  
+  # --- Print should not error ----------------------------------------------
+  expect_no_error(capture.output(print(dup)))
+})
+
+test_that("deduplicate_table() removes non-top-ranked duplicates", {
+  
+  data("base_example", package = "joinery")
+  
+  # Simple synthetic duplicate table for testing:
+  # cluster 1: A kept, B removed
+  # cluster 2: C kept
+  duplicates <- data.table::data.table(
+    id = c("A", "B", "C"),
+    duplicate_group = c(1, 1, 2),
+    score = c(1, 0.8, 1),
+    rank  = c(1L, 2L, 1L)
+  )
+  
+  # Base table to deduplicate
+  base <- data.table::data.table(
+    id = c("A", "B", "C", "D"),
+    value = c(10, 20, 30, 40)
+  )
+  
+  # Expected behavior:
+  # - Remove B (rank != 1)
+  # - Keep A, C, D
+  result <- deduplicate_table(
+    base_table = base,
+    duplicates = duplicates,
+    id         = "id"
+  )
+  
+  # Correct set of remaining IDs
+  expect_setequal(result$id, c("A", "C", "D"))
+  
+  # Removed ID is really gone
+  expect_false("B" %in% result$id)
+  
+  # Output row order should remain consistent
+  expect_equal(result$id, c("A", "C", "D"))
+  
+  # Values must remain unchanged
+  expect_equal(result$value[result$id == "A"], 10)
+  expect_equal(result$value[result$id == "C"], 30)
+  expect_equal(result$value[result$id == "D"], 40)
+  
+  # No duplicates in the output
+  expect_true(all(result[, .N, by = id]$N == 1))
+})

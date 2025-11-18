@@ -6,6 +6,7 @@
 It is designed to integrate cleanly with tidyverse workflows while also supporting:
 
 - **tibbles** (dplyr)
+- base **data.frames**
 - **data.table**
 - **DuckDB tables** (future work: SQL backend)
 
@@ -185,12 +186,27 @@ Column weights come from:
 - `weights` arg
 - or `strategy@weights` if none supplied
 
+These are normalized to relative identification potential `rIP`, i.e.:
+```
+tokens[, rIP := rarity / sum(rarity), by = .(get(id), column)]
+```
+Example code for rIP-based tresholding:
+```
+scored <- joined[
+    , .(score = sum(rIP * weight, na.rm = TRUE)),
+    by = c(id, id2)
+  ]
+  
+  # Apply threshold
+  scored <- scored[score >= threshold]
+```
+
 ### 5. Threshold filtering
 
 Only record pairs where:
 
 ```
-score >= threshold
+rIP  >= threshold
 ```
 
 are returned.
@@ -345,9 +361,10 @@ candidates <- search_candidates(
 duplicate_group  
 score
 id
-<original columns>
+<original columns of base_table>
 rank
 ```
+(Implemented and working and tests ready)
 
 ### Cross-table candidate matches:
 
@@ -381,7 +398,7 @@ likely_duplicates
 
 candidates
 # A tibble: 12 × 15
-   match_id score direction id        year entry_line kreis Nachname   Vorname      Strasse         Hausnummer Ort          PLZ    rank
+   match_id score source   id        year entry_line kreis Nachname   Vorname      Strasse         Hausnummer Ort          PLZ    rank
      <int> <dbl> <chr>     <chr>    <dbl>      <dbl> <chr> <chr>      <chr>        <chr>           <chr>      <chr>        <chr> <int>
  1       1  0.98 base      2016-001  2016          1 A     Müller     Hans         Hauptstr.       12         Musterstadt  80000     1
  2       1  0.98 target    2017-010  2017          1 A     Mueller    Hans         Hauptstrasse    12         Musterstadt  80000     1
