@@ -12,7 +12,8 @@ Imports:
     data.table,
     igraph,
     stringi,
-    phonics
+    phonics,
+    lubridate
 Collate: 
     'joinery-package.R'
     'import-standalone-purrr.R'

@@ -6,10 +6,10 @@
 **joinery** is a heuristic, token-based record linkage system for R.
 It is designed to integrate cleanly with tidyverse workflows while also supporting:
 
-* **tibbles** (dplyr)
-* base **data.frames**
-* **data.table**
-* **DuckDB tables** (future SQL backend)
+* **data.table** (main in-memoty backend implemented)
+* **tibbles** (defers to data.table backend but gives you tibbles)
+* base **data.frames**  (defers to data.table backend but gives you data.frames)
+* **DuckDB tables** (not yet implemented)
 
 The package is built on the **new S7 class system** to keep the linkage workflow cleanly separated into:
 

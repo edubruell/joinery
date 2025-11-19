@@ -151,6 +151,288 @@ normalize_street <- function(x, lang = NULL, dict = joinery::street_types) {
   out
 }
 
+#' Normalize dates to ISO 8601 format (YYYY-MM-DD)
+#'
+#' `normalize_date()` parses dates from various formats and standardizes them to
+#' ISO 8601 format (YYYY-MM-DD) as a character string. Handles common date
+#' formats across locales including European (DD.MM.YYYY), American (MM/DD/YYYY),
+#' and ISO-style formats.
+#'
+#' @param x A character or Date vector containing dates to normalize.
+#' @param format Optional format string for parsing (passed to `as.Date()`).
+#'   If `NULL` (default), attempts automatic parsing via multiple common formats.
+#' @param orders Optional character vector of lubridate order specifications
+#'   (e.g., `c("dmy", "mdy", "ymd")`). Used when `format = NULL`.
+#'   Defaults to `c("ymd", "dmy", "mdy")`.
+#'
+#' @return A character vector of dates in ISO 8601 format (YYYY-MM-DD).
+#'   Unparseable dates return `NA_character_` with a warning.
+#'
+#' @details
+#' When `format` is provided, uses `as.Date(x, format)` directly.
+#' When `format = NULL`, tries `lubridate::parse_date_time()` with the
+#' specified `orders` to handle mixed formats flexibly.
+#'
+#' @examples
+#' normalize_date("31.12.2023")
+#' # "2023-12-31"
+#'
+#' normalize_date("12/31/2023")
+#' # "2023-12-31"
+#'
+#' normalize_date(c("2023-01-15", "15.01.2023", "01/15/2023"))
+#' # c("2023-01-15", "2023-01-15", "2023-01-15")
+#'
+#' normalize_date("31-12-2023", format = "%d-%m-%Y")
+#' # "2023-12-31"
+#'
+#' @export
+normalize_date <- function(x, format = NULL, orders = c("ymd", "dmy", "mdy")) {
+  
+  c(
+    "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
+    "format must be NULL or character" = (is.null(format) || is.character(format)),
+    "orders must be character" = is.character(orders)
+  ) |> validate_inputs()
+  
+  is_na <- is.na(x)
+  
+  if (inherits(x, "Date")) {
+    out <- format(x, "%Y-%m-%d")
+    out[is_na] <- NA_character_
+    return(out)
+  }
+  
+  if (!is.null(format)) {
+    parsed <- as.Date(x, format = format)
+    out <- format(parsed, "%Y-%m-%d")
+    out[is_na] <- NA_character_
+    
+    if (any(is.na(out) & !is_na)) {
+      warning("Some dates could not be parsed with the specified format")
+    }
+    
+    return(out)
+  }
+  
+  parsed <- lubridate::parse_date_time(x, orders = orders, quiet = TRUE)
+  out <- format(parsed, "%Y-%m-%d")
+  out[is_na] <- NA_character_
+  
+  if (any(is.na(out) & !is_na)) {
+    warning("Some dates could not be parsed with orders: ", paste(orders, collapse = ", "))
+  }
+  
+  out
+}
+
+
+#' Extract date components as tokens
+#'
+#' `date_tokens()` parses dates and extracts specified components (year, month, day)
+#' as separate tokens. This is useful for flexible date matching where you want to
+#' match on specific date parts rather than full dates.
+#'
+#' @param x A character or Date vector containing dates to tokenize.
+#' @param components Character vector specifying which date components to extract.
+#'   Can include `"year"`, `"month"`, and/or `"day"`. Defaults to all three.
+#' @param format Optional format string for parsing (passed to `as.Date()`).
+#'   If `NULL` (default), attempts automatic parsing via lubridate.
+#' @param orders Optional character vector of lubridate order specifications
+#'   (e.g., `c("dmy", "mdy", "ymd")`). Used when `format = NULL`.
+#'   Defaults to `c("ymd", "dmy", "mdy")`.
+#'
+#' @return A list of character vectors, one per input element. Each vector
+#'   contains the requested date components as strings. Unparseable dates
+#'   return an empty character vector with a warning.
+#'
+#' @details
+#' Components are returned as zero-padded strings:
+#' * `"year"` — 4-digit year (e.g., `"2023"`)
+#' * `"month"` — 2-digit month (e.g., `"01"`, `"12"`)
+#' * `"day"` — 2-digit day (e.g., `"05"`, `"31"`)
+#'
+#' The order of tokens in the output follows the order of `components`.
+#'
+#' @examples
+#' date_tokens("2023-12-31")
+#' # list(c("2023", "12", "31"))
+#'
+#' date_tokens("31.12.2023", components = c("year", "month"))
+#' # list(c("2023", "12"))
+#'
+#' date_tokens("12/31/2023", components = "year")
+#' # list("2023")
+#'
+#' date_tokens(c("2023-01-15", "15.06.2023"))
+#' # list(c("2023", "01", "15"), c("2023", "06", "15"))
+#'
+#' @export
+date_tokens <- function(x,
+                        components = c("year", "month", "day"),
+                        format = NULL,
+                        orders = c("ymd", "dmy", "mdy")) {
+  
+  c(
+    "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
+    "components must be character" = is.character(components),
+    "components must be valid" = all(components %in% c("year", "month", "day")),
+    "format must be NULL or character" = (is.null(format) || is.character(format)),
+    "orders must be character" = is.character(orders)
+  ) |> validate_inputs()
+  
+  is_na <- is.na(x)
+  
+  if (inherits(x, "Date")) {
+    parsed <- x
+  } else if (!is.null(format)) {
+    parsed <- as.Date(x, format = format)
+    if (any(is.na(parsed) & !is_na)) {
+      warning("Some dates could not be parsed with the specified format")
+    }
+  } else {
+    parsed <- lubridate::parse_date_time(x, orders = orders, quiet = TRUE)
+    parsed <- as.Date(parsed)
+    if (any(is.na(parsed) & !is_na)) {
+      warning("Some dates could not be parsed with orders: ", paste(orders, collapse = ", "))
+    }
+  }
+  
+  extract_components <- function(date) {
+    if (is.na(date)) return(character(0))
+    
+    tokens <- character()
+    
+    for (comp in components) {
+      token <- switch(comp,
+        year = format(date, "%Y"),
+        month = format(date, "%m"),
+        day = format(date, "%d")
+      )
+      tokens <- c(tokens, token)
+    }
+    
+    tokens
+  }
+  
+  map(parsed, extract_components)
+}
+
+#' Approximate dates by rounding to coarser time units
+#'
+#' `approximate_date()` rounds dates to the start of broader time periods
+#' (month, quarter, half-year, year, or decade). This is useful for fuzzy
+#' temporal matching when exact dates may differ slightly but represent the
+#' same general time period.
+#'
+#' @param x A character or Date vector containing dates to approximate.
+#' @param unit Character string specifying the rounding unit. One of:
+#'   * `"month"` — round to first day of month (default)
+#'   * `"quarter"` — round to first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
+#'   * `"half"` — round to first day of half-year (Jan 1 or Jul 1)
+#'   * `"year"` — round to January 1
+#'   * `"decade"` — round to first year of decade (e.g., 2020-01-01)
+#' @param format Optional format string for parsing (passed to `as.Date()`).
+#'   If `NULL` (default), attempts automatic parsing via lubridate.
+#' @param orders Optional character vector of lubridate order specifications.
+#'   Used when `format = NULL`. Defaults to `c("ymd", "dmy", "mdy")`.
+#'
+#' @return A character vector of dates in ISO 8601 format (YYYY-MM-DD),
+#'   rounded to the start of the specified time unit. Unparseable dates
+#'   return `NA_character_` with a warning.
+#'
+#' @details
+#' Rounding always goes to the **start** of the period:
+#' * `"month"`: 2023-03-15 → 2023-03-01
+#' * `"quarter"`: 2023-03-15 → 2023-01-01 (Q1), 2023-05-20 → 2023-04-01 (Q2)
+#' * `"half"`: 2023-03-15 → 2023-01-01 (H1), 2023-08-20 → 2023-07-01 (H2)
+#' * `"year"`: 2023-03-15 → 2023-01-01
+#' * `"decade"`: 2023-03-15 → 2020-01-01
+#'
+#' @examples
+#' approximate_date("2023-03-15", unit = "month")
+#' # "2023-03-01"
+#'
+#' approximate_date("2023-03-15", unit = "quarter")
+#' # "2023-01-01"
+#'
+#' approximate_date("2023-08-20", unit = "half")
+#' # "2023-07-01"
+#'
+#' approximate_date("2023-03-15", unit = "year")
+#' # "2023-01-01"
+#'
+#' approximate_date("2023-03-15", unit = "decade")
+#' # "2020-01-01"
+#'
+#' approximate_date(c("2023-01-15", "2023-04-20", "2023-09-10"), unit = "quarter")
+#' # c("2023-01-01", "2023-04-01", "2023-07-01")
+#'
+#' @export
+approximate_date <- function(x,
+                             unit = c("month", "quarter", "half", "year", "decade"),
+                             format = NULL,
+                             orders = c("ymd", "dmy", "mdy")) {
+  
+  unit <- match.arg(unit)
+  
+  c(
+    "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
+    "format must be NULL or character" = (is.null(format) || is.character(format)),
+    "orders must be character" = is.character(orders)
+  ) |> validate_inputs()
+  
+  is_na <- is.na(x)
+  
+  if (inherits(x, "Date")) {
+    parsed <- x
+  } else if (!is.null(format)) {
+    parsed <- as.Date(x, format = format)
+    if (any(is.na(parsed) & !is_na)) {
+      warning("Some dates could not be parsed with the specified format")
+    }
+  } else {
+    parsed <- lubridate::parse_date_time(x, orders = orders, quiet = TRUE)
+    parsed <- as.Date(parsed)
+    if (any(is.na(parsed) & !is_na)) {
+      warning("Some dates could not be parsed with orders: ", paste(orders, collapse = ", "))
+    }
+  }
+  
+  round_date <- function(date) {
+    if (is.na(date)) return(NA_character_)
+    
+    year <- as.integer(format(date, "%Y"))
+    month <- as.integer(format(date, "%m"))
+    
+    result <- switch(unit,
+      month = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")),
+      
+      quarter = {
+        q_month <- ((month - 1) %/% 3) * 3 + 1
+        as.Date(paste0(year, "-", sprintf("%02d", q_month), "-01"))
+      },
+      
+      half = {
+        h_month <- if (month <= 6) 1 else 7
+        as.Date(paste0(year, "-", sprintf("%02d", h_month), "-01"))
+      },
+      
+      year = as.Date(paste0(year, "-01-01")),
+      
+      decade = {
+        decade_year <- (year %/% 10) * 10
+        as.Date(paste0(decade_year, "-01-01"))
+      }
+    )
+    
+    format(result, "%Y-%m-%d")
+  }
+  
+  map_chr(parsed, round_date)
+}
+
+
 #' Strip vowels from text
 #'
 #' Removes vowels (A, E, I, O, U) including accented and umlaut variants.

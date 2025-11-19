@@ -250,7 +250,689 @@ test_that("normalize_street() correctly normalizes street names (German + intern
   expect_equal(normalize_street("Hovedvägen 44",        lang="sv"), "HOVEDVAGEN 44")
 })
 
+test_that("normalize_date() normalizes dates to ISO 8601 format", {
+  
+  # ===========================================================================#
+  #                      Automatic parsing (default)                          #
+  # ===========================================================================#
+  
+  # ISO format (YYYY-MM-DD)
+  expect_equal(
+    normalize_date("2023-12-31"),
+    "2023-12-31"
+  )
+  
+  # European format (DD.MM.YYYY)
+  expect_equal(
+    normalize_date("31.12.2023"),
+    "2023-12-31"
+  )
+  
+  # American format (MM/DD/YYYY)
+  expect_equal(
+    normalize_date("12/31/2023"),
+    "2023-12-31"
+  )
+  
+  # European slash format (DD/MM/YYYY)
+  expect_equal(
+    normalize_date("31/12/2023", orders = c("dmy", "mdy", "ymd")),
+    "2023-12-31"
+  )
+  
+  # ===========================================================================#
+  #                       Vectorized behavior                                 #
+  # ===========================================================================#
+  
+  x <- c("2023-01-15", "15.01.2023", "01/15/2023")
+  out <- normalize_date(x)
+  expect_true(all(out == "2023-01-15"))
+  
+  # Mixed formats with default orders (ymd, dmy, mdy)
+  x <- c("2023-12-31", "31.12.2022", "01/15/2021")
+  out <- normalize_date(x)
+  expect_equal(out[[1]], "2023-12-31")
+  expect_equal(out[[2]], "2022-12-31")
+  expect_equal(out[[3]], "2021-01-15")
+  
+  # ===========================================================================#
+  #                     Explicit format specification                         #
+  # ===========================================================================#
+  
+  expect_equal(
+    normalize_date("31-12-2023", format = "%d-%m-%Y"),
+    "2023-12-31"
+  )
+  
+  expect_equal(
+    normalize_date("12-31-2023", format = "%m-%d-%Y"),
+    "2023-12-31"
+  )
+  
+  expect_equal(
+    normalize_date("2023/12/31", format = "%Y/%m/%d"),
+    "2023-12-31"
+  )
+  
+  # ===========================================================================#
+  #                            Date objects                                   #
+  # ===========================================================================#
+  
+  d <- as.Date("2023-12-31")
+  expect_equal(
+    normalize_date(d),
+    "2023-12-31"
+  )
+  
+  # Vector of Date objects
+  dates <- as.Date(c("2023-01-01", "2023-06-15", "2023-12-31"))
+  out <- normalize_date(dates)
+  expect_equal(out, c("2023-01-01", "2023-06-15", "2023-12-31"))
+  
+  # ===========================================================================#
+  #                              NA handling                                  #
+  # ===========================================================================#
+  
+  expect_true(is.na(normalize_date(NA_character_)))
+  
+  x <- c("2023-12-31", NA, "31.12.2023")
+  out <- normalize_date(x)
+  expect_equal(out[[1]], "2023-12-31")
+  expect_true(is.na(out[[2]]))
+  expect_equal(out[[3]], "2023-12-31")
+  
+  # Date vector with NA
+  dates <- as.Date(c("2023-01-01", NA, "2023-12-31"))
+  out <- normalize_date(dates)
+  expect_equal(out[[1]], "2023-01-01")
+  expect_true(is.na(out[[2]]))
+  expect_equal(out[[3]], "2023-12-31")
+  
+  # ===========================================================================#
+  #                         Parse failures / warnings                         #
+  # ===========================================================================#
+  
+  # Invalid date with explicit format
+  expect_warning(
+    normalize_date("not-a-date", format = "%Y-%m-%d"),
+    "could not be parsed"
+  )
+  
+  # Invalid date with automatic parsing
+  expect_warning(
+    normalize_date("invalid"),
+    "could not be parsed"
+  )
+  
+  # Mixed valid and invalid
+  x <- c("2023-12-31", "invalid", "31.12.2023")
+  expect_warning(out <- normalize_date(x))
+  expect_equal(out[[1]], "2023-12-31")
+  expect_true(is.na(out[[2]]))
+  expect_equal(out[[3]], "2023-12-31")
+  
+  # ===========================================================================#
+  #                          Custom order specification                       #
+  # ===========================================================================#
+  
+  # Prefer dmy over mdy
+  expect_equal(
+    normalize_date("01/02/2023", orders = c("dmy", "mdy")),
+    "2023-02-01"  # interpreted as 1 Feb 2023
+  )
+  
+  # Prefer mdy over dmy
+  expect_equal(
+    normalize_date("01/02/2023", orders = c("mdy", "dmy")),
+    "2023-01-02"  # interpreted as Jan 2, 2023
+  )
+  
+  # ===========================================================================#
+  #                           Edge cases                                      #
+  # ===========================================================================#
+  
+  # Empty string
+  expect_warning(out <- normalize_date(""))
+  expect_true(is.na(out))
+  
+  # Whitespace only
+  expect_warning(out <- normalize_date("   "))
+  expect_true(is.na(out))
+  
+  # Leap year
+  expect_equal(
+    normalize_date("29.02.2024"),
+    "2024-02-29"
+  )
+  
+  # Year-only or month-year formats should fail gracefully
+  expect_warning(out <- normalize_date("2023"))
+  expect_true(is.na(out))
+})
+
+
+
+test_that("date_tokens() extracts date components correctly", {
+  
+  # ===========================================================================#
+  #                         Default: all components                           #
+  # ===========================================================================#
+  
+  expect_equal(
+    date_tokens("2023-12-31"),
+    list(c("2023", "12", "31"))
+  )
+  
+  expect_equal(
+    date_tokens("31.12.2023"),
+    list(c("2023", "12", "31"))
+  )
+  
+  expect_equal(
+    date_tokens("12/31/2023"),
+    list(c("2023", "12", "31"))
+  )
+  
+  # ===========================================================================#
+  #                       Specific components only                            #
+  # ===========================================================================#
+  
+  # Year only
+  expect_equal(
+    date_tokens("2023-12-31", components = "year"),
+    list("2023")
+  )
+  
+  # Month only
+  expect_equal(
+    date_tokens("2023-01-15", components = "month"),
+    list("01")
+  )
+  
+  # Day only
+  expect_equal(
+    date_tokens("2023-12-05", components = "day"),
+    list("05")
+  )
+  
+  # Year and month
+  expect_equal(
+    date_tokens("2023-12-31", components = c("year", "month")),
+    list(c("2023", "12"))
+  )
+  
+  # Month and day
+  expect_equal(
+    date_tokens("2023-06-15", components = c("month", "day")),
+    list(c("06", "15"))
+  )
+  
+  # Custom order: day, month, year
+  expect_equal(
+    date_tokens("2023-12-31", components = c("day", "month", "year")),
+    list(c("31", "12", "2023"))
+  )
+  
+  # ===========================================================================#
+  #                          Vectorized behavior                              #
+  # ===========================================================================#
+  
+  x <- c("2023-01-15", "15.06.2023", "12/31/2023")
+  out <- date_tokens(x)
+  
+  expect_equal(out[[1]], c("2023", "01", "15"))
+  expect_equal(out[[2]], c("2023", "06", "15"))
+  expect_equal(out[[3]], c("2023", "12", "31"))
+  
+  # Vectorized with specific component
+  x <- c("2023-01-15", "2024-06-20")
+  out <- date_tokens(x, components = "year")
+  expect_equal(out[[1]], "2023")
+  expect_equal(out[[2]], "2024")
+  
+  # ===========================================================================#
+  #                           Date objects                                    #
+  # ===========================================================================#
+  
+  d <- as.Date("2023-12-31")
+  expect_equal(
+    date_tokens(d),
+    list(c("2023", "12", "31"))
+  )
+  
+  dates <- as.Date(c("2023-01-01", "2023-06-15"))
+  out <- date_tokens(dates, components = c("year", "month"))
+  expect_equal(out[[1]], c("2023", "01"))
+  expect_equal(out[[2]], c("2023", "06"))
+  
+  # ===========================================================================#
+  #                           Explicit format                                 #
+  # ===========================================================================#
+  
+  expect_equal(
+    date_tokens("31-12-2023", format = "%d-%m-%Y"),
+    list(c("2023", "12", "31"))
+  )
+  
+  expect_equal(
+    date_tokens("12-31-2023", format = "%m-%d-%Y", components = "year"),
+    list("2023")
+  )
+  
+  # ===========================================================================#
+  #                              NA handling                                  #
+  # ===========================================================================#
+  
+  expect_equal(
+    date_tokens(NA_character_),
+    list(character(0))
+  )
+  
+  x <- c("2023-12-31", NA, "31.12.2023")
+  out <- date_tokens(x)
+  expect_equal(out[[1]], c("2023", "12", "31"))
+  expect_equal(out[[2]], character(0))
+  expect_equal(out[[3]], c("2023", "12", "31"))
+  
+  # Date vector with NA
+  dates <- as.Date(c("2023-01-01", NA, "2023-12-31"))
+  out <- date_tokens(dates, components = "month")
+  expect_equal(out[[1]], "01")
+  expect_equal(out[[2]], character(0))
+  expect_equal(out[[3]], "12")
+  
+  # ===========================================================================#
+  #                         Parse failures / warnings                         #
+  # ===========================================================================#
+  
+  # Invalid date with explicit format
+  expect_warning(
+    out <- date_tokens("not-a-date", format = "%Y-%m-%d"),
+    "could not be parsed"
+  )
+  expect_equal(out, list(character(0)))
+  
+  # Invalid date with automatic parsing
+  expect_warning(
+    out <- date_tokens("invalid"),
+    "could not be parsed"
+  )
+  expect_equal(out, list(character(0)))
+  
+  # Mixed valid and invalid
+  x <- c("2023-12-31", "invalid", "31.12.2023")
+  expect_warning(out <- date_tokens(x))
+  expect_equal(out[[1]], c("2023", "12", "31"))
+  expect_equal(out[[2]], character(0))
+  expect_equal(out[[3]], c("2023", "12", "31"))
+  
+  # ===========================================================================#
+  #                          Custom order specification                       #
+  # ===========================================================================#
+  
+  # Prefer dmy over mdy
+  expect_equal(
+    date_tokens("01/02/2023", orders = c("dmy", "mdy")),
+    list(c("2023", "02", "01"))  # interpreted as 1 Feb 2023
+  )
+  
+  # Prefer mdy over dmy
+  expect_equal(
+    date_tokens("01/02/2023", orders = c("mdy", "dmy")),
+    list(c("2023", "01", "02"))  # interpreted as Jan 2, 2023
+  )
+  
+  # ===========================================================================#
+  #                          Zero-padding verification                        #
+  # ===========================================================================#
+  
+  # Single-digit month and day should be zero-padded
+  expect_equal(
+    date_tokens("2023-01-05"),
+    list(c("2023", "01", "05"))
+  )
+  
+  expect_equal(
+    date_tokens("2023-9-3", format = "%Y-%m-%d"),
+    list(c("2023", "09", "03"))
+  )
+  
+  # ===========================================================================#
+  #                              Edge cases                                   #
+  # ===========================================================================#
+  
+  # Empty string
+  expect_warning(out <- date_tokens(""))
+  expect_equal(out, list(character(0)))
+  
+  # Leap year
+  expect_equal(
+    date_tokens("29.02.2024", components = c("month", "day")),
+    list(c("02", "29"))
+  )
+  
+  # ===========================================================================#
+  #                         Input validation                                  #
+  # ===========================================================================#
+  
+  # Invalid component name
+  expect_error(
+    date_tokens("2023-12-31", components = "invalid"),
+    "components must be valid"
+  )
+  
+  # Mixed valid and invalid components
+  expect_error(
+    date_tokens("2023-12-31", components = c("year", "invalid")),
+    "components must be valid"
+  )
+})
+
 test_that("numeric_tokens() works", {
+
+test_that("approximate_date() rounds dates correctly", {
+  
+  # ===========================================================================#
+  #                              Month rounding                               #
+  # ===========================================================================#
+  
+  expect_equal(
+    approximate_date("2023-03-15", unit = "month"),
+    "2023-03-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-03-01", unit = "month"),
+    "2023-03-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-03-31", unit = "month"),
+    "2023-03-01"
+  )
+  
+  # Vectorized
+  x <- c("2023-01-15", "2023-06-20", "2023-12-31")
+  out <- approximate_date(x, unit = "month")
+  expect_equal(out, c("2023-01-01", "2023-06-01", "2023-12-01"))
+  
+  # ===========================================================================#
+  #                             Quarter rounding                              #
+  # ===========================================================================#
+  
+  # Q1 (Jan-Mar)
+  expect_equal(
+    approximate_date("2023-01-15", unit = "quarter"),
+    "2023-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-03-31", unit = "quarter"),
+    "2023-01-01"
+  )
+  
+  # Q2 (Apr-Jun)
+  expect_equal(
+    approximate_date("2023-04-01", unit = "quarter"),
+    "2023-04-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-05-20", unit = "quarter"),
+    "2023-04-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-06-30", unit = "quarter"),
+    "2023-04-01"
+  )
+  
+  # Q3 (Jul-Sep)
+  expect_equal(
+    approximate_date("2023-07-15", unit = "quarter"),
+    "2023-07-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-09-30", unit = "quarter"),
+    "2023-07-01"
+  )
+  
+  # Q4 (Oct-Dec)
+  expect_equal(
+    approximate_date("2023-10-01", unit = "quarter"),
+    "2023-10-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-12-31", unit = "quarter"),
+    "2023-10-01"
+  )
+  
+  # Vectorized across all quarters
+  x <- c("2023-02-15", "2023-05-20", "2023-08-10", "2023-11-25")
+  out <- approximate_date(x, unit = "quarter")
+  expect_equal(out, c("2023-01-01", "2023-04-01", "2023-07-01", "2023-10-01"))
+  
+  # ===========================================================================#
+  #                            Half-year rounding                             #
+  # ===========================================================================#
+  
+  # H1 (Jan-Jun)
+  expect_equal(
+    approximate_date("2023-01-01", unit = "half"),
+    "2023-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-03-15", unit = "half"),
+    "2023-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-06-30", unit = "half"),
+    "2023-01-01"
+  )
+  
+  # H2 (Jul-Dec)
+  expect_equal(
+    approximate_date("2023-07-01", unit = "half"),
+    "2023-07-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-08-20", unit = "half"),
+    "2023-07-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-12-31", unit = "half"),
+    "2023-07-01"
+  )
+  
+  # Vectorized
+  x <- c("2023-03-15", "2023-08-20")
+  out <- approximate_date(x, unit = "half")
+  expect_equal(out, c("2023-01-01", "2023-07-01"))
+  
+  # ===========================================================================#
+  #                              Year rounding                                #
+  # ===========================================================================#
+  
+  expect_equal(
+    approximate_date("2023-03-15", unit = "year"),
+    "2023-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-01-01", unit = "year"),
+    "2023-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2023-12-31", unit = "year"),
+    "2023-01-01"
+  )
+  
+  # Vectorized across multiple years
+  x <- c("2021-06-15", "2022-03-20", "2023-09-10")
+  out <- approximate_date(x, unit = "year")
+  expect_equal(out, c("2021-01-01", "2022-01-01", "2023-01-01"))
+  
+  # ===========================================================================#
+  #                             Decade rounding                               #
+  # ===========================================================================#
+  
+  expect_equal(
+    approximate_date("2023-03-15", unit = "decade"),
+    "2020-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2020-01-01", unit = "decade"),
+    "2020-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2029-12-31", unit = "decade"),
+    "2020-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2030-01-01", unit = "decade"),
+    "2030-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("1995-06-15", unit = "decade"),
+    "1990-01-01"
+  )
+  
+  expect_equal(
+    approximate_date("2000-06-15", unit = "decade"),
+    "2000-01-01"
+  )
+  
+  # Vectorized across decades
+  x <- c("1995-03-15", "2005-08-20", "2023-12-31")
+  out <- approximate_date(x, unit = "decade")
+  expect_equal(out, c("1990-01-01", "2000-01-01", "2020-01-01"))
+  
+  # ===========================================================================#
+  #                              Date objects                                 #
+  # ===========================================================================#
+  
+  d <- as.Date("2023-03-15")
+  expect_equal(
+    approximate_date(d, unit = "month"),
+    "2023-03-01"
+  )
+  
+  dates <- as.Date(c("2023-01-15", "2023-06-20"))
+  out <- approximate_date(dates, unit = "quarter")
+  expect_equal(out, c("2023-01-01", "2023-04-01"))
+  
+  # ===========================================================================#
+  #                         Different date formats                            #
+  # ===========================================================================#
+  
+  # European format
+  expect_equal(
+    approximate_date("31.03.2023", unit = "month"),
+    "2023-03-01"
+  )
+  
+  # American format
+  expect_equal(
+    approximate_date("03/31/2023", unit = "quarter"),
+    "2023-01-01"
+  )
+  
+  # Explicit format
+  expect_equal(
+    approximate_date("31-03-2023", format = "%d-%m-%Y", unit = "half"),
+    "2023-01-01"
+  )
+  
+  # ===========================================================================#
+  #                              NA handling                                  #
+  # ===========================================================================#
+  
+  expect_true(is.na(approximate_date(NA_character_, unit = "month")))
+  
+  x <- c("2023-03-15", NA, "2023-06-20")
+  out <- approximate_date(x, unit = "quarter")
+  expect_equal(out[[1]], "2023-01-01")
+  expect_true(is.na(out[[2]]))
+  expect_equal(out[[3]], "2023-04-01")
+  
+  # Date vector with NA
+  dates <- as.Date(c("2023-01-15", NA, "2023-12-31"))
+  out <- approximate_date(dates, unit = "year")
+  expect_equal(out[[1]], "2023-01-01")
+  expect_true(is.na(out[[2]]))
+  expect_equal(out[[3]], "2023-01-01")
+  
+  # ===========================================================================#
+  #                         Parse failures / warnings                         #
+  # ===========================================================================#
+  
+  expect_warning(
+    out <- approximate_date("not-a-date", unit = "month"),
+    "could not be parsed"
+  )
+  expect_true(is.na(out))
+  
+  expect_warning(
+    out <- approximate_date("invalid", format = "%Y-%m-%d", unit = "year"),
+    "could not be parsed"
+  )
+  expect_true(is.na(out))
+  
+  # ===========================================================================#
+  #                          Custom order specification                       #
+  # ===========================================================================#
+  
+  # Prefer dmy over mdy
+  expect_equal(
+    approximate_date("01/02/2023", orders = c("dmy", "mdy"), unit = "month"),
+    "2023-02-01"  # interpreted as 1 Feb 2023
+  )
+  
+  # Prefer mdy over dmy
+  expect_equal(
+    approximate_date("01/02/2023", orders = c("mdy", "dmy"), unit = "month"),
+    "2023-01-01"  # interpreted as Jan 2, 2023
+  )
+  
+  # ===========================================================================#
+  #                              Edge cases                                   #
+  # ===========================================================================#
+  
+  # Leap year February
+  expect_equal(
+    approximate_date("2024-02-29", unit = "month"),
+    "2024-02-01"
+  )
+  
+  expect_equal(
+    approximate_date("2024-02-29", unit = "quarter"),
+    "2024-01-01"
+  )
+  
+  # Year 2000 (edge of millennium)
+  expect_equal(
+    approximate_date("2000-06-15", unit = "decade"),
+    "2000-01-01"
+  )
+  
+  # Year 1999
+  expect_equal(
+    approximate_date("1999-12-31", unit = "decade"),
+    "1990-01-01"
+  )
+})
+
   
   # --------------------------------------------------------------------------
   # Simple numeric tokens
