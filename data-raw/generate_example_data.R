@@ -357,8 +357,8 @@ target_new <- tibble(
 # 8. Combine TARGET
 # ==============================================================================
 
-target_example <- bind_rows(target_matches, target_new)
-
+target_example <- bind_rows(target_matches, target_new) |>
+  rename(actual_link = id_base)
 
 
 # ==============================================================================

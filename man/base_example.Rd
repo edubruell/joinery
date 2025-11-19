@@ -5,7 +5,7 @@
 \alias{base_example}
 \title{Base dataset for record linkage example}
 \format{
-A tibble with 3,150 rows and 7 variables:
+A tibble with 3,300 rows and 7 variables:
 \describe{
   \item{id_base}{Character identifier for base records (B0001-B3150)}
   \item{Vorname}{First name, weighted by ethnic group prevalence}
@@ -24,7 +24,7 @@ Synthetically generated using weighted sampling from common German, Turkish,
 base_example
 }
 \description{
-A dataset containing 3,150 person records with German, Turkish, and Polish names,
+A dataset containing 3,300 person records with German, Turkish, and Polish names,
 including addresses across various German cities. Approximately 5% of records are
 intentional duplicates with small variations to simulate real-world data quality issues.
 }

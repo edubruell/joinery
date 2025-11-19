@@ -116,6 +116,9 @@ method(print.Search_Preparer, Search_Preparer) <- function(x, ...) {
 #' @slot weights   A named numeric vector (validated in wrapper).
 #' @slot block_by  NULL or a character vector of blocking variables.
 #' @slot rarity    A character scalar describing the rarity method.
+#' @slot threshold  A numeric scalar containing the match or deduplication threshold
+#' @slot min_rarity  Numeric scalar between 0 and Inf.
+#'   Tokens with rarity below this value are removed before scoring.
 #'
 #' @seealso [search_strategy()]
 #'
@@ -125,7 +128,9 @@ Search_Strategy <- new_class("Search_Strategy",
                                preparers = class_list,
                                weights   = class_any,
                                block_by  = class_any,
-                               rarity    = class_character
+                               rarity    = class_character,
+                               threshold = class_numeric,
+                               min_rarity = class_any 
                              )
 )
 
@@ -165,7 +170,10 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
   }
   
   # Rarity
-  cat("\n  Rarity: ", x@rarity, "\n", sep = "")
+  cat("\n  Rarity Metric: ", x@rarity, "\n", sep = "")
+  cat("\n  Min rarity: ", x@min_rarity, "\n", sep="")
+  #Threshold
+  cat("\n  Threshold: ", if (is.null(x@threshold)) "(none)" else x@threshold, "\n", sep = "")
 }
 
 
@@ -195,13 +203,12 @@ expr_to_step <- function(expr) {
 }
 
 
-
 #' Define a Search Strategy for Record Linkage
 #'
 #' @description
 #' Creates a `Search_Strategy` object that specifies how columns should be
 #' preprocessed for token-index-based record linkage, along with optional weights,
-#' blocking variables, and rarity computation method.
+#' blocking variables, rarity computation method, and similarity threshold.
 #'
 #' @param ... Two-sided formulas of the form `column ~ preprocessing_steps`.
 #'   The left-hand side names the column; the right-hand side contains one or
@@ -211,17 +218,30 @@ expr_to_step <- function(expr) {
 #'   Candidate searches will be restricted to records sharing the same blocking
 #'   key values. Default is `NULL` (no blocking).
 #' @param weights Optional named numeric vector of weights for similarity scoring.
-#'   Names should correspond to columns. 
+#'   Names should correspond to columns. Default is `numeric()` (uniform weights).
 #' @param rarity Character scalar specifying the rarity computation method.
 #'   Default is `"inverse_freq"`.
+#' @param threshold Numeric scalar specifying the minimum relative indentification 
+#'   potential required for two records to be considered matches. Default is `0.9`.
 #'
-#' @return A `Search_Strategy` 
+#' @param min_rarity Numeric scalar specifying the minimum rarity value required
+#'   for a token to be included in similarity scoring. Tokens with rarity below
+#'   this threshold are filtered out. Default is `0`.
+#'
+#'
+#' @return A `Search_Strategy` object.
 #'
 #' @export
 search_strategy <- function(...,
                             block_by = NULL,
                             weights  = numeric(),
-                            rarity   = "inverse_freq") {
+                            rarity   = "inverse_freq",
+                            min_rarity = 0,
+                            threshold = 0.9) {
+  
+  if (!is.numeric(min_rarity)) {
+    rlang::abort("min_rarity  must be numeric.")
+  }
 
   fmls <- rlang::list2(...)
   
@@ -272,137 +292,11 @@ search_strategy <- function(...,
     preparers = preparers,
     weights   = weights,
     block_by  = block_by,
-    rarity    = rarity
+    rarity    = rarity,
+    threshold = threshold,
+    min_rarity = min_rarity
+    
   )
 }
 
 
-#' Prepare Data for Record Linkage Search
-#'
-#' @param data A data.frame / tibble / data.table (or db table in other backends).
-#' @param id   Character scalar naming the ID column in `data`.
-#' @param strategy A `Search_Strategy` object.
-#'
-#' @export
-prepare_search_data <- new_generic(
-  "prepare_search_data",
-  c("data", "id", "strategy")
-)
-
-#' Detect Duplicate Records
-#'
-#' @description
-#' Identify likely duplicate records within a single table using
-#' token-based similarity scoring defined in a `Search_Strategy`.
-#'
-#' Backends must:
-#' - preprocess data using `prepare_search_data()`,
-#' - compute token rarity using the strategy's rarity method,
-#' - join records on shared tokens (respecting `block_by`),
-#' - aggregate rarity × column-weight contributions into a similarity score,
-#' - return only pairs with `score >= threshold`,
-#' - group connected pairs into duplicate clusters.
-#'
-#' @param base_table A data.frame, tibble, data.table, or backend-specific
-#'   table to deduplicate.
-#' @param id Character scalar naming the ID column in `base_table`.
-#' @param strategy A `Search_Strategy` object defining preprocessing steps,
-#'   blocking variables, rarity metric, and optional column weights.
-#' @param threshold Numeric scalar specifying the minimum similarity score
-#'   required for two records to be considered duplicates.
-#' @param weights Optional named numeric vector overriding the weights stored
-#'   in `strategy`. If `NULL`, the strategy's weights (or uniform weights) are used.
-#'
-#' @return A backend-specific table containing at least:
-#' \describe{
-#'   \item{duplicate_group}{Integer cluster label.}
-#'   \item{id}{Record ID.}
-#'   \item{score}{Similarity score for the record within its cluster.}
-#'   \item{rank}{Rank of the record within its duplicate group.}
-#'   \item{<original columns>}{All additional columns from `base_table`.}
-#' }
-#'
-#' @export
-detect_duplicates <- new_generic(
-  "detect_duplicates",
-  c("base_table", "id", "strategy", "threshold")
-)
-
-#' Deduplicate a Table
-#'
-#' @description
-#' Generic function that removes or merges duplicate records from a table
-#' based on duplicate pairs identified by `detect_duplicates()`.
-#'
-#' @param base_table A data.frame / tibble / data.table (or db table in other backends).
-#' @param duplicates A table of duplicate pairs generated by detect_duplicates
-#' @param id Character scalar naming the ID column in `base_table`.
-#'
-#' @return A deduplicated version of `base_table`.
-#'
-#' @export
-deduplicate_table <- new_generic("deduplicate_table", 
-                                 c("base_table", "duplicates", "id"))
-
-#' Search for Candidate Matches Between Tables
-#'
-#' @description
-#' Generic function that finds candidate record matches between two tables
-#' based on token-based similarity scoring defined in a `Search_Strategy`.
-#'
-#' @param base_table A data.frame / tibble / data.table (or db table in other backends).
-#' @param target_table A data.frame / tibble / data.table (or db table in other backends) to search against.
-#' @param base_id Character scalar naming the ID column in `base_table`.
-#' @param target_id Character scalar naming the ID column in `target_table`.
-#' @param strategy A `Search_Strategy` object defining matching criteria.
-#'
-#' @return Data with candidate matches
-#'
-#' @export
-search_candidates <- new_generic("search_candidates", 
-                                 c("base_table", "target_table",
-                                   "base_id", "target_id", "strategy"))
-
-#' Compute Token Rarity for Record Linkage
-#'
-#' `compute_rarity()` assigns a rarity score to each token produced by
-#' [`prepare_search_data()`], using the rarity method defined in a
-#' `Search_Strategy`.
-#'
-#' Rarity quantifies how informative a token is when comparing records.
-#' In **joinery**, rarity is always computed:
-#'
-#' - using **one global rarity metric** specified in the strategy,
-#' - **per column**, because each field has its own token distribution,
-#' - **within each block** (if the strategy specifies `block_by`).
-#'
-#' The input `tokens` must be the long-format token table returned by
-#' `prepare_search_data()`, containing at minimum:
-#'
-#' - an ID column,
-#' - a `column` field indicating the source variable,
-#' - a `token` field,
-#' - a `row_id` identifying the originating record,
-#' - and any `block_by` variables required by the strategy.
-#'
-#' Backends (e.g., data.frame, data.table, DuckDB relations) may implement
-#' their own methods for this generic, but all must return the same logical
-#' structure: the original token table with an added numeric `rarity` column.
-#'
-#' @param tokens A token table created by [prepare_search_data()], in any
-#'   backend-specific representation. Must contain at least `column`, `token`,
-#'   and `row_id`, plus any `block_by` columns.
-#' @param strategy A `Search_Strategy` defining the rarity method, blocking
-#'   variables, and field structure.
-#'
-#' @return The same token table with an added `rarity` column.
-#'
-#' @export
-compute_rarity <- new_generic(
-  "compute_rarity",
-  c("tokens", "strategy")
-)
-
-
-    
- 

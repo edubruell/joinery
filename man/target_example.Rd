@@ -7,6 +7,7 @@
 \format{
 A tibble with 3,000 rows and 7 variables:
 \describe{
+  \item{actual_link}{The actual base_id in the simulation process}
   \item{id_target}{Character identifier for target records (T0001-T3600)}
   \item{Vorname}{First name, may include titles, initials, or middle names}
   \item{Nachname}{Last name, may contain typos or token swaps}

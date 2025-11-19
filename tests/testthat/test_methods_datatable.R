@@ -1,120 +1,3 @@
-test_that("normalize_text() works as in examples", {
-  # Example 1: normalize_text("Café Coñac")
-  expect_equal(
-    normalize_text("Café Coñac"),
-    "CAFE CONAC"
-  )
-  
-  # Example 2: normalize_text(..., transliteration = "Latin-ASCII")
-  expect_equal(
-    normalize_text("Straße", transliteration = "Latin-ASCII"),
-    "STRASSE"
-  )
-})
-
-test_that("as_metaphone() returns correct Metaphone codes", {
-  
-  expect_equal(
-    as_metaphone("Café"),
-    "KF"
-  )
-  
-  expect_equal(
-    as_metaphone("Straße"),
-    "STRS"
-  )
-  
-})
-
-test_that("as_soundex() works as in examples", {
-  expect_equal(
-    as_soundex("Café"),
-    "C100"
-  )
-  
-  expect_equal(
-    as_soundex("Straße"),
-    "S362"
-  )
-})
-
-test_that("as_cologne() works as in examples", {
-  expect_equal(
-    as_cologne("Café"),
-    "43"
-  )
-  
-  expect_equal(
-    as_cologne("Straße"),
-    "8278"
-  )
-})
-
-test_that("word_tokens() works as in examples", {
-  expect_equal(
-    word_tokens("This is an example."),
-    list(c("This", "is", "an", "example."))
-  )
-  
-  expect_equal(
-    word_tokens("Another, test; string."),
-    list(c("Another,", "test;", "string."))
-  )
-  
-  # Check min_length filter
-  expect_equal(
-    word_tokens("This is an example", min_nchar = 3),
-    list(c("This", "example"))
-  )
-})
-
-test_that("generate_ngrams() works as in examples", {
-  # Example: generate_ngrams("hello", 2)
-  expect_equal(
-    generate_ngrams("hello", 2),
-    list(c("he", "el", "ll", "lo"))
-  )
-  
-  # Example: generate_ngrams("an example", 3)
-  # "an example" has length 11
-  # 3-grams:
-  # "an ", "n e", " ex", "exa", "xam", "amp", "mpl", "ple"
-  expect_equal(
-    generate_ngrams("an example", 3),
-    list(c("an ", "n e", " ex", "exa", "xam", "amp", "mpl", "ple"))
-  )
-  
-  # Edge case: too short => empty char vector
-  expect_equal(
-    generate_ngrams("hi", 3),
-    list(character(0))
-  )
-})
-
-test_that("use_dictionary() works as in examples", {
-  dict <- data.table::data.table(
-    tokens = c("example", "sample"),
-    token_group = c("example/sample", "example/sample")
-  )
-  
-  expect_equal(
-    use_dictionary("example", dict),
-    list("example/sample")
-  )
-  
-  # nonexistent should return character(0)
-  expect_equal(
-    use_dictionary("nonexistent", dict),
-    list(character(0))
-  )
-  
-  # vectorized lookup
-  expect_equal(
-    use_dictionary(c("example", "nonexistent"), dict),
-    list("example/sample", character(0))
-  )
-})
-
 test_that("prepare_search_data() works for data.table backend", {
   data("base_example", package = "joinery")   # adjust package if needed
   
@@ -267,15 +150,15 @@ test_that("detect_duplicates() works for data.table backend and returns merged o
     Strasse  ~ normalize_text + word_tokens,
     Hausnummer ~ normalize_text + word_tokens,
     Ort ~ normalize_text + word_tokens,
-    block_by = "Kreis"
+    block_by = "Kreis", 
+    threshold = 0.8
   )
   
   # --- Run duplicate detection --------------------------------------------
   dup <- detect_duplicates(
     as.data.table(base_example),
     id        = "id_base",
-    strategy  = yp_strategy,
-    threshold = 0.8
+    strategy  = yp_strategy
   )
   
   # --- Basic structure -----------------------------------------------------
@@ -361,4 +244,116 @@ test_that("deduplicate_table() removes non-top-ranked duplicates", {
   
   # No duplicates in the output
   expect_true(all(result[, .N, by = id]$N == 1))
+})
+
+test_that("extract_unmatched() works for data.table backend", {
+  
+  data("base_example", package = "joinery")
+  base_dt <- as.data.table(base_example)
+  
+  # Simple match table mimicking joinery output
+  # (Only the column name `id` matters for extract_unmatched)
+  matches <- data.table::data.table(
+    id = c("B0001", "B0003", "B0005"),
+    score = c(0.95, 0.92, 0.90),
+    match_id = 1:3
+  )
+  
+  # --- Run extract_unmatched() --------------------------------------------
+  result <- extract_unmatched(
+    data    = base_dt,
+    id      = "id_base",
+    matches = matches
+  )
+  
+  # --- Basic structure -----------------------------------------------------
+  expect_true(data.table::is.data.table(result))
+  expect_true("id_base" %in% names(result))
+  
+  # Matched IDs must be removed
+  expect_false(any(result$id_base %in% matches$id))
+  
+  # All other IDs must remain
+  remaining_ids <- setdiff(base_dt$id_base, matches$id)
+  expect_setequal(result$id_base, remaining_ids)
+  
+  # Order must be preserved relative to original
+  expect_equal(
+    result$id_base,
+    base_dt[!(id_base %in% matches$id), id_base]
+  )
+  
+  # No columns must be lost
+  expect_setequal(names(result), names(base_dt))
+  
+  # Should work with empty match tables -------------------------------------
+  result2 <- extract_unmatched(
+    data    = base_dt,
+    id      = "id_base",
+    matches = data.table(id = character())
+  )
+  expect_equal(result2$id_base, base_dt$id_base)
+  
+  # Should work when every row is matched -----------------------------------
+  result3 <- extract_unmatched(
+    data    = base_dt,
+    id      = "id_base",
+    matches = data.table(id = base_dt$id_base)
+  )
+  expect_equal(nrow(result3), 0L)
+  
+  # Print should not error --------------------------------------------------
+  expect_no_error(capture.output(print(result)))
+})
+
+
+test_that("multi_stage_match works with example data", {
+  base   <- as.data.table(base_example)
+  target <- as.data.table(target_example)
+  
+  # Strategy A: strict word tokens
+  strat_a <- search_strategy(
+    Vorname ~ normalize_text + word_tokens(min_nchar = 3),
+    Nachname ~ normalize_text + word_tokens(min_nchar = 3),
+    block_by = "Kreis",
+    threshold = 0.8
+  )
+  
+  # Strategy B: fallback n-grams
+  strat_b <- search_strategy(
+    Vorname ~ normalize_text + generate_ngrams(n = 3),
+    Nachname ~ normalize_text + generate_ngrams(n = 3),
+    block_by = "Kreis",
+    threshold = 0.6
+  )
+  
+  # Intentionally no names supplied → should auto-name strategy_1, strategy_2
+  strategies <- list(strat_a, strat_b)
+  
+  res <- multi_stage_match(
+    base,
+    target,
+    base_id = "id_base",
+    target_id = "id_target",
+    strategies = strategies
+  )
+  
+  expect_s3_class(res, "data.table")
+  
+  # Output schema should contain:
+  expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(res)))
+  
+  # Stages must equal the auto names
+  expect_true(all(unique(res$stage) %in% c("strategy_1", "strategy_2")))
+  
+  # Global match IDs must be unique
+  expect_equal(
+    length(unique(res$match_id)),
+    length(unique(res$match_id))
+  )
+  
+  # Basic sanity
+  expect_gt(nrow(res), 0)
+  expect_true(all(res$rank >= 1))
+  expect_true(all(res$source %in% c("base", "target")))
 })

@@ -8,7 +8,9 @@ search_strategy(
   ...,
   block_by = NULL,
   weights = numeric(),
-  rarity = "inverse_freq"
+  rarity = "inverse_freq",
+  min_rarity = 0,
+  threshold = 0.9
 )
 }
 \arguments{
@@ -22,16 +24,23 @@ Candidate searches will be restricted to records sharing the same blocking
 key values. Default is `NULL` (no blocking).}
 
 \item{weights}{Optional named numeric vector of weights for similarity scoring.
-Names should correspond to columns.}
+Names should correspond to columns. Default is `numeric()` (uniform weights).}
 
 \item{rarity}{Character scalar specifying the rarity computation method.
 Default is `"inverse_freq"`.}
+
+\item{min_rarity}{Numeric scalar specifying the minimum rarity value required
+for a token to be included in similarity scoring. Tokens with rarity below
+this threshold are filtered out. Default is `0`.}
+
+\item{threshold}{Numeric scalar specifying the minimum relative indentification 
+potential required for two records to be considered matches. Default is `0.9`.}
 }
 \value{
-A `Search_Strategy`
+A `Search_Strategy` object.
 }
 \description{
 Creates a `Search_Strategy` object that specifies how columns should be
 preprocessed for token-index-based record linkage, along with optional weights,
-blocking variables, and rarity computation method.
+blocking variables, rarity computation method, and similarity threshold.
 }

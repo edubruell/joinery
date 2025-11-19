@@ -20,7 +20,10 @@ Collate:
     'import-standalone-obj-type.R'
     'utilities.R'
     'search_strategy.R'
-    'backend_datatable.R'
+    'generics.R'
+    'methods_datatable.R'
+    'methods_tibble.R'
+    'preparers_datatable.R'
     'data.R'
 RoxygenNote: 7.3.2
 Depends: 
