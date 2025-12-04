@@ -1,12 +1,33 @@
+# ============================================================
+# data.table methods for joinery
+# ============================================================
+#
+# This file implements the full data.table backend for joinery’s S7-based
+# record-linkage engine. 
+#
+# These methods interpret the backend-agnostic Search_Strategy IR and execute it
+# using data.table operations. The core workflow follows the
+# joinery pipeline:
+#
+#       1. Column-wise preprocessing via S7 Step pipelines
+#       2. Long-form token table construction (id × column × token × row_id)
+#       3. Optional blocking via strategy@block_by
+#       4. Rarity computation (inverse_freq, tfidf, bm25, etc.)
+#       5. Token-overlap joins (self-joins for duplicates; cross-joins for
+#          candidate search)
+#       6. rIP-based scoring with column weights
+#       7. Threshold filtering and connected-component grouping
+#
+# ============================================================
+
 
 DT_tbl <- new_S3_class("data.table")
 
-# Method: prepare_search_data for data.table, character ID, and Search_Strategy
-#------------------------------------------------------------------------------
 method(
-   prepare_search_data,
-    list(DT_tbl, class_character, Search_Strategy)
-  ) <- function(data, id, strategy) {
+  prepare_search_data,
+  list(DT_tbl, class_character, Search_Strategy)
+) <- function(data, id, strategy) {
+  
   dt <- data.table::copy(data)
   
   if (!id %in% names(dt)) {
@@ -16,67 +37,104 @@ method(
   preparers <- strategy@preparers
   block_by  <- strategy@block_by
   
-  # Helper: apply one Step (R backend)
-  apply_step_r <- function(acc, step) {
-    fn <- get(step@name, mode = "function")
-    args <- c(list(acc), step@args)
-    do.call(fn, args)
+  # --------------------------------------------------------------------
+  # Compute total work in advance: sum over all (columns * steps * chunks)
+  # --------------------------------------------------------------------
+  chunk_size <- 50000L
+  
+  total_work <- 0L
+  for (prep in preparers) {
+    col <- prep@column
+    n   <- length(dt[[col]])
+    n_chunks <- ceiling(n / chunk_size)
+    n_steps  <- length(prep@steps)
+    total_work <- total_work + n_chunks * n_steps
   }
   
-  # One token table per prepared column -----------------------------------
-  token_list <- map(preparers, function(prep) {
-    col <- prep@column
+  # Create progress bar
+  progress_env <- rlang::env(parent = asNamespace("cli"))
+  pb <- progress_init(total = total_work, .envir = progress_env)
+  
+  # --------------------------------------------------------------------
+  # Helper to apply one step with chunking + progress
+  # --------------------------------------------------------------------
+  apply_step_r <- function(acc, step) {
     
+    fn   <- get(step@name, mode = "function")
+    args <- step@args
+    n    <- length(acc)
+    
+    if (n < chunk_size) {
+      # one-shot application
+      progress_update(pb, amount = 1L, .envir = progress_env)
+      return(do.call(fn, c(list(acc), args)))
+    }
+    
+    # chunked mode
+    idx <- seq.int(1L, n, by = chunk_size)
+    out_list <- vector("list", length(idx))
+    
+    for (i in seq_along(idx)) {
+      from <- idx[i]
+      to   <- min(from + chunk_size - 1L, n)
+      
+      out_list[[i]] <- do.call(fn, c(list(acc[from:to]), args))
+      
+      # known amount of work: one chunk processed
+      progress_update(pb, amount = 1L, .envir = progress_env)
+    }
+    
+    unlist(out_list, recursive = FALSE)
+  }
+  
+  # --------------------------------------------------------------------
+  # Construct token tables
+  # --------------------------------------------------------------------
+  token_list <- map(preparers, function(prep) {
+    
+    col <- prep@column
     if (!col %in% names(dt)) {
       stop(sprintf("Column '%s' not found in data", col), call. = FALSE)
     }
     
-    # Run pipeline on vector dt[[col]]
     tokens <- Reduce(
-      f = apply_step_r,
-      x = prep@steps,
+      f    = function(acc, step) apply_step_r(acc, step),
+      x    = prep@steps,
       init = dt[[col]]
     )
     
-    # Ensure list-of-character per row
-    if (!is.list(tokens)) {
-      tokens <- as.list(tokens)
-    }
+    if (!is.list(tokens)) tokens <- as.list(tokens)
     
     lens <- lengths(tokens)
     
-    # Build long token table WITHOUT any := or !!
     out <- data.table::data.table(
-      column = col,
+      src_column = col,
       token  = unlist(tokens, use.names = FALSE),
       row_id = rep(seq_len(nrow(dt)), times = lens)
     )
     
-    # Add ID column with correct *name* (id is a character scalar)
     out[[id]] <- rep(dt[[id]], times = lens)
-    
-    # Reorder columns to have ID first
-    data.table::setcolorder(out, c(id, "column", "token", "row_id"))
-    
+    data.table::setcolorder(out, c(id, "src_column", "token", "row_id"))
     out
   })
   
   tokens <- data.table::rbindlist(token_list, use.names = TRUE, fill = TRUE)
   
-  # Attach blocking columns (if any) --------------------------------------
+  # --------------------------------------------------------------------
+  # Add block_by columns
+  # --------------------------------------------------------------------
   if (!is.null(block_by)) {
     missing <- setdiff(block_by, names(dt))
     if (length(missing) > 0) {
-      stop(
-        "Blocking columns not found in data: ",
-        paste(missing, collapse = ", "),
-        call. = FALSE
-      )
+      stop("Blocking columns not found: ",
+           paste(missing, collapse = ", "), call. = FALSE)
     }
     
     block_dt <- dt[, c(id, block_by), with = FALSE]
-    tokens   <- merge(tokens, block_dt, by = id, all.x = TRUE)
+    tokens <- merge(tokens, block_dt, by = id, all.x = TRUE)
   }
+  
+  progress_finish(pb, progress_env)
   
   tokens[]
 }
@@ -94,7 +152,7 @@ method(
   block_by      <- strategy@block_by
   
   # Grouping keys: block + column + token
-  by_keys <- c(block_by, "column", "token")
+  by_keys <- c(block_by, "src_column", "token")
   
   # Ensure block columns exist if block_by was specified
   if (!is.null(block_by)) {
@@ -112,7 +170,7 @@ method(
   
   # N = total rows in this block/column
   # (we attach once per group; downstream summed over matches)
-  dt[, N := uniqueN(row_id), by = c(block_by, "column")]
+  dt[, N := uniqueN(row_id), by = c(block_by, "src_column")]
   
   # Apply rarity formula ---------------------------------------------------
   dt[, rarity := {
@@ -172,23 +230,23 @@ method(
   }
   
   # Guarantee weight coverage
-  missing_w <- setdiff(unique(tokens$column), names(weights))
+  missing_w <- setdiff(unique(tokens$src_column), names(weights))
   if (length(missing_w) > 0) {
     stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
   }
   
   # Add weight column
-  tokens[, weight := weights[column]]
+  tokens[, weight := weights[src_column]]
   
   #Compute Identification Potential based on rarity metric
-  tokens[, rIP := rarity / sum(rarity), by = .(get(id), column)]
+  tokens[, rIP := rarity / sum(rarity), by = .(get(id), src_column)]
   
   # --- 4. Self-join on shared tokens (within blocks) -----------------------
   
   block_by <- strategy@block_by %||% character()
-  by_cols  <- c("column", "token", block_by)
+  by_cols  <- c("src_column", "token", block_by)
   
-  rhs <- tokens[, c(id, "row_id", "column", "token", block_by), with = FALSE]
+  rhs <- tokens[, c(id, "row_id", "src_column", "token", block_by), with = FALSE]
   
   id2  <- paste0(id, "_2")
   row2 <- "row_id_2"
@@ -345,22 +403,22 @@ method(
     }
   }
   
-  missing_w <- setdiff(unique(all_tokens$column), names(weights))
+  missing_w <- setdiff(unique(all_tokens$src_column), names(weights))
   if (length(missing_w) > 0) {
     stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
   }
   
-  base_tokens[, weight := weights[column]]
-  target_tokens[, weight := weights[column]]
+  base_tokens[, weight := weights[src_column]]
+  target_tokens[, weight := weights[src_column]]
   
   # --- 4. Compute rIP per record × column -----------------------------------
-  base_tokens[,  rIP := rarity / sum(rarity), by = .(uid, column)]
-  target_tokens[, rIP := rarity / sum(rarity), by = .(uid, column)]
+  base_tokens[,  rIP := rarity / sum(rarity), by = .(uid, src_column)]
+  target_tokens[, rIP := rarity / sum(rarity), by = .(uid, src_column)]
   
   # --- 5. Cross-table join on shared tokens (respecting block_by) ------------
-  by_cols <- c("column", "token", block_by)
+  by_cols <- c("src_column", "token", block_by)
   
-  rhs <- target_tokens[, c("uid", "row_id", "column", "token", block_by), with = FALSE]
+  rhs <- target_tokens[, c("uid", "row_id", "src_column", "token", block_by), with = FALSE]
   data.table::setnames(rhs, "uid",    "uid2")
   data.table::setnames(rhs, "row_id", "row_id2")
   
@@ -571,7 +629,7 @@ method(
   )
   
   # --- 2. Keep only the tokens for this specific column --------------------
-  mask <- tokens$column == column
+  mask <- tokens$src_column == column
   tokens <- tokens[mask,]
   
   

@@ -13,7 +13,9 @@ Imports:
     igraph,
     stringi,
     phonics,
-    lubridate
+    lubridate,
+    cli,
+    glue
 Collate: 
     'joinery-package.R'
     'import-standalone-purrr.R'
@@ -24,9 +26,16 @@ Collate:
     'generics.R'
     'methods_datatable.R'
     'methods_tibble.R'
-    'preparers_datatable.R'
+    'preparers.R'
+    'batch_duckdb.R'
+    'methods_duckdb.R'
     'data.R'
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends: 
     R (>= 3.5)
 LazyData: true
+Suggests:
+    duckdb,
+    DBI,
+    dbplyr,
+    dplyr

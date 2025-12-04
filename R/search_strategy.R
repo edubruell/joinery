@@ -1,3 +1,16 @@
+# ============================================================
+# Main Search Strategy and Search Step Classes for joinery
+# ============================================================
+#
+# Main Search Strategy and Search Step Classes for joinery
+#
+# Defines the IR (Intermediate Representation) elements for record linkage:
+# - Step: individual preprocessing operation with name and arguments
+# - Search_Preparer: preprocessing pipeline for a single column
+# - Search_Strategy: complete linkage specification including preparers,
+#   weights, blocking variables, rarity method, and match threshold
+#
+# ============================================================
 
 #' Step Class
 #'

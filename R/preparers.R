@@ -1,4 +1,15 @@
-
+# ============================================================
+# Preparer Functions for joinery
+# ============================================================
+#
+# This file defines native R implementations of joinery preprocessing
+# steps. Each function operates on in-memory R vectors/lists and corresponds 
+# to a Step object in the IR.
+#
+# All functions preserve list-column structure where appropriate
+# (e.g., tokenization steps return lists of character vectors).
+#
+# ============================================================
 
 #' Normalize text string
 #'

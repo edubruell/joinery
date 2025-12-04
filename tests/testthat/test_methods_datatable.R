@@ -21,12 +21,12 @@ test_that("prepare_search_data() works for data.table backend", {
   
   # Expected columns: id, column, token, row_id, and any block_by cols
   block_cols    <- yp_strategy@block_by %||% character()
-  expected_names <- c("id_base", "column", "token", "row_id", block_cols)
+  expected_names <- c("id_base", "src_column", "token", "row_id", block_cols)
   
   expect_true(all(expected_names %in% names(result)))
   
   expect_type(result$id_base, "character")
-  expect_type(result$column, "character")
+  expect_type(result$src_column, "character")
   expect_type(result$token,  "character")
   expect_type(result$row_id, "integer")
   
@@ -35,12 +35,12 @@ test_that("prepare_search_data() works for data.table backend", {
   
   # All columns in strategy should appear in output --------------------------
   expected_cols <- names(yp_strategy@preparers)
-  expect_setequal(unique(result$column), expected_cols)
+  expect_setequal(unique(result$src_column), expected_cols)
   
   # Each preparer should produce > 0 rows ------------------------------------
   map(expected_cols, function(col) {
     expect_true(
-      sum(result$column == col) > 0L,
+      sum(result$src_column == col) > 0L,
       info = paste("Column", col, "produced no output")
     )
   })
@@ -52,7 +52,7 @@ test_that("prepare_search_data() works for data.table backend", {
   expected_tokens  <- unlist(expected_tokens, use.names = FALSE)
   
   # Tokens produced by prepare_search_data() for Nachname
-  res_nachname <- result[column == "Nachname", token]
+  res_nachname <- result[src_column == "Nachname", token]
   
   # Lengths should match, and tokens should be the same (order should match too)
   expect_equal(length(res_nachname), length(expected_tokens))
@@ -97,7 +97,7 @@ test_that("compute_rarity() works for data.table backend", {
   
   # Expected grouping variables
   block_cols <- yp_strategy@block_by %||% character()
-  expected_cols <- c("id_base", "column", "token", "row_id", block_cols, "freq", "df", "N", "rarity")
+  expected_cols <- c("id_base", "src_column", "token", "row_id", block_cols, "freq", "df", "N", "rarity")
   expect_true(all(expected_cols %in% names(rar)))
   
   # Inverse frequency expectation -------------------------------------------
@@ -116,14 +116,14 @@ test_that("compute_rarity() works for data.table backend", {
     n_rows = .N,
     freq_unique   = uniqueN(freq),
     rarity_unique = uniqueN(rarity)
-  ), by = c(block_cols, "column", "token")]
+  ), by = c(block_cols, "src_column", "token")]
   
   expect_true(all(rar_check$freq_unique == 1))
   expect_true(all(rar_check$rarity_unique == 1))
   
   # Known value check: pick a specific token to validate ---------------------
   # Example: "MUELLER" in Nachname inside "Region Hannover"
-  known <- rar[column == "Nachname" & token == "MUELLER" &
+  known <- rar[src_column == "Nachname" & token == "MUELLER" &
                  get(block_cols) == "Region Hannover"]
   
   expect_equal(known$freq[1], 25)        # from your earlier output

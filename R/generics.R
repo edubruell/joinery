@@ -1,3 +1,12 @@
+# ============================================================
+# S7 generics
+# ============================================================
+#
+# Defines joinery's core functions as S7 generics that 
+# get backend method via multiple dispatch
+#
+# ============================================================
+
 #' Prepare Data for Record Linkage Search
 #'
 #' @param data A data.frame / tibble / data.table (or db table in other backends).

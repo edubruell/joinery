@@ -1,3 +1,33 @@
+# ============================================================
+# data.frame / tibble wrappers for joinery (DT backend)
+# ============================================================
+#
+# This file provides S7 method implementations that enable joinery to operate
+# on base data.frames and tibbles while delegating all heavy lifting to the
+# data.table backend.
+#
+# The workflow is:
+#
+#   - Convert incoming data.frame / tibble objects to data.table
+#       via as_DT()
+#
+#   - Call the DT_tbl method implementation
+#       (prepare_search_data, compute_rarity, detect_duplicates,
+#        search_candidates, deduplicate_table, extract_unmatched,
+#        multi_stage_match, .inspect_tokens)
+#
+#   - Convert results back to the original container type
+#       using back_to_original()
+#
+# No IR interpretation occurs here; this file only provides thin compatibility
+# layers so that users can pass data.frame or tibble inputs without having
+# data.table as their primary data structure.
+#
+# All matching logic, tokenization, rarity computation, and scoring are
+# performed in the DT backend implemented in methods_datatable.R.
+#
+# ============================================================
+
 .jyDF      <- S7::new_S3_class("data.frame")
 .jyTBL_DF  <- S7::new_S3_class("tbl_df")  # tibble
 .jyTBL     <- S7::new_S3_class("tbl")     # tibble parent
