@@ -12,7 +12,7 @@ All core backend functionality is implemented and tested. The package now suppor
 
 **Next Phase:** 0.3 (SearchEngine Heuristics) — Focus shifts to accuracy improvements (rIP smoothing, containment rules, feedback weighting).
 
-See `notes/duckdb_status.md` for detailed status and `notes/roadmap.md` for upcoming work.
+See `notes/phase3_plan.md` for upcoming work.
 
 ---
 

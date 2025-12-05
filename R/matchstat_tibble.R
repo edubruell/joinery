@@ -23,68 +23,69 @@
 
 # Method: summarize_matches (data.frame)
 #------------------------------------------------------------------------------
-method(
-  summarize_matches,
-  list(.jyDF)
-) <- function(matches, type = NULL, base_id = NULL, target_id = NULL) {
-  summarize_matches(as_DT(matches), type = type, base_id = base_id, 
-                    target_id = target_id)
-}
-
-method(
-  summarize_matches,
-  list(.jyTBL_DF)
-) <- function(matches, type = NULL, base_id = NULL, target_id = NULL) {
-  summarize_matches(as_DT(matches), type = type, base_id = base_id, 
-                    target_id = target_id)
-}
-
-
-# Method: score_distribution (data.frame)
-#------------------------------------------------------------------------------
-method(
-  score_distribution,
-  list(.jyDF)
-) <- function(matches, breaks = 10, plot = FALSE) {
-  result <- score_distribution(as_DT(matches), breaks = breaks, plot = plot)
-  if (!plot) {
-    back_to_original(result, matches)
-  } else {
-    result  # plot objects returned as-is
-  }
-}
-
-method(
-  score_distribution,
-  list(.jyTBL_DF)
-) <- function(matches, breaks = 10, plot = FALSE) {
-  result <- score_distribution(as_DT(matches), breaks = breaks, plot = plot)
-  if (!plot) {
-    back_to_original(result, matches)
-  } else {
-    result
-  }
-}
-
-
-# Method: sample_matches (data.frame)
-#------------------------------------------------------------------------------
-method(
-  sample_matches,
-  list(.jyDF)
-) <- function(matches, n = 10, type = c("high", "low", "borderline", "random"),
-                threshold = NULL) {
-  result <- sample_matches(as_DT(matches), n = n, type = type, 
-                           threshold = threshold)
-  back_to_original(result, matches)
-}
-
-method(
-  sample_matches,
-  list(.jyTBL_DF)
-) <- function(matches, n = 10, type = c("high", "low", "borderline", "random"),
-                threshold = NULL) {
-  result <- sample_matches(as_DT(matches), n = n, type = type, 
-                           threshold = threshold)
-  back_to_original(result, matches)
-}
+#method(
+#  summarize_matches,
+#  list(.jyDF)
+#) <- function(matches, type = NULL, base_id = NULL, target_id = NULL) {
+#  summarize_matches(as_DT(matches), type = type, base_id = base_id, 
+#                    target_id = target_id)
+#}
+#
+#method(
+#  summarize_matches,
+#  list(.jyTBL_DF)
+#) <- function(matches, type = NULL, base_id = NULL, target_id = NULL) {
+#  summarize_matches(as_DT(matches), type = type, base_id = base_id, 
+#                    target_id = target_id)
+#}
+#
+#
+## Method: score_distribution (data.frame)
+##------------------------------------------------------------------------------
+#method(
+#  score_distribution,
+#  list(.jyDF)
+#) <- function(matches, breaks = 10, plot = FALSE) {
+#  result <- score_distribution(as_DT(matches), breaks = breaks, plot = plot)
+#  if (!plot) {
+#    back_to_original(result, matches)
+#  } else {
+#    result  # plot objects returned as-is
+#  }
+#}
+#
+#method(
+#  score_distribution,
+#  list(.jyTBL_DF)
+#) <- function(matches, breaks = 10, plot = FALSE) {
+#  result <- score_distribution(as_DT(matches), breaks = breaks, plot = plot)
+#  if (!plot) {
+#    back_to_original(result, matches)
+#  } else {
+#    result
+#  }
+#}
+#
+#
+## Method: sample_matches (data.frame)
+##------------------------------------------------------------------------------
+#method(
+#  sample_matches,
+#  list(.jyDF)
+#) <- function(matches, n = 10, type = c("high", "low", "borderline", "random"),
+#                threshold = NULL) {
+#  result <- sample_matches(as_DT(matches), n = n, type = type, 
+#                           threshold = threshold)
+#  back_to_original(result, matches)
+#}
+#
+#method(
+#  sample_matches,
+#  list(.jyTBL_DF)
+#) <- function(matches, n = 10, type = c("high", "low", "borderline", "random"),
+#                threshold = NULL) {
+#  result <- sample_matches(as_DT(matches), n = n, type = type, 
+#                           threshold = threshold)
+#  back_to_original(result, matches)
+#}
+#

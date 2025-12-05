@@ -2,15 +2,19 @@
 # Main Search Strategy and Search Step Classes for joinery
 # ============================================================
 #
-# Main Search Strategy and Search Step Classes for joinery
-#
 # Defines the IR (Intermediate Representation) elements for record linkage:
 # - Step: individual preprocessing operation with name and arguments
 # - Search_Preparer: preprocessing pipeline for a single column
+# - Smoothing: rIP smoothing configuration
 # - Search_Strategy: complete linkage specification including preparers,
-#   weights, blocking variables, rarity method, and match threshold
+#   weights, blocking variables, rarity method, smoothing, and match threshold
 #
 # ============================================================
+
+
+# ---------------------------------------------------------------------------
+# Step class
+# ---------------------------------------------------------------------------
 
 #' Step Class
 #'
@@ -30,6 +34,9 @@ Step <- new_class("Step",
 )
 
 
+# ---------------------------------------------------------------------------
+# Search_Preparer class
+# ---------------------------------------------------------------------------
 
 #' Search Preparer Class
 #'
@@ -103,7 +110,177 @@ method(print.Search_Preparer, Search_Preparer) <- function(x, ...) {
   }))
 }
 
+# ---------------------------------------------------------------------------
+# Smoothing classes (for rIP smoothing)
+# ---------------------------------------------------------------------------
 
+#' rIP Smoothing Configuration
+#'
+#' @description
+#' Base S7 class that describes how relative identification potential (rIP)
+#' should be smoothed within a record and column during scoring.
+#'
+#' Concrete subclasses implement specific smoothing rules.
+#' Backends inspect the `method` slot and possibly additional parameters
+#' when transforming rIP values before scoring.
+#'
+#' @slot method A character scalar describing the smoothing method.
+#'
+#' @noRd
+Smoothing <- new_class(
+  "Smoothing",
+  properties = list(
+    method = class_character
+  )
+)
+
+#' Identity rIP Smoothing (no transformation)
+#'
+#' @description
+#' S7 class that represents the default behaviour where rIP values are left
+#' unchanged apart from the usual normalization inside each record and column.
+#'
+#' This is the default for [search_strategy()] and behaves as if no smoothing
+#' was configured.
+#'
+#' @noRd
+Smoothing_None <- new_class(
+  "Smoothing_None",
+  parent = Smoothing,
+  properties = list()
+)
+
+#' Log rIP Smoothing
+#'
+#' @description
+#' S7 class that represents log based rIP smoothing.  
+#' Typical backends will apply a transformation of the form
+#' `rIP := log1p(rIP)` followed by renormalization within each record and column.
+#'
+#' This reduces the dominance of very large rIP values while keeping the
+#' relative ordering of tokens similar.
+#'
+#' @noRd
+Smoothing_Log <- new_class(
+  "Smoothing_Log",
+  parent = Smoothing,
+  properties = list()
+)
+
+#' Offset rIP Smoothing
+#'
+#' @description
+#' S7 class that represents offset based rIP smoothing with a constant offset
+#' parameter `alpha`.  
+#' Typical backends will apply `rIP := rIP + alpha` followed by renormalization
+#' within each record and column.
+#'
+#' This can slightly lift very small rIP values and compress the range of rIP.
+#'
+#' @slot alpha Numeric scalar giving the offset to add before renormalization.
+#'
+#' @noRd
+Smoothing_Offset <- new_class(
+  "Smoothing_Offset",
+  parent = Smoothing,
+  properties = list(
+    alpha = class_numeric
+  )
+)
+
+#' Softmax rIP Smoothing
+#'
+#' @description
+#' S7 class that represents softmax style rIP smoothing with a temperature
+#' parameter.  
+#' Typical backends will compute
+#' `rIP := exp(rIP / temperature) / sum(exp(rIP / temperature))`
+#' within each record and column.
+#'
+#' Smaller `temperature` values sharpen the distribution; larger values
+#' flatten it.
+#'
+#' @slot temperature Numeric scalar controlling the softness of the transform.
+#'
+#' @noRd
+Smoothing_Softmax <- new_class(
+  "Smoothing_Softmax",
+  parent = Smoothing,
+  properties = list(
+    temperature = class_numeric
+  )
+)
+
+
+#' rIP Smoothing Helpers
+#'
+#' @name smooth_rip
+#' @rdname smooth_rip
+#' @title Configure rIP smoothing for a search strategy
+#'
+#' @description
+#' Helper functions that construct S7 `Smoothing` objects used by
+#' [search_strategy()] to control how relative identification potential (rIP)
+#' is smoothed before scoring.
+#'
+#' All helpers are pure configuration; they do not perform any computation
+#' by themselves. Backend methods for `detect_duplicates()` and
+#' `search_candidates()` interpret the resulting `Smoothing` object.
+#'
+#' @return An object inheriting from [Smoothing] that can be passed to
+#'   the `smoothing` argument of [search_strategy()].
+#'
+#' @seealso [search_strategy()], [Smoothing]
+NULL
+
+#' @describeIn smooth_rip Identity rIP smoothing (no transformation beyond
+#'   standard per record normalization). This is the default.
+#'
+#' @export
+smooth_rip_identity <- function() {
+  Smoothing_None(method = "none")
+}
+
+#' @describeIn smooth_rip Logarithmic rIP smoothing.  
+#'   Backends typically apply `log1p(rIP)` and then renormalize within
+#'   each record and column.
+#'
+#' @export
+smooth_rip_log <- function() {
+  Smoothing_Log(method = "log")
+}
+
+#' @describeIn smooth_rip Offset based rIP smoothing with a constant offset
+#'   `alpha` that is added to all rIP values before renormalization.
+#'
+#' @param alpha Numeric scalar; offset that is added to rIP values prior to
+#'   normalization. Must be non negative.
+#'
+#' @export
+smooth_rip_offset <- function(alpha = 0.5) {
+  if (!is.numeric(alpha) || length(alpha) != 1L || alpha < 0) {
+    rlang::abort("`alpha` must be a single non negative numeric value.")
+  }
+  Smoothing_Offset(method = "offset", alpha = alpha)
+}
+
+#' @describeIn smooth_rip Softmax style rIP smoothing with a temperature
+#'   parameter that controls how sharp or flat the transformed distribution is.
+#'
+#' @param temperature Numeric scalar; softmax temperature parameter.
+#'   Must be strictly positive.
+#'
+#' @export
+smooth_rip_softmax <- function(temperature = 1) {
+  if (!is.numeric(temperature) || length(temperature) != 1L || temperature <= 0) {
+    rlang::abort("`temperature` must be a single positive numeric value.")
+  }
+  Smoothing_Softmax(method = "softmax", temperature = temperature)
+}
+
+# ---------------------------------------------------------------------------
+# Search_Strategy class
+# ---------------------------------------------------------------------------
 
 #' Search Strategy Class
 #'
@@ -119,7 +296,9 @@ method(print.Search_Preparer, Search_Preparer) <- function(x, ...) {
 #' - Optional **block_by** variable(s) restricting candidate searches to blocks.
 #' - A **rarity** method governing how token rarity is computed
 #'   (e.g., `"inverse_freq"`, `"tfidf"`).
-#'
+#' - A smoothing configuration that describes how rIP values are transformed
+#'   before scoring.
+#'   
 #' All operational behavior (tokenization, rarity computation,
 #' duplicate detection, candidate search) is handled by S7 generics such
 #' as `prepare_search_data()`, `compute_rarity()`,
@@ -131,6 +310,9 @@ method(print.Search_Preparer, Search_Preparer) <- function(x, ...) {
 #' @slot rarity    A character scalar describing the rarity method.
 #' @slot threshold  A numeric scalar containing the match or deduplication threshold
 #' @slot min_rarity  Numeric scalar between 0 and Inf.
+#' @slot smoothing A [Smoothing] object describing how rIP should be smoothed
+#'   within each record and column before scoring.
+#' 
 #'   Tokens with rarity below this value are removed before scoring.
 #'
 #' @seealso [search_strategy()]
@@ -143,7 +325,8 @@ Search_Strategy <- new_class("Search_Strategy",
                                block_by  = class_any,
                                rarity    = class_character,
                                threshold = class_numeric,
-                               min_rarity = class_any 
+                               min_rarity = class_any,
+                               smoothing = Smoothing
                              )
 )
 
@@ -155,40 +338,67 @@ print.Search_Strategy <- new_external_generic("base", "print", "x")
 
 
 #' @noRd
+#' @noRd
 method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
-  cat("<joinery::Search_Strategy>\n")
   
-  # Preparers
-  cat("\n  Columns prepared: ", length(x@preparers), "\n", sep = "")
-  walk(x@preparers, function(p) {
-    cat("    - ", p@column, " (", length(p@steps), " steps)\n", sep = "")
-  })
+  cli::cli_text("{.strong <joinery::Search_Strategy>}")
   
-  # Weights
-  cat("\n  Weights:\n")
-  if (length(x@weights) == 0) {
-    cat("    (none)\n")
-  } else {
-    invisible(imap(x@weights, function(w, nm) {
-      cat("    - ", nm, ": ", w, "\n", sep = "")
-    }))
-  }
+  # Columns -------------------------------------------------------------
+  cols <- vapply(
+    x@preparers,
+    function(p) sprintf("%s(%d)", p@column, length(p@steps)),
+    character(1)
+  )
+  cli::cli_text("columns: {paste(cols, collapse = ', ')}")
   
-  # Blocking
-  cat("\n  Blocking: ")
+  # Blocking ------------------------------------------------------------
   if (is.null(x@block_by)) {
-    cat("none\n")
+    cli::cli_text("blocking: none")
   } else {
-    cat(paste(x@block_by, collapse = ", "), "\n")
+    cli::cli_text("blocking: {paste(x@block_by, collapse = ', ')}")
   }
   
-  # Rarity
-  cat("\n  Rarity Metric: ", x@rarity, "\n", sep = "")
-  cat("\n  Min rarity: ", x@min_rarity, "\n", sep="")
-  #Threshold
-  cat("\n  Threshold: ", if (is.null(x@threshold)) "(none)" else x@threshold, "\n", sep = "")
+  # Weights -------------------------------------------------------------
+  if (length(x@weights) == 0) {
+    cli::cli_text("weights: none")
+  } else {
+    w <- paste(
+      sprintf("%s=%s", names(x@weights), format(x@weights)),
+      collapse = ", "
+    )
+    cli::cli_text("weights: {w}")
+  }
+  
+  # Rarity --------------------------------------------------------------
+  cli::cli_text("rarity: {x@rarity}  (min={format(x@min_rarity)})")
+  
+  # Smoothing -----------------------------------------------------------
+  sm <- x@smoothing
+  if (sm@method == "none") {
+    cli::cli_text("smoothing: none")
+  } else {
+    # allow short inline param display
+    if (inherits(sm, "Smoothing_Offset")) {
+      cli::cli_text("smoothing: offset(alpha={format(sm@alpha)})")
+    } else if (inherits(sm, "Smoothing_Softmax")) {
+      cli::cli_text("smoothing: softmax(temp={format(sm@temperature)})")
+    } else {
+      cli::cli_text("smoothing: {sm@method}")
+    }
+  }
+  
+  # Threshold -----------------------------------------------------------
+  thr <- x@threshold
+  cli::cli_text("threshold: {if (is.null(thr)) 'none' else format(thr)}")
+  
+  invisible(x)
 }
 
+
+
+# ---------------------------------------------------------------------------
+# Helpers for building Search_Strategy
+# ---------------------------------------------------------------------------
 
 #' Convert Expression to Step Object
 #'
@@ -219,14 +429,15 @@ expr_to_step <- function(expr) {
 #' Define a Search Strategy for Record Linkage
 #'
 #' @description
-#' Creates a `Search_Strategy` object that specifies how columns should be
-#' preprocessed for token-index-based record linkage, along with optional weights,
-#' blocking variables, rarity computation method, and similarity threshold.
+#' Creates a [Search_Strategy] object that specifies how columns should be
+#' preprocessed for token index based record linkage, along with optional
+#' weights, blocking variables, rarity computation method, rIP smoothing,
+#' and similarity threshold.
 #'
-#' @param ... Two-sided formulas of the form `column ~ preprocessing_steps`.
-#'   The left-hand side names the column; the right-hand side contains one or
-#'   more function calls to apply in sequence (e.g., 
-#'   `name ~ normalize_text + word_tokens(min_nchar = 3)`).
+#' @param ... Two sided formulas of the form `column ~ preprocessing_steps`.
+#'   The left hand side names the column; the right hand side contains one or
+#'   more function calls to apply in sequence (for example
+#'   `name ~ normalize_text() + word_tokens(min_nchar = 3)`).
 #' @param block_by Optional character vector of column names to use for blocking.
 #'   Candidate searches will be restricted to records sharing the same blocking
 #'   key values. Default is `NULL` (no blocking).
@@ -234,28 +445,34 @@ expr_to_step <- function(expr) {
 #'   Names should correspond to columns. Default is `numeric()` (uniform weights).
 #' @param rarity Character scalar specifying the rarity computation method.
 #'   Default is `"inverse_freq"`.
-#' @param threshold Numeric scalar specifying the minimum relative indentification 
-#'   potential required for two records to be considered matches. Default is `0.9`.
-#'
 #' @param min_rarity Numeric scalar specifying the minimum rarity value required
 #'   for a token to be included in similarity scoring. Tokens with rarity below
 #'   this threshold are filtered out. Default is `0`.
+#' @param threshold Numeric scalar specifying the minimum relative identification
+#'   potential required for two records to be considered matches. Default is `0.9`.
+#' @param smoothing A [Smoothing] object created by one of the
+#'   [smooth_rip] helpers that controls how rIP values are smoothed before
+#'   scoring. Default is [smooth_rip_identity()].
 #'
-#'
-#' @return A `Search_Strategy` object.
+#' @return A [Search_Strategy] object.
 #'
 #' @export
 search_strategy <- function(...,
-                            block_by = NULL,
-                            weights  = numeric(),
-                            rarity   = "inverse_freq",
+                            block_by   = NULL,
+                            weights    = numeric(),
+                            rarity     = "inverse_freq",
                             min_rarity = 0,
-                            threshold = 0.9) {
+                            threshold  = 0.9,
+                            smoothing  = smooth_rip_identity()) {
   
   if (!is.numeric(min_rarity)) {
-    rlang::abort("min_rarity  must be numeric.")
+    rlang::abort("`min_rarity` must be numeric.")
   }
-
+  
+  if (!S7_inherits(smoothing, Smoothing)) {
+    rlang::abort("`smoothing` must be a `Smoothing` object created by a smooth_rip_*() helper.")
+  }
+  
   fmls <- rlang::list2(...)
   
   flatten_plus_calls <- function(expr) {
@@ -267,7 +484,7 @@ search_strategy <- function(...,
   }
   
   preparers <- map(fmls, function(fml) {
-
+    
     if (!rlang::is_formula(fml)) {
       rlang::abort("All arguments to search_strategy() must be formulas.")
     }
@@ -286,30 +503,26 @@ search_strategy <- function(...,
     Search_Preparer(col, steps)
   })
   
-
-  
   names(preparers) <- map_chr(preparers, function(p) p@column)
   
   if (!is.null(block_by) && !is.character(block_by)) {
-    rlang::abort("block_by must be NULL or a character vector.")
+    rlang::abort("`block_by` must be NULL or a character vector.")
   }
   if (length(weights) > 0 &&
       (is.null(names(weights)) || any(names(weights) == ""))) {
-    rlang::abort("weights must be a named numeric vector.")
+    rlang::abort("`weights` must be a named numeric vector.")
   }
-  if (!is.character(rarity) || length(rarity) != 1) {
-    rlang::abort("rarity must be a single character string.")
+  if (!is.character(rarity) || length(rarity) != 1L) {
+    rlang::abort("`rarity` must be a single character string.")
   }
   
   Search_Strategy(
-    preparers = preparers,
-    weights   = weights,
-    block_by  = block_by,
-    rarity    = rarity,
-    threshold = threshold,
-    min_rarity = min_rarity
-    
+    preparers  = preparers,
+    weights    = weights,
+    block_by   = block_by,
+    rarity     = rarity,
+    threshold  = threshold,
+    min_rarity = min_rarity,
+    smoothing  = smoothing
   )
 }
-
-
