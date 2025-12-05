@@ -761,38 +761,281 @@ method(
 }
 
   
-  # ============================================================================
-  # Method: extract_unmatched
-  # ============================================================================
-  #
-  # Extracts records that did not match from a table.
-  #
-  # TODO: Implement this method.
+# Method: extract_unmatched for DuckDB
+#------------------------------------------------------------------------------
+method(
+  extract_unmatched,
+  list(Duck_tbl, class_character, Duck_tbl)
+) <- function(data, id, matches) {
   
-  # method(
-  #   extract_unmatched,
-  #   list(Duck_tbl, class_character, Duck_tbl)
-  # ) <- function(data, id, matches) {
-  #   stop("DuckDB backend not yet implemented", call. = FALSE)
-  # }
+  con <- data$src$con
+  
+  data_tbl    <- data$lazy_query$x
+  matches_tbl <- matches$lazy_query$x
+  
+  id_q <- sprintf('"%s"', id)
+  
+  # Validate: id column exists in data table
+  data_cols <- DBI::dbGetQuery(
+    con,
+    paste0("PRAGMA table_info(", data_tbl, ");")
+  )$name
+  
+  if (!id %in% data_cols) {
+    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+  }
+  
+  # Validate: matches table has an 'id' column
+  matches_cols <- DBI::dbGetQuery(
+    con,
+    paste0("PRAGMA table_info(", matches_tbl, ");")
+  )$name
+  
+  if (!"id" %in% matches_cols) {
+    stop("`matches` must contain a column named 'id'", call. = FALSE)
+  }
+  
+  # Generate output table name
+  out_name <- paste0("_joinery_tmp_unmatched_", sample.int(1e9, 1))
+  
+  # SQL anti-join: keep rows where id NOT IN matched set
+  sql <- paste0(
+    "CREATE TABLE ", out_name, " AS\n",
+    "SELECT d.*\n",
+    "FROM ", data_tbl, " AS d\n",
+    "WHERE d.", id_q, " NOT IN (\n",
+    "  SELECT DISTINCT id\n",
+    "  FROM ", matches_tbl, "\n",
+    ");"
+  )
+  
+  DBI::dbExecute(con, sql)
+  dplyr::tbl(con, out_name)
+}
   
   
-  # ============================================================================
-  # Method: multi_stage_match
-  # ============================================================================
-  #
-  # Runs multiple search strategies in sequence, extracting unmatched records
-  # between stages.
-  #
-  # TODO: Implement this method. Can likely reuse generic implementation
-  # if the other methods are properly implemented.
+# Method: multi_stage_match for DuckDB
+#------------------------------------------------------------------------------
+# Runs multiple search strategies in sequence, extracting unmatched records
+# between stages.
+method(
+  multi_stage_match,
+  list(Duck_tbl, Duck_tbl, class_character, class_character, class_list)
+) <- function(base_table,
+              target_table,
+              base_id,
+              target_id,
+              strategies,
+              ...) {
   
-  # method(
-  #   multi_stage_match,
-  #   list(Duck_tbl, Duck_tbl, class_character, class_character, class_list)
-  # ) <- function(base_table, target_table, base_id, target_id, strategies) {
-  #   stop("DuckDB backend not yet implemented", call. = FALSE)
-  # }
+  con <- base_table$src$con
+  
+  # ---- VALIDATION ----------------------------------------------------------
+  c("strategies must be a list"    =  is.list(strategies),
+    "strategies must not be empty" =  length(strategies) > 0) |> 
+    validate_inputs()
+  
+  # If names missing: assign "strategy_1", "strategy_2", …
+  if (is.null(names(strategies)) || any(names(strategies) == "")) {
+    names(strategies) <- paste0("strategy_", seq_along(strategies))
+  }
+  
+  # Ensure all elements are Search_Strategy
+  c("strategies must be a list of Search_Strategy objects" = 
+      is.list(strategies) && all(sapply(strategies, S7_inherits, Search_Strategy))
+  ) |> validate_inputs()
+  
+  # ---- PREP ----------------------------------------------------------------
+  base_res   <- base_table
+  target_res <- target_table
+  
+  all_matches   <- list()
+  match_counter <- 0L
+  
+  tmp <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))
+  
+  # ---- MAIN LOOP -----------------------------------------------------------
+  for (stage_name in names(strategies)) {
+    strategy <- strategies[[stage_name]]
+    
+    # Run stage matching
+    stage_matches <- search_candidates(
+      base_res,
+      target_res,
+      base_id,
+      target_id,
+      strategy = strategy
+    )
+    
+    stage_tbl <- stage_matches$lazy_query$x
+    
+    # Check if any matches found
+    n_matches <- DBI::dbGetQuery(
+      con,
+      paste0("SELECT COUNT(*) AS n FROM ", stage_tbl)
+    )$n
+    
+    if (n_matches > 0) {
+      # Create new table with stage label and adjusted match_id
+      staged_tbl <- tmp("_joinery_tmp_staged")
+      
+      sql_stage <- paste0(
+        "CREATE TEMP TABLE ", staged_tbl, " AS\n",
+        "SELECT\n",
+        "  match_id + ", match_counter, " AS match_id,\n",
+        "  score,\n",
+        "  '", stage_name, "' AS stage,\n",
+        "  source,\n",
+        "  id,\n",
+        "  rank,\n",
+        "  * EXCLUDE (match_id, score, source, id, rank)\n",
+        "FROM ", stage_tbl, ";"
+      )
+      
+      DBI::dbExecute(con, sql_stage)
+      
+      # Update match counter
+      match_counter <- DBI::dbGetQuery(
+        con,
+        paste0("SELECT MAX(match_id) AS max_id FROM ", staged_tbl)
+      )$max_id
+      
+      all_matches[[stage_name]] <- staged_tbl
+      
+      # Remove matched rows (per side)
+      base_res <- extract_unmatched(
+        base_res,
+        base_id,
+        dplyr::tbl(con, staged_tbl) |> dplyr::filter(source == "base")
+      )
+      
+      target_res <- extract_unmatched(
+        target_res,
+        target_id,
+        dplyr::tbl(con, staged_tbl) |> dplyr::filter(source == "target")
+      )
+      
+      # Check if either side is empty
+      base_tbl <- base_res$lazy_query$x
+      target_tbl <- target_res$lazy_query$x
+      
+      n_base <- DBI::dbGetQuery(
+        con,
+        paste0("SELECT COUNT(*) AS n FROM ", base_tbl)
+      )$n
+      
+      n_target <- DBI::dbGetQuery(
+        con,
+        paste0("SELECT COUNT(*) AS n FROM ", target_tbl)
+      )$n
+      
+      # Stop if one side is empty
+      if (n_base == 0L || n_target == 0L) break
+    }
+  }
+  
+  # ---- RETURN --------------------------------------------------------------
+  if (length(all_matches) == 0L) {
+    # Empty-structure return (schema only)
+    out_name <- tmp("_joinery_tmp_multistage")
+    DBI::dbExecute(
+      con,
+      paste0(
+        "CREATE TABLE ", out_name, " AS\n",
+        "SELECT\n",
+        "  CAST(NULL AS INTEGER) AS match_id,\n",
+        "  CAST(NULL AS DOUBLE) AS score,\n",
+        "  CAST(NULL AS VARCHAR) AS stage,\n",
+        "  CAST(NULL AS VARCHAR) AS source,\n",
+        "  CAST(NULL AS VARCHAR) AS id,\n",
+        "  CAST(NULL AS INTEGER) AS rank\n",
+        "LIMIT 0;"
+      )
+    )
+    return(dplyr::tbl(con, out_name))
+  }
+  
+  # Union all stage results
+  out_name <- tmp("_joinery_tmp_multistage")
+  
+  union_parts <- paste(
+    paste0("SELECT * FROM ", all_matches),
+    collapse = "\nUNION ALL\n"
+  )
+  
+  sql_final <- paste0(
+    "CREATE TABLE ", out_name, " AS\n",
+    union_parts, "\n",
+    "ORDER BY match_id, stage, source, rank;"
+  )
+  
+  DBI::dbExecute(con, sql_final)
+  dplyr::tbl(con, out_name)
+}
+
+
+# Method: .inspect_tokens for DuckDB
+#------------------------------------------------------------------------------
+method(
+  .inspect_tokens,
+  list(Duck_tbl, class_character, Search_Strategy, class_character)
+) <- function(data, id, strategy, column) {
+  
+  con <- data$src$con
+  data_tbl <- data$lazy_query$x
+  
+  id_q <- sprintf('"%s"', id)
+  column_q <- sprintf('"%s"', column)
+  
+  # --- Validate inputs -----------------------------------------------------
+  data_cols <- DBI::dbGetQuery(
+    con,
+    paste0("PRAGMA table_info(", data_tbl, ");")
+  )$name
+  
+  if (!id %in% data_cols) {
+    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+  }
+  if (!column %in% data_cols) {
+    stop(sprintf("Column '%s' not found in data", column), call. = FALSE)
+  }
+  if (!column %in% names(strategy@preparers)) {
+    stop(sprintf("Column '%s' not found in strategy preparers", column), call. = FALSE)
+  }
+  
+  # --- 1. Create single-column strategy for efficiency ---------------------
+  single_col_strategy <- copy(strategy)
+  single_col_strategy@preparers <- list(strategy@preparers[[column]])
+  names(single_col_strategy@preparers) <- column
+  
+  # --- 2. Prepare tokens via joinery's interpreter -------------------------
+  tokens <- prepare_search_data(
+    data     = data,
+    id       = id,
+    strategy = single_col_strategy
+  )
+  
+  tokens_tbl <- tokens$lazy_query$x
+  
+  # --- 3. Join back to original data and count occurrences -----------------
+  out_name <- paste0("_joinery_tmp_inspect_", sample.int(1e9, 1))
+  
+  sql <- paste0(
+    "CREATE TABLE ", out_name, " AS\n",
+    "SELECT\n",
+    "  t.token,\n",
+    "  d.", column_q, " AS ", column_q, ",\n",
+    "  COUNT(*) AS n\n",
+    "FROM ", tokens_tbl, " t\n",
+    "LEFT JOIN ", data_tbl, " d\n",
+    "  ON t.", id_q, " = d.", id_q, "\n",
+    "GROUP BY t.token, d.", column_q, "\n",
+    "ORDER BY n DESC, t.token;"
+  )
+  
+  DBI::dbExecute(con, sql)
+  dplyr::tbl(con, out_name)
+}
   
 
 #' Drop all temporary DuckDB tables created by joinery

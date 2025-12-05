@@ -1,5 +1,21 @@
 # 📦 joinery — Developer / Coding-Agent Guide
 
+## Current Development Stage
+
+**Phase 0.2 (DuckDB Backend) — COMPLETE ✅**
+
+All core backend functionality is implemented and tested. The package now supports:
+- Scalable processing of datasets up to 50M rows
+- Full feature parity between data.table and DuckDB backends
+- All core generics working on both backends
+- Comprehensive test coverage
+
+**Next Phase:** 0.3 (SearchEngine Heuristics) — Focus shifts to accuracy improvements (rIP smoothing, containment rules, feedback weighting).
+
+See `notes/duckdb_status.md` for detailed status and `notes/roadmap.md` for upcoming work.
+
+---
+
 ## Overview
 
 **joinery** is a heuristic, token-based record linkage system for R.
@@ -120,10 +136,15 @@ rank
 
 For detailed guidance on specific topics, consult:
 
+**Core Architecture:**
 - **`notes/architecture.md`** — Data.table backend internals, token table schema, rarity & scoring details.
 - **`notes/preparers_reference.md`** — Complete catalog of text normalization, phonetic encoding, token generation, and token transformation functions.
-- **`notes/duckdb_backend.md`** — DuckDB batch execution, performance tuning, fuzzy_tokens special case, progress reporting.
-- **`notes/roadmap.md`** — Strategic roadmap (phases 0.2–1.0, feature priorities).
-- **`notes/duckdb_performance.md"`** —  Performance considerations for the duckdb backend
 
+**DuckDB Backend (Phase 0.2 — COMPLETE):**
+- **`notes/duckdb_status.md`** — **Implementation status, completed features, test coverage, known limitations.**
+- **`notes/duckdb_coding_guide.md`** — **Practical guide for using and extending the DuckDB backend.**
+- **`notes/duckdb_backend.md`** — Design philosophy, batch execution architecture, no-SQL-translation approach.
+- **`notes/duckdb_performance.md`** — Performance tuning guide, batch size recommendations, optimization strategies.
 
+**Project Planning:**
+- **`notes/roadmap.md`** — Strategic roadmap (phases 0.2–1.0, feature priorities, current phase).

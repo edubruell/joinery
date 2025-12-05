@@ -605,7 +605,9 @@ method(
   out[]
 }
 
-# Method: .inspect_tokens 
+# Method: .inspect_tokens  
+# (The dot is so  so we can use enysm on the column and do not get in trouble
+#  with class_character)
 #------------------------------------------------------------------------------
 method(
   .inspect_tokens,
@@ -620,19 +622,21 @@ method(
   if (!column %in% names(dt)) {
     stop(sprintf("Column '%s' not found in data", column), call. = FALSE)
   }
+  if (!column %in% names(strategy@preparers)) {
+    stop(sprintf("Column '%s' not found in strategy preparers", column), call. = FALSE)
+  }
   
-  # --- 1. Prepare tokens via joinery's interpreter -------------------------
+  # --- 1. Create single-column strategy for efficiency ---------------------
+  single_col_strategy <- copy(strategy)
+  single_col_strategy@preparers <- list(strategy@preparers[[column]])
+  names(single_col_strategy@preparers) <- column
+  
+  # --- 2. Prepare tokens via joinery's interpreter -------------------------
   tokens <- prepare_search_data(
     data     = dt,
     id       = id,
-    strategy = strategy
+    strategy = single_col_strategy
   )
-  
-  # --- 2. Keep only the tokens for this specific column --------------------
-  mask <- tokens$src_column == column
-  tokens <- tokens[mask,]
-  
-  
   
   # --- 3. Join back to retrieve the original strings -----------------------
   dt_join <- dt[, c(id, column), with = FALSE]
@@ -649,15 +653,8 @@ method(
   res <- merged[
     ,
     .(n = .N),
-    by = c("token",column)
+    by = c("token", column)
   ]
-  
-
-  
-  # --- 5. Add token_ip = n / sum(n) within each token ----------------------
-  res[, token_ip := n / sum(n), by = token]
-  
   
   res[]
 }
-

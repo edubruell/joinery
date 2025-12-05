@@ -29,6 +29,10 @@ Collate:
     'preparers.R'
     'batch_duckdb.R'
     'methods_duckdb.R'
+    'matchstat_generics.R'
+    'matchstat_datatable.R'
+    'matchstat_duckdb.R'
+    'matchstat_tibble.R'
     'data.R'
 RoxygenNote: 7.3.3
 Depends: 
