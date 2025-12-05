@@ -337,28 +337,74 @@ Search_Strategy <- new_class("Search_Strategy",
 print.Search_Strategy <- new_external_generic("base", "print", "x")
 
 
-#' @noRd
+
+
+# Main print method
 #' @noRd
 method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
   
   cli::cli_text("{.strong <joinery::Search_Strategy>}")
   
-  # Columns -------------------------------------------------------------
-  cols <- vapply(
-    x@preparers,
-    function(p) sprintf("%s(%d)", p@column, length(p@steps)),
-    character(1)
-  )
-  cli::cli_text("columns: {paste(cols, collapse = ', ')}")
+  # ------------------------------------------------------------------
+  # Columns and their step pipelines (compact bullets)
+  # ------------------------------------------------------------------
+  bullets <- character(length(x@preparers))
   
-  # Blocking ------------------------------------------------------------
+  if (length(x@preparers) > 0) {
+    for (i in seq_along(x@preparers)) {
+      prep <- x@preparers[[i]]
+      
+      step_labels <- vapply(
+        prep@steps,
+        function(s) {
+          if (length(s@args) == 0) {
+            sprintf("%s()", s@name)
+          } else {
+            arg_names <- names(s@args)
+            args_fmt <- vapply(seq_along(s@args), function(j) {
+              val <- deparse(s@args[[j]], nlines = 1)
+              if (is.null(arg_names) || arg_names[j] == "") {
+                val
+              } else {
+                sprintf("%s = %s", arg_names[j], val)
+              }
+            }, character(1))
+            sprintf("%s(%s)", s@name, paste(args_fmt, collapse = ", "))
+          }
+        },
+        character(1)
+      )
+      
+      bullets[[i]] <- sprintf(
+        "{.field %s}: %s",
+        prep@column,
+        paste(step_labels, collapse = " → ")
+      )
+    }
+    
+    cli::cli_text()
+    cli::cli_text("{.strong columns}")
+    cli::cli_bullets(bullets)
+  } else {
+    cli::cli_text()
+    cli::cli_text("{.strong columns}")
+    cli::cli_text("none")
+  }
+  
+  # ------------------------------------------------------------------
+  # Other metadata (one line each)
+  # ------------------------------------------------------------------
+  
+  cli::cli_text()
+  
+  # blocking
   if (is.null(x@block_by)) {
     cli::cli_text("blocking: none")
   } else {
     cli::cli_text("blocking: {paste(x@block_by, collapse = ', ')}")
   }
   
-  # Weights -------------------------------------------------------------
+  # weights
   if (length(x@weights) == 0) {
     cli::cli_text("weights: none")
   } else {
@@ -369,30 +415,28 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
     cli::cli_text("weights: {w}")
   }
   
-  # Rarity --------------------------------------------------------------
-  cli::cli_text("rarity: {x@rarity}  (min={format(x@min_rarity)})")
+  # rarity
+  cli::cli_text("rarity: {x@rarity} (min={format(x@min_rarity)})")
   
-  # Smoothing -----------------------------------------------------------
+  # smoothing
   sm <- x@smoothing
   if (sm@method == "none") {
     cli::cli_text("smoothing: none")
+  } else if (inherits(sm, "Smoothing_Offset")) {
+    cli::cli_text("smoothing: offset(alpha={format(sm@alpha)})")
+  } else if (inherits(sm, "Smoothing_Softmax")) {
+    cli::cli_text("smoothing: softmax(temp={format(sm@temperature)})")
   } else {
-    # allow short inline param display
-    if (inherits(sm, "Smoothing_Offset")) {
-      cli::cli_text("smoothing: offset(alpha={format(sm@alpha)})")
-    } else if (inherits(sm, "Smoothing_Softmax")) {
-      cli::cli_text("smoothing: softmax(temp={format(sm@temperature)})")
-    } else {
-      cli::cli_text("smoothing: {sm@method}")
-    }
+    cli::cli_text("smoothing: {sm@method}")
   }
   
-  # Threshold -----------------------------------------------------------
+  # threshold
   thr <- x@threshold
   cli::cli_text("threshold: {if (is.null(thr)) 'none' else format(thr)}")
   
   invisible(x)
 }
+
 
 
 
