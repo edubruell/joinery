@@ -380,24 +380,27 @@ method(
 
 # Method: search_candidates for DuckDB tables
 #------------------------------------------------------------------------------
-# Searches for candidate matches between base_table and target_table using token
-# overlap and similarity scoring. Returns all matched record pairs with scores.
+# Summary:
+#   Given a base table and a target table, compute candidate record matches
+#   by tokenizing selected columns, weighting tokens by rarity and column
+#   importance, and scoring overlaps. Produces a long-form table with one
+#   row per record per match.
 #
-# Algorithm:
-# 1. Prepare token tables for both base and target (batched if needed)
-# 2. Union token tables with source markers (base|target)
-# 3. Compute shared rarity using compute_rarity()
-# 4. Enrich tokens with weights and rIP (relative identification potential)
-# 5. Cross-join on (column, token, block_by) to find candidate pairs
-# 6. Score pairs by summing rIP × weight per record pair
-# 7. Filter by threshold and assign match IDs
-# 8. Expand to long form (one row per record per match)
-# 9. Merge original data back onto result
-# 10. Rank records within each match group
+# Pipeline:
+#   1. Tokenize all selected columns for base and target (batching if needed)
+#   2. Combine tokens with source markers (base or target)
+#   3. Compute token rarity across the combined token universe
+#   4. Compute rIP (relative identification potential) and apply column weights
+#   5. Generate candidate pairs by joining on identical tokens
+#   6. Score each pair by summing rIP × weight over matching tokens
+#   7. Filter pairs by similarity threshold from strategy
+#   8. Assign match IDs and expand to long form
+#   9. Merge the corresponding base and target data back in
+#  10. Rank records within each match group
 #
-# Returns a lazy DuckDB table with schema:
-#   match_id (int), score (double), source (varchar),
-#   id (varchar), rank (int), <original columns>
+# Returned value:
+#   A DuckDB table containing match_id, score, source, id, rank, and
+#   all original columns.
 method(
   search_candidates,
   list(Duck_tbl, Duck_tbl, class_character, class_character, Search_Strategy)
@@ -411,8 +414,7 @@ method(
               target_tokens = NULL,
               debug = FALSE) {
   
-  browser()
-  
+
   con <- base_table$src$con
   base_id_q   <- sprintf('"%s"', base_id)
   target_id_q <- sprintf('"%s"', target_id)
@@ -668,8 +670,52 @@ method(
   DBI::dbExecute(con, sql_target_merge)
   
   
+  # ---------------------------------------------------------------
+  # 12. Overwrite base_with_cols_tbl and target_with_cols_tbl so that
+  # both have identical column sets and column order
+  # ---------------------------------------------------------------
+  
+  # Fetch column names
+  cols_base   <- DBI::dbGetQuery(con, paste0("PRAGMA table_info(", base_with_cols_tbl, ");"))$name
+  cols_target <- DBI::dbGetQuery(con, paste0("PRAGMA table_info(", target_with_cols_tbl, ");"))$name
+  
+  # Union of all column names
+  common_cols <- union(cols_base, cols_target)
+  
+  # Build aligned SELECT lists
+  sel_base <- paste(
+    vapply(common_cols, function(col) {
+      if (col %in% cols_base) col else paste0("NULL AS ", col)
+    }, character(1L)),
+    collapse = ", "
+  )
+  
+  sel_target <- paste(
+    vapply(common_cols, function(col) {
+      if (col %in% cols_target) col else paste0("NULL AS ", col)
+    }, character(1L)),
+    collapse = ", "
+  )
+  
+  # Overwrite tables with aligned versions
+  sql_overwrite_base <- paste0(
+    "CREATE OR REPLACE TEMP TABLE ", base_with_cols_tbl, " AS\n",
+    "SELECT ", sel_base, "\n",
+    "FROM ", base_with_cols_tbl, ";\n"
+  )
+  
+  sql_overwrite_target <- paste0(
+    "CREATE OR REPLACE TEMP TABLE ", target_with_cols_tbl, " AS\n",
+    "SELECT ", sel_target, "\n",
+    "FROM ", target_with_cols_tbl, ";\n"
+  )
+  
+  DBI::dbExecute(con, sql_overwrite_base)
+  DBI::dbExecute(con, sql_overwrite_target)
+  
+  
   #----------------------------------------------------------
-  # 12. Final union and ranking
+  # 13. Final union and ranking
   #----------------------------------------------------------
   out_name <- tmp("_joinery_tmp_candidates")
   
@@ -713,8 +759,6 @@ method(
   
   dplyr::tbl(con, out_name)
 }
-
-  
 
   
   # ============================================================================

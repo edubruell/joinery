@@ -1,4 +1,4 @@
-# Joinery <img src="man/figures/logo.png" align="right" height="134" alt="" />
+# joinery <img src="man/figures/logo.png" align="right" height="139" alt="" />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -11,7 +11,7 @@
 It uses token-based indexing, flexible text normalization, phonetic encoders, and optional blocking to match imperfect or inconsistent records.
 The package is  inspired by the ideas behind Thorsten Doherr’s **searchengine** project (see: [https://github.com/ThorstenDoherr/searchengine/](https://github.com/ThorstenDoherr/searchengine/)).
 
-Like good woodworking, the goal is to make the joins clean,without reaching for the mallet.
+Like good woodworking, the goal is to make the joins clean, without reaching for the mallet.
 
 ## Installation
 
