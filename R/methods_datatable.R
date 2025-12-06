@@ -196,6 +196,74 @@ method(
 }
 
 
+#' Internal helper: compute pairwise scores between two token tables
+#' @noRd
+.score_token_pairs <- function(
+    lhs_tokens,
+    rhs_tokens,
+    id_lhs,
+    id_rhs,
+    strategy,
+    weights
+) {
+  
+  block_by <- strategy@block_by %||% character()
+  by_cols  <- c("src_column", "token", block_by)
+  
+  # Validate weights
+  missing_w <- setdiff(
+    unique(c(lhs_tokens$src_column, rhs_tokens$src_column)),
+    names(weights)
+  )
+  if (length(missing_w) > 0) {
+    stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
+  }
+  
+  lhs_tokens[, weight := weights[src_column]]
+  rhs_tokens[, weight := weights[src_column]]
+  
+  # Base rIP
+  lhs_tokens[, rIP := rarity / sum(rarity), by = c(id_lhs, "src_column")]
+  rhs_tokens[, rIP := rarity / sum(rarity), by = c(id_rhs, "src_column")]
+  
+  # Optional smoothing
+  sm <- strategy@smoothing@method
+  if (sm == "log") {
+    lhs_tokens[, rIP := {x <- log1p(rIP); x / sum(x)}, by = c(id_lhs, "src_column")]
+    rhs_tokens[, rIP := {x <- log1p(rIP); x / sum(x)}, by = c(id_rhs, "src_column")]
+  } else if (sm == "softmax") {
+    t <- strategy@smoothing@temperature
+    lhs_tokens[, rIP := {ex <- exp(rIP / t); ex / sum(ex)}, by = c(id_lhs, "src_column")]
+    rhs_tokens[, rIP := {ex <- exp(rIP / t); ex / sum(ex)}, by = c(id_rhs, "src_column")]
+  } else if (sm == "offset") {
+    a <- strategy@smoothing@alpha
+    lhs_tokens[, rIP := {x <- rIP + a; x / sum(x)}, by = c(id_lhs, "src_column")]
+    rhs_tokens[, rIP := {x <- rIP + a; x / sum(x)}, by = c(id_rhs, "src_column")]
+  }
+  
+  # Prepare RHS for join
+  rhs <- rhs_tokens[, c(id_rhs, "row_id", "src_column", "token", block_by), with = FALSE]
+  data.table::setnames(rhs, c(id_rhs, "row_id"), c("rhs_id", "rhs_row"))
+  
+  # Token-overlap join
+  joined <- lhs_tokens[
+    rhs,
+    on = by_cols,
+    allow.cartesian = TRUE,
+    nomatch = 0L
+  ]
+  
+  # Aggregate pairwise score
+  scored <- joined[
+    , .(score = sum(rIP * weight, na.rm = TRUE)),
+    by = .(lhs_id = get(id_lhs), rhs_id)
+  ]
+  
+  scored[]
+}
+
+
+
 # Method: detect_duplicates 
 #------------------------------------------------------------------------------
 method(
@@ -204,6 +272,7 @@ method(
 ) <- function(base_table, id, strategy, weights = NULL) {
   
   dt <- data.table::copy(base_table)
+  dt[[id]] <- as.character(dt[[id]])
   
   # --- 1. Prepare token table ---------------------------------------------
   tokens <- prepare_search_data(
@@ -235,39 +304,18 @@ method(
     stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
   }
   
-  # Add weight column
-  tokens[, weight := weights[src_column]]
-  
-  #Compute Identification Potential based on rarity metric
-  tokens[, rIP := rarity / sum(rarity), by = .(get(id), src_column)]
-  
-  # --- 4. Self-join on shared tokens (within blocks) -----------------------
-  
-  block_by <- strategy@block_by %||% character()
-  by_cols  <- c("src_column", "token", block_by)
-  
-  rhs <- tokens[, c(id, "row_id", "src_column", "token", block_by), with = FALSE]
-  
-  id2  <- paste0(id, "_2")
-  row2 <- "row_id_2"
-  
-  data.table::setnames(rhs, id,  id2)
-  data.table::setnames(rhs, "row_id", row2)
-  
-  joined <- tokens[
-    rhs,
-    on = by_cols,
-    allow.cartesian = TRUE,
-    nomatch = 0
-  ]
+  # --- 4. Compute pairwise scores through helper ----------------------------
+  scored <- .score_token_pairs(
+    lhs_tokens = tokens,
+    rhs_tokens = tokens,
+    id_lhs     = id,
+    id_rhs     = id,
+    strategy   = strategy,
+    weights    = weights
+  )
   
   # Remove self matches
-  joined <- joined[joined[[id]] != joined[[id2]]]
-  
-  scored <- joined[
-    , .(score = sum(rIP * weight, na.rm = TRUE)),
-    by = c(id, id2)
-  ]
+  scored <- scored[lhs_id != rhs_id]
   
   # Apply threshold
   thr <- strategy@threshold
@@ -283,18 +331,15 @@ method(
     ))
   }
   
-  # --- 6. Build connected components (robust edges) ------------------------
+  # --- 5. Connected components ----------------------------------------------
   edges <- scored[, .(
-    from = .SD[[1]],
-    to   = .SD[[2]]
-  ), .SDcols = c(id, id2)]
+    from = lhs_id,
+    to   = rhs_id
+  )]
   
-  
-  # Mirror edges for safety
   edges <- rbind(edges, edges[, .(from = to, to = from)])
   
-  # Ensure all nodes included
-  all_ids <- unique(c(tokens[[id]]))
+  all_ids <- unique(tokens[[id]])
   
   g <- igraph::graph_from_data_frame(edges, directed = FALSE, vertices = all_ids)
   comp <- igraph::components(g)
@@ -304,10 +349,10 @@ method(
     duplicate_group = unname(comp$membership)
   )
   
-  # --- 7. Insert scores & ranks -------------------------------------------
+  # --- 6. Scores and ranks --------------------------------------------------
   scored_long <- rbindlist(list(
-    scored[, .(id = get(id),  score)],
-    scored[, .(id = get(id2), score)]
+    scored[, .(id = lhs_id, score)],
+    scored[, .(id = rhs_id, score)]
   ))
   
   best <- scored_long[
@@ -318,10 +363,9 @@ method(
   result <- membership_dt[best, on = "id"]
   
   result[, rank := rank(-score, ties.method = "first"), by = duplicate_group]
+  setkeyv(result, c("duplicate_group", "rank"))
   
-  data.table::setkeyv(result, c("duplicate_group", "rank"))
-  
-  # ---8. Attach original data -----------------------------------------------
+  # --- 7. Attach original data ----------------------------------------------
   result <- merge(
     result,
     dt,
@@ -333,6 +377,7 @@ method(
   
   result[]
 }
+
 
 # Method: deduplicate_table 
 #------------------------------------------------------------------------------
@@ -346,7 +391,7 @@ method(
     stop(sprintf("ID '%s' not found in base_table", col), call. = FALSE)
   }      
   duplicate_ids <- duplicates[rank!=1L,]$id
-  to_remove <- dt[[id]] %in% duplicate_ids
+  to_remove <- as.character(dt[[id]]) %in% duplicate_ids
   
   dt[!to_remove,][]
 }
@@ -367,17 +412,17 @@ method(
   # --- 0. Copy inputs -------------------------------------------------------
   base_dt   <- data.table::copy(base_table)
   target_dt <- data.table::copy(target_table)
-  
-  block_by <- strategy@block_by %||% character()
+  base_dt[[base_id]]     <- as.character(base_dt[[base_id]])
+  target_dt[[target_id]] <- as.character(target_dt[[target_id]])
   
   # --- 1. Prepare token tables ----------------------------------------------
-  base_tokens <- prepare_search_data(base_dt,   base_id,   strategy)
+  base_tokens <- prepare_search_data(base_dt, base_id, strategy)
   base_tokens[, side := "base"]
   
   target_tokens <- prepare_search_data(target_dt, target_id, strategy)
   target_tokens[, side := "target"]
   
-  # Add a unified key for side-specific IDs
+  # unified id per side
   base_tokens[, uid := base_tokens[[base_id]]]
   target_tokens[, uid := target_tokens[[target_id]]]
   
@@ -388,7 +433,7 @@ method(
     all_tokens <- all_tokens[rarity >= strategy@min_rarity]
   }
   
-  # Split back
+  # split back
   base_tokens   <- all_tokens[side == "base"]
   target_tokens <- all_tokens[side == "target"]
   
@@ -408,37 +453,23 @@ method(
     stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
   }
   
-  base_tokens[, weight := weights[src_column]]
-  target_tokens[, weight := weights[src_column]]
+  # --- 4. Compute pairwise similarity ---------------------------------------
+  # All rIP, smoothing, joins, and weighting are delegated to the helper
+  scored <- .score_token_pairs(
+    lhs_tokens = base_tokens,
+    rhs_tokens = target_tokens,
+    id_lhs     = "uid",
+    id_rhs     = "uid",
+    strategy   = strategy,
+    weights    = weights
+  )
   
-  # --- 4. Compute rIP per record × column -----------------------------------
-  base_tokens[,  rIP := rarity / sum(rarity), by = .(uid, src_column)]
-  target_tokens[, rIP := rarity / sum(rarity), by = .(uid, src_column)]
-  
-  # --- 5. Cross-table join on shared tokens (respecting block_by) ------------
-  by_cols <- c("src_column", "token", block_by)
-  
-  rhs <- target_tokens[, c("uid", "row_id", "src_column", "token", block_by), with = FALSE]
-  data.table::setnames(rhs, "uid",    "uid2")
-  data.table::setnames(rhs, "row_id", "row_id2")
-  
-  joined <- base_tokens[
-    rhs,
-    on = by_cols,
-    allow.cartesian = TRUE,
-    nomatch = 0L
-  ]
-  
-  # --- 6. Compute pairwise similarity ----------------------------------------
-  scored <- joined[
-    , .(score = sum(rIP * weight, na.rm = TRUE)),
-    by = .(uid, uid2)
-  ]
-  
+  # Apply threshold
   thr <- strategy@threshold
   if (is.null(thr)) stop("Strategy must define a threshold.")
   scored <- scored[score >= thr]
   
+  # No matches
   if (nrow(scored) == 0) {
     return(data.table(
       match_id = integer(),
@@ -449,16 +480,16 @@ method(
     ))
   }
   
-  # --- 7. Assign match IDs ---------------------------------------------------
+  # --- 5. Assign match IDs ---------------------------------------------------
   scored[, match_id := .I]
   
-  # --- 8. Expand to long form (base + target rows per match) -----------------
+  # --- 6. Expand to long form ------------------------------------------------
   long <- rbindlist(list(
-    scored[, .(match_id, score, source = "base",   id = uid)],
-    scored[, .(match_id, score, source = "target", id = uid2)]
+    scored[, .(match_id, score, source = "base",   id = lhs_id)],
+    scored[, .(match_id, score, source = "target", id = rhs_id)]
   ))
   
-  # --- 9. Attach original base and target metadata ---------------------------
+  # --- 7. Attach original data ------------------------------------------------
   base_dt2   <- data.table::copy(base_dt)
   target_dt2 <- data.table::copy(target_dt)
   
@@ -483,17 +514,14 @@ method(
   
   out <- rbindlist(list(base_long, target_long), use.names = TRUE, fill = TRUE)
   
-  # --- 10. Rank within match_id ---------------------------------------------
+  # --- 8. Rank within match --------------------------------------------------
   out[, rank := rank(-score, ties.method = "first"), by = match_id]
-  
-  # Standardize ordering
   data.table::setorder(out, match_id, source, rank)
   
   out[]
 }
 
-
-# Method: extract_unmatched
+# Method: extract_unmatched 
 #------------------------------------------------------------------------------
 method(
   extract_unmatched,
@@ -509,12 +537,14 @@ method(
     stop("`matches` must contain a column named 'id'", call. = FALSE)
   }
   
+  # normalize types
+  dt[[id]]      <- as.character(dt[[id]])
+  matches[, id := as.character(id)]
+  
   matched_ids <- unique(matches[["id"]])
   
-  # keep rows whose ID is NOT in matched_ids
-  dt[!(dt[[id]] %in% matched_ids), ][]
+  dt[!(dt[[id]] %in% matched_ids)]
 }
-
 
 # Method: multi_stage_match
 #------------------------------------------------------------------------------
@@ -614,7 +644,6 @@ method(
   list(DT_tbl, class_character, Search_Strategy, class_character)
 ) <- function(data, id, strategy, column) {
   dt <- data.table::copy(data)
-  
   # --- Validate inputs -----------------------------------------------------
   if (!id %in% names(dt)) {
     stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
