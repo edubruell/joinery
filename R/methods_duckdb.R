@@ -1,12 +1,10 @@
-if (requireNamespace("duckdb", quietly = TRUE) &&
-    requireNamespace("DBI", quietly = TRUE) &&
-    requireNamespace("dplyr", quietly = TRUE)) {
-    return(invisible(NULL))
+if (!requireNamespace("duckdb", quietly = TRUE) ||
+    !requireNamespace("DBI", quietly = TRUE) ||
+    !requireNamespace("dplyr", quietly = TRUE)) {
+  return(invisible(NULL))
 }
 
 Duck_tbl <- new_S3_class("tbl_duckdb_connection")
-
-
 
 # Internal: Score token pairs with optional Phase 3 features
 #------------------------------------------------------------------------------

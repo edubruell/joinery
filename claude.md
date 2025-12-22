@@ -1,21 +1,5 @@
 # 📦 joinery — Developer / Coding-Agent Guide
 
-## Current Development Stage
-
-**Phase 0.3 (SearchEngine Heuristics) — COMPLETE ✅**
-
-All Phase 3 features are implemented and tested across both backends:
-- **rIP Smoothing** — log, softmax, and offset smoothing methods prevent over-dominance of rare tokens
-- **Containment** — `max_candidates` limits matches per record, preventing one-token overmatching
-- **Feedback Weighting** — penalizes low token overlap, reduces noise in partial matches
-- **Unified SQL helper** — `.score_pairs_sql()` centralizes scoring logic for DuckDB backend
-
-Both data.table and DuckDB backends support all Phase 3 features with full test coverage.
-
-**Next Phase:** 0.4 (Step_Feature Infrastructure) — IR upgrade to support non-token similarity metrics (embeddings, geo-distance, etc.).
-
----
-
 ## Overview
 
 **joinery** is a heuristic, token-based record linkage system for R.
@@ -30,6 +14,17 @@ The package is built on the **S7 class system**, separating linkage into:
 
 1. **A declarative search strategy** — defines *how* text fields should be normalized, tokenized, encoded, weighted, scored, and blocked.
 2. **Backend-specific execution** — defines *how* data is matched using the IR.
+
+## Current Development Stage
+
+**Phase 0.3 (SearchEngine Heuristics) — COMPLETE ✅**
+
+All Phase 3 features are implemented and tested across both backends:
+- **rIP Smoothing** — log, softmax, and offset smoothing methods prevent over-dominance of rare tokens
+- **Containment** — `max_candidates` limits matches per record, preventing one-token overmatching
+- **Feedback Weighting** — penalizes low token overlap, reduces noise in partial matches
+
+**Next Phase:** 0.4 (Step_Feature Infrastructure) — IR upgrade to support non-token similarity metrics (embeddings, geo-distance, etc.).
 
 ## Core S7 Classes
 

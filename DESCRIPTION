@@ -23,6 +23,7 @@ Collate:
     'import-standalone-obj-type.R'
     'utilities.R'
     'search_strategy.R'
+    'embedding_strategy.R'
     'generics.R'
     'methods_datatable.R'
     'methods_tibble.R'
@@ -42,4 +43,5 @@ Suggests:
     duckdb,
     DBI,
     dbplyr,
-    dplyr
+    dplyr,
+    tidyllm

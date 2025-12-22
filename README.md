@@ -13,6 +13,27 @@ The package is  inspired by the ideas behind Thorsten Doherr’s **searchengine*
 
 Like good woodworking, the goal is to make the joins clean, without reaching for the mallet.
 
+## How joinery differs from classical record linkage
+
+Most record linkage tools rely on edit distances or probabilistic pairwise comparison after blocking. This works well for clean data and short strings, but often breaks down for messy administrative data where rare tokens matter more than character-level similarity.
+
+**joinery** follows a different paradigm inspired by Doherr’s *SearchEngine*:
+
+- Matching is framed as **search and candidate retrieval**, not exhaustive pairwise comparison.
+- Records are decomposed into tokens weighted by their **informativeness (rarity)**.
+- Similarity comes from **overlap of informative tokens**, not string distance.
+- Candidate generation and scoring are the same operation.
+- Matching is **directional**; one table defines token frequencies, the other provides search queries.
+
+This approach works especially well when:
+- Names are long, noisy, or inconsistently formatted.
+- Rare identifiers should dominate common boilerplate terms.
+- No labeled training data is available.
+- Matching proceeds in multiple, increasingly tolerant stages.
+
+joinery is not a drop-in replacement for probabilistic linkage engines. It is a complementary tool for **transparent, strategy-driven matching** where robustness and explainability matter more than calibrated match probabilities.
+
+
 ## Installation
 
 ```r

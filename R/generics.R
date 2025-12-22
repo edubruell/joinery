@@ -209,3 +209,46 @@ inspect_tokens <- function(data, id, strategy, column) {
 }
 
 
+# ============================================================
+# Embedding-Specific Generics (tidyllm-dependent)
+# ============================================================
+
+#' Compute Embeddings for Records
+#'
+#' @description
+#' Compute embedding vectors for records using an `Embedding_Strategy`.
+#' This is a backend-specific generic that handles data retrieval,
+#' text assembly, and embedding computation via tidyllm.
+#'
+#' @param data A data.frame / tibble / data.table (or db table in other backends).
+#' @param id Character scalar naming the ID column in `data`.
+#' @param strategy An `Embedding_Strategy` object specifying columns,
+#'   embedding model, and normalization settings.
+#'
+#' @return A backend-specific table with columns: `id` and `embedding`
+#'   (where `embedding` contains numeric vectors).
+#'
+#' @export
+compute_embeddings <- new_generic(
+  "compute_embeddings",
+  c("data", "id", "strategy")
+)
+
+#' Score Embedding Pairs Using Cosine Similarity
+#'
+#' @description
+#' Compute cosine similarity scores between base and target embeddings.
+#' This is a pure scoring function that operates on pre-computed embeddings.
+#'
+#' @param base_embeddings A table with columns: `id` and `embedding`.
+#' @param target_embeddings A table with columns: `id` and `embedding`.
+#' @param strategy An `Embedding_Strategy` object (used for normalization settings).
+#'
+#' @return A backend-specific table with columns: `base_id`, `target_id`, `score`.
+#'
+#' @export
+score_embeddings <- new_generic(
+  "score_embeddings",
+  c("base_embeddings", "target_embeddings", "strategy")
+)
+
