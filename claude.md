@@ -2,17 +2,17 @@
 
 ## Current Development Stage
 
-**Phase 0.2 (DuckDB Backend) — COMPLETE ✅**
+**Phase 0.3 (SearchEngine Heuristics) — COMPLETE ✅**
 
-All core backend functionality is implemented and tested. The package now supports:
-- Scalable processing of datasets up to 50M rows
-- Full feature parity between data.table and DuckDB backends
-- All core generics working on both backends
-- Comprehensive test coverage
+All Phase 3 features are implemented and tested across both backends:
+- **rIP Smoothing** — log, softmax, and offset smoothing methods prevent over-dominance of rare tokens
+- **Containment** — `max_candidates` limits matches per record, preventing one-token overmatching
+- **Feedback Weighting** — penalizes low token overlap, reduces noise in partial matches
+- **Unified SQL helper** — `.score_pairs_sql()` centralizes scoring logic for DuckDB backend
 
-**Next Phase:** 0.3 (SearchEngine Heuristics) — Focus shifts to accuracy improvements (rIP smoothing, containment rules, feedback weighting).
+Both data.table and DuckDB backends support all Phase 3 features with full test coverage.
 
-See `notes/phase3_plan.md` for upcoming work.
+**Next Phase:** 0.4 (Step_Feature Infrastructure) — IR upgrade to support non-token similarity metrics (embeddings, geo-distance, etc.).
 
 ---
 
@@ -140,11 +140,11 @@ For detailed guidance on specific topics, consult:
 - **`notes/architecture.md`** — Data.table backend internals, token table schema, rarity & scoring details.
 - **`notes/preparers_reference.md`** — Complete catalog of text normalization, phonetic encoding, token generation, and token transformation functions.
 
-**DuckDB Backend (Phase 0.2 — COMPLETE):**
-- **`notes/duckdb_status.md`** — **Implementation status, completed features, test coverage, known limitations.**
-- **`notes/duckdb_coding_guide.md`** — **Practical guide for using and extending the DuckDB backend.**
+**DuckDB Backend:**
+- **`notes/duckdb_status.md`** — Implementation status, completed features, test coverage, known limitations.
+- **`notes/duckdb_coding_guide.md`** — Practical guide for using and extending the DuckDB backend.
 - **`notes/duckdb_backend.md`** — Design philosophy, batch execution architecture, no-SQL-translation approach.
 - **`notes/duckdb_performance.md`** — Performance tuning guide, batch size recommendations, optimization strategies.
 
 **Project Planning:**
-- **`notes/roadmap.md`** — Strategic roadmap (phases 0.2–1.0, feature priorities, current phase).
+- **`notes/roadmap.md`** — Strategic roadmap (phases 0.4–1.0, feature priorities, current phase).

@@ -253,11 +253,40 @@ method(
     nomatch = 0L
   ]
   
-  # Aggregate pairwise score
-  scored <- joined[
-    , .(score = sum(rIP * weight, na.rm = TRUE)),
-    by = .(lhs_id = get(id_lhs), rhs_id)
-  ]
+  # Compute scores with optional feedback adjustment
+  if (strategy@feedback_strength > 0) {
+    # Need total rIP per LHS record for overlap calculation
+    total_rip <- lhs_tokens[
+      , .(total_rip = sum(rIP)),
+      by = c(id_lhs)
+    ]
+    
+    # Compute raw score and matched rIP
+    scored <- joined[
+      , .(
+        raw_score = sum(rIP * weight, na.rm = TRUE),
+        matched_rip = sum(rIP, na.rm = TRUE)
+      ),
+      by = .(lhs_id = get(id_lhs), rhs_id)
+    ]
+    
+    # Join total rIP
+    scored <- merge(scored, total_rip, by.x = "lhs_id", by.y = id_lhs, all.x = TRUE)
+    
+    # Compute overlap share and adjusted score
+    s <- strategy@feedback_strength
+    scored[, overlap_share := matched_rip / total_rip]
+    scored[, score := raw_score * (1 - s * (1 - overlap_share))]
+    
+    # Clean up intermediate columns
+    scored[, c("raw_score", "matched_rip", "total_rip", "overlap_share") := NULL]
+  } else {
+    # Standard scoring without feedback
+    scored <- joined[
+      , .(score = sum(rIP * weight, na.rm = TRUE)),
+      by = .(lhs_id = get(id_lhs), rhs_id)
+    ]
+  }
   
   scored[]
 }
@@ -321,6 +350,15 @@ method(
   thr <- strategy@threshold
   if (is.null(thr)) stop("Strategy must define a threshold.")
   scored <- scored[score >= thr]
+  
+  # Apply containment limit
+  if (is.finite(strategy@max_candidates)) {
+    scored <- scored[
+      order(-score),
+      head(.SD, strategy@max_candidates),
+      by = lhs_id
+    ]
+  }
   
   if (nrow(scored) == 0L) {
     return(data.table(
@@ -468,6 +506,15 @@ method(
   thr <- strategy@threshold
   if (is.null(thr)) stop("Strategy must define a threshold.")
   scored <- scored[score >= thr]
+  
+  # Apply containment limit
+  if (is.finite(strategy@max_candidates)) {
+    scored <- scored[
+      order(-score),
+      head(.SD, strategy@max_candidates),
+      by = lhs_id
+    ]
+  }
   
   # No matches
   if (nrow(scored) == 0) {

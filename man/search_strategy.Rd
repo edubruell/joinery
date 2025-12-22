@@ -10,14 +10,17 @@ search_strategy(
   weights = numeric(),
   rarity = "inverse_freq",
   min_rarity = 0,
-  threshold = 0.9
+  threshold = 0.9,
+  smoothing = smooth_rip_identity(),
+  max_candidates = Inf,
+  feedback_strength = 0
 )
 }
 \arguments{
-\item{...}{Two-sided formulas of the form `column ~ preprocessing_steps`.
-The left-hand side names the column; the right-hand side contains one or
-more function calls to apply in sequence (e.g., 
-`name ~ normalize_text + word_tokens(min_nchar = 3)`).}
+\item{...}{Two sided formulas of the form `column ~ preprocessing_steps`.
+The left hand side names the column; the right hand side contains one or
+more function calls to apply in sequence (for example
+`name ~ normalize_text() + word_tokens(min_nchar = 3)`).}
 
 \item{block_by}{Optional character vector of column names to use for blocking.
 Candidate searches will be restricted to records sharing the same blocking
@@ -33,14 +36,27 @@ Default is `"inverse_freq"`.}
 for a token to be included in similarity scoring. Tokens with rarity below
 this threshold are filtered out. Default is `0`.}
 
-\item{threshold}{Numeric scalar specifying the minimum relative indentification 
+\item{threshold}{Numeric scalar specifying the minimum relative identification
 potential required for two records to be considered matches. Default is `0.9`.}
+
+\item{smoothing}{A [Smoothing] object created by one of the
+[smooth_rip] helpers that controls how rIP values are smoothed before
+scoring. Default is [smooth_rip_identity()].}
+
+\item{max_candidates}{Numeric scalar specifying the maximum number of candidate
+matches to retain per record. Default is `Inf` (no limit). When finite,
+only the top `max_candidates` highest scoring matches are kept per record.}
+
+\item{feedback_strength}{Numeric scalar controlling feedback weighted scoring.
+Default is `0` (disabled). Positive values adjust scores based on the
+proportion of matched tokens.}
 }
 \value{
-A `Search_Strategy` object.
+A [Search_Strategy] object.
 }
 \description{
-Creates a `Search_Strategy` object that specifies how columns should be
-preprocessed for token-index-based record linkage, along with optional weights,
-blocking variables, rarity computation method, and similarity threshold.
+Creates a [Search_Strategy] object that specifies how columns should be
+preprocessed for token index based record linkage, along with optional
+weights, blocking variables, rarity computation method, rIP smoothing,
+and similarity threshold.
 }

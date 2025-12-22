@@ -310,10 +310,15 @@ smooth_rip_softmax <- function(temperature = 1) {
 #' @slot rarity    A character scalar describing the rarity method.
 #' @slot threshold  A numeric scalar containing the match or deduplication threshold
 #' @slot min_rarity  Numeric scalar between 0 and Inf.
+#'   Tokens with rarity below this value are removed before scoring.
 #' @slot smoothing A [Smoothing] object describing how rIP should be smoothed
 #'   within each record and column before scoring.
-#' 
-#'   Tokens with rarity below this value are removed before scoring.
+#' @slot max_candidates Numeric scalar specifying the maximum number of candidate
+#'   matches to retain per record. Default is `Inf` (no limit). When finite,
+#'   only the top `max_candidates` highest scoring matches are kept.
+#' @slot feedback_strength Numeric scalar controlling feedback weighted scoring.
+#'   Default is `0` (disabled). Positive values adjust scores based on token
+#'   overlap patterns.
 #'
 #' @seealso [search_strategy()]
 #'
@@ -326,7 +331,9 @@ Search_Strategy <- new_class("Search_Strategy",
                                rarity    = class_character,
                                threshold = class_numeric,
                                min_rarity = class_any,
-                               smoothing = Smoothing
+                               smoothing = Smoothing,
+                               max_candidates = class_numeric,
+                               feedback_strength = class_numeric
                              )
 )
 
@@ -434,6 +441,20 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
   thr <- x@threshold
   cli::cli_text("threshold: {if (is.null(thr)) 'none' else format(thr)}")
   
+  # max_candidates
+  if (is.finite(x@max_candidates)) {
+    cli::cli_text("max_candidates: {format(x@max_candidates)}")
+  } else {
+    cli::cli_text("max_candidates: none")
+  }
+  
+  # feedback_strength
+  if (x@feedback_strength > 0) {
+    cli::cli_text("feedback_strength: {format(x@feedback_strength)}")
+  } else {
+    cli::cli_text("feedback_strength: none")
+  }
+  
   invisible(x)
 }
 
@@ -497,6 +518,12 @@ expr_to_step <- function(expr) {
 #' @param smoothing A [Smoothing] object created by one of the
 #'   [smooth_rip] helpers that controls how rIP values are smoothed before
 #'   scoring. Default is [smooth_rip_identity()].
+#' @param max_candidates Numeric scalar specifying the maximum number of candidate
+#'   matches to retain per record. Default is `Inf` (no limit). When finite,
+#'   only the top `max_candidates` highest scoring matches are kept per record.
+#' @param feedback_strength Numeric scalar controlling feedback weighted scoring.
+#'   Default is `0` (disabled). Positive values adjust scores based on the
+#'   proportion of matched tokens.
 #'
 #' @return A [Search_Strategy] object.
 #'
@@ -507,7 +534,9 @@ search_strategy <- function(...,
                             rarity     = "inverse_freq",
                             min_rarity = 0,
                             threshold  = 0.9,
-                            smoothing  = smooth_rip_identity()) {
+                            smoothing  = smooth_rip_identity(),
+                            max_candidates = Inf,
+                            feedback_strength = 0) {
   
   if (!is.numeric(min_rarity)) {
     rlang::abort("`min_rarity` must be numeric.")
@@ -515,6 +544,14 @@ search_strategy <- function(...,
   
   if (!S7_inherits(smoothing, Smoothing)) {
     rlang::abort("`smoothing` must be a `Smoothing` object created by a smooth_rip_*() helper.")
+  }
+  
+  if (!is.numeric(max_candidates) || length(max_candidates) != 1L || max_candidates <= 0) {
+    rlang::abort("`max_candidates` must be a single positive numeric value.")
+  }
+  
+  if (!is.numeric(feedback_strength) || length(feedback_strength) != 1L || feedback_strength < 0) {
+    rlang::abort("`feedback_strength` must be a single non-negative numeric value.")
   }
   
   fmls <- rlang::list2(...)
@@ -567,6 +604,8 @@ search_strategy <- function(...,
     rarity     = rarity,
     threshold  = threshold,
     min_rarity = min_rarity,
-    smoothing  = smoothing
+    smoothing  = smoothing,
+    max_candidates = max_candidates,
+    feedback_strength = feedback_strength
   )
 }

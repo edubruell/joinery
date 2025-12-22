@@ -6,6 +6,8 @@
 \alias{joinery-package}
 \title{joinery: Heuristic Index-Based Record Linkage in R}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Index-based heuristic record linkage for R.
 }
 \author{
