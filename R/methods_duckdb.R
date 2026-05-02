@@ -302,18 +302,22 @@ method(
       bm25 = "LOG((N - df + 0.5) / (df + 0.5))",
       stop("Unknown rarity method: ", rarity_method)
     )
-    
-    sql <- paste(
-      "SELECT",
-      "  *,",
-      paste0("  COUNT(*) OVER (PARTITION BY src_column, token", block_cols_prefixed, ") AS freq,"),
-      paste0("  COUNT(DISTINCT row_id) OVER (PARTITION BY src_column, token", block_cols_prefixed, ") AS df,"),
-      paste0("  COUNT(DISTINCT row_id) OVER (PARTITION BY src_column", block_cols_prefixed, ") AS N,"),
-      paste0("  ", rarity_expr, " AS rarity"),
-      "FROM", table
+
+    # Two-level SQL: inner query computes freq/df/N as window functions; outer
+    # query applies the rarity formula. This avoids DuckDB's prohibition on
+    # nested window function calls (e.g. SUM(freq) OVER (...) where freq is
+    # itself a window function result, as in tfidf).
+    sql <- paste0(
+      "SELECT *, ", rarity_expr, " AS rarity\n",
+      "FROM (\n",
+      "  SELECT *,\n",
+      "    COUNT(*) OVER (PARTITION BY src_column, token", block_cols_prefixed, ") AS freq,\n",
+      "    COUNT(DISTINCT row_id) OVER (PARTITION BY src_column, token", block_cols_prefixed, ") AS df,\n",
+      "    COUNT(DISTINCT row_id) OVER (PARTITION BY src_column", block_cols_prefixed, ") AS N\n",
+      "  FROM ", table, "\n",
+      ") AS _inner"
     )
-    
-    
+
     temp_table <- paste0(table, "_rewrite_", sample.int(1e9, 1))
     
     DBI::dbExecute(con, paste0("CREATE TABLE ", temp_table, " AS ", sql))
@@ -348,12 +352,21 @@ method(
   list(Duck_tbl, class_character, Search_Strategy)
 ) <- function(base_table, id, strategy, weights = NULL, base_tokens = NULL,
               debug = FALSE) {
-  
+
   con <- base_table$src$con
   id_q <- sprintf('"%s"', id)
-  
+
   tmp <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))
-  
+
+  # Allow callers to supply a pre-computed data.frame/data.table token table
+  # (e.g. from the data.table backend) instead of a DuckDB tbl. Used in
+  # tests to bypass batch preprocessing and exercise the SQL scoring paths.
+  if (!is.null(base_tokens) && !inherits(base_tokens, "tbl_duckdb_connection")) {
+    tmp_tok <- paste0("_joinery_tokens_", sample.int(1e9, 1))
+    DBI::dbWriteTable(con, tmp_tok, as.data.frame(base_tokens))
+    base_tokens <- dplyr::tbl(con, tmp_tok)
+  }
+
   # ----------------------------------------------------------
   # 1. Prepare tokens and compute rarity
   # ----------------------------------------------------------
@@ -444,7 +457,7 @@ method(
     "CREATE TEMP TABLE ", comp_tbl, " AS\n",
     "WITH RECURSIVE cc AS (\n",
     "  SELECT a AS node, a AS label FROM ", edges_tbl, "\n",
-    "  UNION ALL\n",
+    "  UNION\n",
     "  SELECT e.b AS node, MIN(cc.label) AS label\n",
     "  FROM ", edges_tbl, " e\n",
     "  JOIN cc ON e.a = cc.node\n",
@@ -593,18 +606,31 @@ method(
   con <- base_table$src$con
   base_id_q   <- sprintf('"%s"', base_id)
   target_id_q <- sprintf('"%s"', target_id)
-  
+
   block_by <- strategy@block_by %||% NULL
   tmp <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))
-  
-  
+
+  # Allow callers to supply pre-computed data.frame/data.table token tables
+  # instead of tbl_duckdb_connection objects. Used in tests to bypass batch
+  # preprocessing and exercise the SQL scoring paths directly.
+  if (!is.null(base_tokens) && !inherits(base_tokens, "tbl_duckdb_connection")) {
+    tmp_tok <- paste0("_joinery_tokens_", sample.int(1e9, 1))
+    DBI::dbWriteTable(con, tmp_tok, as.data.frame(base_tokens))
+    base_tokens <- dplyr::tbl(con, tmp_tok)
+  }
+  if (!is.null(target_tokens) && !inherits(target_tokens, "tbl_duckdb_connection")) {
+    tmp_tok <- paste0("_joinery_tokens_", sample.int(1e9, 1))
+    DBI::dbWriteTable(con, tmp_tok, as.data.frame(target_tokens))
+    target_tokens <- dplyr::tbl(con, tmp_tok)
+  }
+
   #----------------------------------------------------------
   # 1. Prepare tokens for base and target
   #----------------------------------------------------------
   base_tokens <- if (is.null(base_tokens)) {
     base_table |> prepare_search_data(base_id, strategy)
   } else base_tokens
-  
+
   target_tokens <- if (is.null(target_tokens)) {
     target_table |> prepare_search_data(target_id, strategy)
   } else target_tokens
@@ -969,9 +995,10 @@ method(
     names(strategies) <- paste0("strategy_", seq_along(strategies))
   }
   
-  # Ensure all elements are Search_Strategy
-  c("strategies must be a list of Search_Strategy objects" = 
-      is.list(strategies) && all(sapply(strategies, S7_inherits, Search_Strategy))
+  # Ensure all elements are Search_Strategy or Embedding_Strategy
+  valid_strategy <- function(s) S7_inherits(s, Search_Strategy) || S7_inherits(s, Embedding_Strategy)
+  c("strategies must be a list of Search_Strategy or Embedding_Strategy objects" =
+      is.list(strategies) && all(sapply(strategies, valid_strategy))
   ) |> validate_inputs()
   
   # ---- PREP ----------------------------------------------------------------
