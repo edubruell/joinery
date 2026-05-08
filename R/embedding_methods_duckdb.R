@@ -212,7 +212,7 @@ method(
 
   block_by <- strategy@block_by
   block_conditions <- if (!is.null(block_by) && length(block_by) > 0) {
-    sprintf("AND b.\"%s\" = t.\"%s\"", block_by, block_by)
+    sprintf("b.\"%s\" = t.\"%s\"", block_by, block_by)
   } else character(0L)
 
   #----------------------------------------------------------
@@ -398,7 +398,7 @@ method(
 
   block_by <- strategy@block_by
   block_conditions <- if (!is.null(block_by) && length(block_by) > 0) {
-    sprintf("AND a.\"%s\" = b.\"%s\"", block_by, block_by)
+    sprintf("a.\"%s\" = b.\"%s\"", block_by, block_by)
   } else character(0L)
 
   #----------------------------------------------------------
