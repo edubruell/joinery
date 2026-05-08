@@ -1058,18 +1058,30 @@ method(
       
       all_matches[[stage_name]] <- staged_tbl
       
+      # Materialize per-side filters into temp tables so extract_unmatched()
+      # receives a real backing table (it inspects the lazy_query$x name via
+      # PRAGMA table_info, which fails on composed lazy queries).
+      base_match_tbl   <- tmp("_joinery_tmp_stage_base")
+      target_match_tbl <- tmp("_joinery_tmp_stage_target")
+      DBI::dbExecute(con, paste0(
+        "CREATE TEMP TABLE ", base_match_tbl,
+        " AS SELECT * FROM ", staged_tbl, " WHERE source = 'base';"
+      ))
+      DBI::dbExecute(con, paste0(
+        "CREATE TEMP TABLE ", target_match_tbl,
+        " AS SELECT * FROM ", staged_tbl, " WHERE source = 'target';"
+      ))
+
       # Remove matched rows (per side)
       base_res <- extract_unmatched(
-        base_res,
-        base_id,
-        dplyr::tbl(con, staged_tbl) |> dplyr::filter(source == "base")
+        base_res, base_id, dplyr::tbl(con, base_match_tbl)
       )
-      
       target_res <- extract_unmatched(
-        target_res,
-        target_id,
-        dplyr::tbl(con, staged_tbl) |> dplyr::filter(source == "target")
+        target_res, target_id, dplyr::tbl(con, target_match_tbl)
       )
+
+      DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", base_match_tbl, ";"))
+      DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", target_match_tbl, ";"))
       
       # Check if either side is empty
       base_tbl <- base_res$lazy_query$x
