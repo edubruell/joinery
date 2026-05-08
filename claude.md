@@ -1,4 +1,4 @@
-# 📦 joinery — Developer / Coding-Agent Guide
+# joinery — Developer / Coding-Agent Guide
 
 ## Overview
 
@@ -17,14 +17,27 @@ The package is built on the **S7 class system**, separating linkage into:
 
 ## Current Development Stage
 
-**Phase 0.3 (SearchEngine Heuristics) — COMPLETE ✅**
+**Phase 0.3 (SearchEngine Heuristics) is complete.**
+**Phase 0.4 (Test Coverage Hardening) is complete.**
 
-All Phase 3 features are implemented and tested across both backends:
+The current work is **embedding implementation design** for the next phase.
+
+Implemented Phase 0.3 features:
 - **rIP Smoothing** — log, softmax, and offset smoothing methods prevent over-dominance of rare tokens
 - **Containment** — `max_candidates` limits matches per record, preventing one-token overmatching
 - **Feedback Weighting** — penalizes low token overlap, reduces noise in partial matches
 
-**Next Phase:** 0.4 (Step_Feature Infrastructure) — IR upgrade to support non-token similarity metrics (embeddings, geo-distance, etc.).
+Current priority:
+- Raise package test coverage substantially before starting embeddings.
+- Prefer normal `testthat` tests for deterministic unit and integration behavior.
+- Put genuinely long-running or large-data checks in `local_tests/`, not in CRAN/package tests.
+- Treat `R/generics.R` coverage as structurally unimportant; S7 generic definitions are covered through backend methods.
+- Current coverage baseline (2026-04-29): `preparers.R` 99%, `batch_duckdb.R` 87%, `utilities.R` 64%, `methods_datatable.R` 60%, `search_strategy.R` 42%, `methods_duckdb.R` 34%, `methods_tibble.R` 13%, `embedding_strategy.R` 0%.
+- Primary remaining gap: `R/methods_duckdb.R` (34%) — rarity methods, smoothing variants, empty-result schemas, and error paths need coverage parity with the data.table backend.
+- Secondary gap: `R/search_strategy.R` (42%) — S7 class definition boilerplate limits the ceiling; focus on any remaining validation or constructor branches not yet tested.
+- `R/methods_tibble.R` is intentionally low (~13%); embedding dispatch paths require `tidyllm` and are out of scope until embeddings are undeferred.
+
+Embeddings are deferred until coverage improves. See `notes/roadmap.md` and `notes/test_coverage_plan.md` for planning details.
 
 ## Core S7 Classes
 
@@ -127,6 +140,15 @@ rank
 - **Output must follow the schemas above.**
 - **Multi-stage matching is sequential** — matches → extract residuals → next strategy.
 
+## Testing Policy
+
+- Run normal package tests with `Rscript -e "devtools::test()"`.
+- Run coverage with `Rscript -e "covr::package_coverage()"` when `covr` is installed.
+- Add ordinary `testthat` tests for small deterministic cases, validation errors, backend parity, scoring branches, and output schemas.
+- Do not put large DuckDB jobs, stress tests, provider-dependent embedding tests, or expensive benchmarks in `tests/testthat/`.
+- Put those larger checks in `local_tests/`; they are intentionally local and excluded from package builds/checks via `.Rbuildignore`.
+- Keep `examples/`, `localwip/`, `notes/`, and `joinery.Rproj` local unless explicitly requested otherwise.
+
 ## Reference Documentation
 
 For detailed guidance on specific topics, consult:
@@ -143,3 +165,5 @@ For detailed guidance on specific topics, consult:
 
 **Project Planning:**
 - **`notes/roadmap.md`** — Strategic roadmap (phases 0.4–1.0, feature priorities, current phase).
+- **`notes/test_coverage_plan.md`** — Current coverage-hardening plan and local-test policy.
+- **`notes/embedding_design.md`** — Detailed implementation design for embedding-based matching (Phase 0.4).

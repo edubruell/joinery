@@ -39,28 +39,28 @@ if (requireNamespace("duckdb", quietly = TRUE) &&
   }
   
   
-  #' Compare data.table and DuckDB preparer results
+  #' Prepare token tables via both backends for comparison
   #'
-  #' Helper to test that a preparer produces equivalent results
-  #' across data.table and DuckDB backends.
+  #' Runs prepare_search_data() on small data via the data.table backend and
+  #' sets up a matching DuckDB connection+table. The pre-computed token table
+  #' can then be injected into DuckDB methods via base_tokens= to exercise the
+  #' SQL scoring paths without going through batch preprocessing.
   #'
-  #' @param data Input data frame
-  #' @param preparer_fn Preparer function (e.g., normalize_text)
-  #' @param col Column name to apply preparer to
-  #' @param ... Additional arguments to preparer_fn
-  #' @return List with dt_result and duckdb_result for comparison
-  compare_backends <- function(data, preparer_fn, col, ...) {
-    # data.table result
-    dt_result <- preparer_fn(data[[col]], ...)
-    
-    # DuckDB result (to be implemented as preparers are built)
-    # For now, returns NULL to signal not yet implemented
-    duckdb_result <- NULL
-    
-    list(
-      dt = dt_result,
-      duckdb = duckdb_result
-    )
+  #' @param data Data frame or data.table to process
+  #' @param id Character. ID column name
+  #' @param strategy Search_Strategy object
+  #' @param env Environment for deferred cleanup (default: parent.frame())
+  #' @return List with dt_tokens (data.table), duck_tbl (tbl_duckdb_connection),
+  #'         and con (DuckDB connection)
+  compare_backends <- function(data, id, strategy, env = parent.frame()) {
+    dt_tokens <- prepare_search_data(data.table::as.data.table(data), id, strategy)
+
+    con <- local_duckdb_con(env = env)
+    tbl_name <- paste0("src_", sample.int(1e9, 1))
+    DBI::dbWriteTable(con, tbl_name, as.data.frame(data))
+    duck_tbl <- dplyr::tbl(con, tbl_name)
+
+    list(dt_tokens = dt_tokens, duck_tbl = duck_tbl, con = con)
   }
   
   

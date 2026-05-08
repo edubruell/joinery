@@ -542,6 +542,181 @@ test_that("feedback_strength works in search_candidates", {
   expect_lt(partial_match_fb, partial_match_no_fb)
 })
 
+test_that("compute_rarity() supports tfidf, smoothed_inverse_freq, and bm25", {
+  dt <- data.table(
+    id   = c("R1", "R2", "R3", "R4"),
+    name = c("alpha beta", "alpha gamma", "delta epsilon", "delta zeta")
+  )
+
+  for (m in c("tfidf", "smoothed_inverse_freq", "bm25")) {
+    strat <- search_strategy(
+      name ~ normalize_text() + word_tokens(),
+      rarity    = m,
+      threshold = 0.1
+    )
+    tokens <- prepare_search_data(dt, "id", strat)
+    rar    <- compute_rarity(tokens, strat)
+
+    expect_true(is.numeric(rar$rarity), info = paste("numeric rarity for", m))
+    expect_false(any(is.na(rar$rarity)), info = paste("no NA for", m))
+  }
+
+  # Unknown rarity method errors at compute_rarity() time
+  strat_bad <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    rarity    = "unknown_method",
+    threshold = 0.1
+  )
+  tokens_bad <- prepare_search_data(dt, "id", strat_bad)
+  expect_error(compute_rarity(tokens_bad, strat_bad))
+})
+
+test_that("softmax and offset smoothing produce valid scores", {
+  three_meyers <- data.table(
+    id       = 1:3,
+    Nachname = c("Meyer", "Meier", "Mair"),
+    Kreis    = "A"
+  )
+
+  strat_offset <- search_strategy(
+    Nachname ~ normalize_text() + generate_ngrams(2),
+    block_by  = "Kreis",
+    threshold = 0.1,
+    smoothing = smooth_rip_offset(0.1)
+  )
+  strat_softmax <- search_strategy(
+    Nachname ~ normalize_text() + generate_ngrams(2),
+    block_by    = "Kreis",
+    threshold   = 0.1,
+    smoothing   = smooth_rip_softmax(2.0)
+  )
+
+  res_offset  <- detect_duplicates(three_meyers, "id", strat_offset)
+  res_softmax <- detect_duplicates(three_meyers, "id", strat_softmax)
+
+  expect_true(is.numeric(res_offset$score))
+  expect_false(any(is.na(res_offset$score)))
+  expect_true(is.numeric(res_softmax$score))
+  expect_false(any(is.na(res_softmax$score)))
+})
+
+test_that("detect_duplicates() respects min_rarity threshold", {
+  # All records share "foo" (freq=4, rarity=0.25 with inverse_freq).
+  # Each record has a unique second token, so only "foo" creates token overlap.
+  dt <- data.table(
+    id   = c("A", "B", "C", "D"),
+    name = c("foo baz", "foo qux", "foo abc", "foo def")
+  )
+
+  strat_no_filter <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    threshold  = 0.1,
+    min_rarity = 0
+  )
+  strat_filtered <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    threshold  = 0.1,
+    min_rarity = 0.5   # "foo" has rarity 0.25, below threshold → filtered
+  )
+
+  res_no_filter <- detect_duplicates(dt, "id", strat_no_filter)
+  res_filtered  <- detect_duplicates(dt, "id", strat_filtered)
+
+  # Without filter: "foo" participates, pairs are found
+  expect_gt(nrow(res_no_filter), 0)
+
+  # With filter: "foo" filtered out, no shared tokens remain → no pairs
+  expect_equal(nrow(res_filtered), 0)
+})
+
+test_that("detect_duplicates() returns correct empty schema when no pairs meet threshold", {
+  dt <- data.table(
+    id   = c("A", "B"),
+    name = c("alpha", "omega")
+  )
+  strat <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    threshold = 0.99
+  )
+
+  result <- detect_duplicates(dt, "id", strat)
+
+  expect_equal(nrow(result), 0)
+  expect_true(all(c("duplicate_group", "id", "score", "rank") %in% names(result)))
+  expect_type(result$id, "character")
+  expect_type(result$score, "double")
+  expect_type(result$rank, "integer")
+})
+
+test_that("search_candidates() returns correct empty schema when no pairs meet threshold", {
+  base   <- data.table(id = "A", name = "alpha")
+  target <- data.table(id = "B", name = "omega")
+  strat  <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    threshold = 0.99
+  )
+
+  result <- search_candidates(base, target, "id", "id", strat)
+
+  expect_equal(nrow(result), 0)
+  expect_true(all(c("match_id", "score", "source", "id", "rank") %in% names(result)))
+})
+
+test_that("deduplicate_table() errors when id column is missing", {
+  base <- data.table(id = c("A", "B"), value = 1:2)
+  dups <- data.table(id = "B", duplicate_group = 1L, score = 0.9, rank = 2L)
+
+  expect_error(deduplicate_table(base, dups, "wrong_id"))
+})
+
+test_that("extract_unmatched() errors on bad inputs", {
+  dt      <- data.table(id = c("A", "B"), value = 1:2)
+  matches <- data.table(id = "A")
+
+  # ID column not present in data
+  expect_error(extract_unmatched(dt, "missing_col", matches))
+
+  # matches table has no 'id' column
+  matches_bad <- data.table(wrong_col = "A")
+  expect_error(extract_unmatched(dt, "id", matches_bad))
+})
+
+test_that("multi_stage_match() exits early when stage 1 exhausts residuals", {
+  base   <- data.table(id = c("B1", "B2"), name = c("alpha", "beta"))
+  target <- data.table(id = c("T1", "T2"), name = c("alpha", "beta"))
+
+  strat_exact <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    threshold = 0.5
+  )
+  # Stage 2 should never run because stage 1 matches everything
+  strat_fallback <- search_strategy(
+    name ~ normalize_text() + generate_ngrams(2),
+    threshold = 0.1
+  )
+
+  res <- multi_stage_match(base, target, "id", "id",
+                           list(strat_exact, strat_fallback))
+
+  expect_gt(nrow(res), 0)
+  expect_true(all(res$stage == "strategy_1"))
+})
+
+test_that("multi_stage_match() returns empty schema when no matches found", {
+  base   <- data.table(id = "B1", name = "alpha")
+  target <- data.table(id = "T1", name = "omega")
+
+  strat <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    threshold = 0.99
+  )
+
+  result <- multi_stage_match(base, target, "id", "id", list(strat))
+
+  expect_equal(nrow(result), 0)
+  expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(result)))
+})
+
 test_that("max_candidates trims pairwise candidates in detect_duplicates", {
   # Create many similar records using ngrams (high recall)
   # With ngrams, we'll get many low-quality matches
