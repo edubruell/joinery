@@ -170,44 +170,19 @@ test_that("multi_stage_match() returns empty schema when no stage matches", {
 })
 
 
-# ── DuckDB: token → embedding pipeline (parity smoke test) ────────────────────
+# ── DuckDB: token → embedding pipeline ────────────────────────────────────────
 
-# DuckDB multi_stage_match() with two embedding stages.
-# Token + embedding on DuckDB is not exercised here because
-# prepare_search_data() via batch_map is brittle on tiny fixtures (a
-# separate batch_duckdb issue). Two embedding stages bypass batch_map and
-# still cover validation, residual extraction, and the
-# extract_unmatched() lazy-query bug fix.
-#
-# Single mock; stage separation via threshold:
-#   A1/A2 → identical vectors (cosine 1.0) → only matched at strict threshold
-#   B1/B2 → cosine ≈ 0.71 → only matched at looser threshold
-test_that("DuckDB multi_stage_match() runs two embedding stages end-to-end", {
+# Natural mixed-strategy shape on DuckDB: token stage 1 catches A1/A2 (shared
+# word tokens), embedding stage 2 catches B1/B2 (no token overlap, but mocked
+# vectors match). This pattern previously aborted on tiny fixtures because
+# prepare_search_data() → batch_map() emitted NA windows on the small-table
+# fast path; locked in by the fix in notes/batch_duckdb_brittleness.md.
+test_that("DuckDB multi_stage_match() runs token → embedding end-to-end on small tables", {
   skip_if_not_installed("duckdb")
   skip_if_not_installed("DBI")
   skip_if_not_installed("dplyr")
 
-  emb_map <- list(
-    `alpha beta`   = c(1, 0, 0, 0),
-    synonymA       = c(1, 1, 0, 0),                # |.| = sqrt(2)
-    synonymB       = c(1, 1, 0, 0),                # cos(syn,syn) = 1.0
-    `totally different one`     = c(0, 0, 1, 0),
-    `completely unrelated text` = c(0, 0, 0, 1)
-  )
-  # Make A1/A2 match at high threshold but B1/B2 only at lower.
-  # synonymA / synonymB are identical → cos 1.0; restate so they're close-but-distinct.
-  emb_map$synonymA <- c(1, 1, 0, 0)
-  emb_map$synonymB <- c(1, 0.4, 0, 0)               # cos ≈ 0.927
-
-  local_mocked_bindings(
-    embed = function(text, model) {
-      vecs <- lapply(text, function(t) {
-        if (!is.null(emb_map[[t]])) emb_map[[t]] else c(0, 0, 0, 1)
-      })
-      tibble::tibble(input = text, embeddings = vecs)
-    },
-    .package = "tidyllm"
-  )
+  local_mocked_bindings(embed = make_embed_mock(), .package = "tidyllm")
 
   con <- DBI::dbConnect(duckdb::duckdb(), ":memory:", array = "matrix")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -222,19 +197,19 @@ test_that("DuckDB multi_stage_match() runs two embedding stages end-to-end", {
     dplyr::tbl(con, "target_tbl"),
     "id", "id",
     strategies = list(
-      stage_a = emb_strategy(threshold = 0.99),  # only A1/A2 (cos 1.0)
-      stage_b = emb_strategy(threshold = 0.90)   # then B1/B2 (cos ≈ 0.928)
+      token = token_strategy(),
+      emb   = emb_strategy(threshold = 0.99)
     )
   )
   out_df <- as.data.frame(out)
 
   expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(out_df)))
-  expect_setequal(unique(out_df$stage), c("stage_a", "stage_b"))
+  expect_setequal(unique(out_df$stage), c("token", "emb"))
 
-  a_ids <- unique(out_df$id[out_df$stage == "stage_a"])
-  b_ids <- unique(out_df$id[out_df$stage == "stage_b"])
-  expect_true(all(c("A1", "A2") %in% a_ids))
-  expect_true(all(c("B1", "B2") %in% b_ids))
+  token_ids <- unique(out_df$id[out_df$stage == "token"])
+  emb_ids   <- unique(out_df$id[out_df$stage == "emb"])
+  expect_true(all(c("A1", "A2") %in% token_ids))
+  expect_true(all(c("B1", "B2") %in% emb_ids))
   # Stage-1 records do not bleed into stage 2.
-  expect_false(any(c("A1", "A2") %in% b_ids))
+  expect_false(any(c("A1", "A2") %in% emb_ids))
 })
