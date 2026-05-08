@@ -98,6 +98,53 @@ test_that("assemble_record_text() errors when no character columns available", {
   )
 })
 
+test_that("assemble_record_text() handles data.table input identically to data.frame", {
+  dt <- data.table::data.table(
+    id   = c("A", "B"),
+    name = c("alpha", "beta"),
+    city = c("Berlin", "Hamburg")
+  )
+  df <- as.data.frame(dt)
+
+  out_dt <- assemble_record_text(dt, "id", c("name", "city"))
+  out_df <- assemble_record_text(df, "id", c("name", "city"))
+
+  expect_equal(out_dt, out_df)
+})
+
+test_that("assemble_record_text() coerces factor columns to character", {
+  dt <- data.table::data.table(
+    id   = c("A", "B"),
+    name = factor(c("alpha", "beta")),
+    city = c("Berlin", "Hamburg")
+  )
+  out <- assemble_record_text(dt, "id", c("name", "city"))
+
+  expect_equal(out$text[[1]], "alpha Berlin")
+  expect_equal(out$text[[2]], "beta Hamburg")
+})
+
+test_that("assemble_record_text() auto-detects factor columns", {
+  dt <- data.table::data.table(
+    id    = c("A", "B"),
+    label = factor(c("foo", "bar"))
+  )
+  out <- assemble_record_text(dt, "id", character(0))
+
+  expect_setequal(out$text, c("foo", "bar"))
+})
+
+test_that("assemble_record_text() returns empty string when all parts NA", {
+  dt <- data.table::data.table(
+    id   = "A",
+    name = NA_character_,
+    city = NA_character_
+  )
+  out <- assemble_record_text(dt, "id", c("name", "city"))
+
+  expect_equal(out$text, "")
+})
+
 
 # ── compute_embeddings() ─────────────────────────────────────────────────────
 

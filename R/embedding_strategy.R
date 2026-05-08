@@ -94,22 +94,29 @@ Embedding_Strategy <- new_class(
 
 #' @noRd
 method(print.Search_Preparer, Embedding_Strategy) <- function(x, ...) {
-  cat("<joinery::Embedding_Strategy>\n")
-  cat(
-    "  Columns:         ",
-    if (length(x@columns) == 0) "all" else paste(x@columns, collapse = ", "),
-    "\n", sep = ""
-  )
-  cat("  Provider/Model:  ", deparse(x@embedding_model, nlines = 1), "\n", sep = "")
-  cat("  Threshold:       ", x@threshold, "\n", sep = "")
-  cat("  Collapse sep:    ", shQuote(x@collapse_sep), "\n", sep = "")
-  cat("  Normalize:       ", x@normalize, "\n", sep = "")
-  cat("  Batch size:      ", x@batch_size, "\n", sep = "")
-  cat(
-    "  Block by:        ",
-    if (is.null(x@block_by)) "none" else paste(x@block_by, collapse = ", "),
-    "\n", sep = ""
-  )
+  cli::cli_text("{.strong <joinery::Embedding_Strategy>}")
+
+  cli::cli_text()
+  cli::cli_text("{.strong columns}")
+  if (length(x@columns) == 0) {
+    cli::cli_text("all")
+  } else {
+    cli::cli_text("{paste(x@columns, collapse = ', ')}")
+  }
+
+  cli::cli_text()
+  cli::cli_text("model: {deparse(x@embedding_model, nlines = 1)}")
+  cli::cli_text("threshold: {format(x@threshold)}")
+  cli::cli_text("collapse_sep: {.val {x@collapse_sep}}")
+  cli::cli_text("normalize: {x@normalize}")
+  cli::cli_text("batch_size: {format(x@batch_size)}")
+
+  if (is.null(x@block_by)) {
+    cli::cli_text("blocking: none")
+  } else {
+    cli::cli_text("blocking: {paste(x@block_by, collapse = ', ')}")
+  }
+
   invisible(x)
 }
 

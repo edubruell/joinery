@@ -157,6 +157,15 @@ test_that("embedding_strategy() preserves block_by", {
 
 # ── Print method ──────────────────────────────────────────────────────────────
 
+# cli::cli_text writes via the message channel, not stdout. Capture via
+# testthat::capture_messages() and strip box-drawing chars for matching.
+capture_print <- function(x) {
+  msgs <- testthat::capture_messages(print(x))
+  joined <- paste(msgs, collapse = "")
+  # Strip cli's leading box-drawing prefix and ANSI noise.
+  gsub("│", "", joined, fixed = TRUE)
+}
+
 test_that("print() on Embedding_Strategy emits expected fields", {
   s <- embedding_strategy(
     columns = c("name", "city"),
@@ -164,23 +173,20 @@ test_that("print() on Embedding_Strategy emits expected fields", {
     threshold = 0.85,
     block_by = "region"
   )
-  out <- capture.output(print(s))
-  joined <- paste(out, collapse = "\n")
+  joined <- capture_print(s)
 
   expect_match(joined, "Embedding_Strategy")
   expect_match(joined, "name, city")
-  expect_match(joined, "0.85")
+  expect_match(joined, "0\\.85")
   expect_match(joined, "region")
 })
 
 test_that("print() on Embedding_Strategy shows 'all' when columns empty", {
   s <- embedding_strategy(embedding_model = fake_model, threshold = 0.5)
-  out <- capture.output(print(s))
-  expect_match(paste(out, collapse = "\n"), "all")
+  expect_match(capture_print(s), "all")
 })
 
 test_that("print() on Embedding_Strategy shows 'none' when block_by NULL", {
   s <- embedding_strategy(embedding_model = fake_model, threshold = 0.5)
-  out <- capture.output(print(s))
-  expect_match(paste(out, collapse = "\n"), "none")
+  expect_match(capture_print(s), "none")
 })

@@ -294,6 +294,25 @@ test_that("detect_duplicates() returns empty schema when no pairs exceed thresho
   expect_true(all(c("duplicate_group", "score", "id", "rank") %in% names(out_df)))
 })
 
+# ── drop_joinery_temp_tables() picks up _joinery_emb_ ─────────────────────────
+
+test_that("drop_joinery_temp_tables() removes _joinery_emb_ tables", {
+  con <- local_duckdb_emb_con()
+
+  # Create one table in each prefix space and one outside.
+  DBI::dbExecute(con, "CREATE TABLE _joinery_tmp_x AS SELECT 1 AS a;")
+  DBI::dbExecute(con, "CREATE TABLE _joinery_emb_y AS SELECT 1 AS a;")
+  DBI::dbExecute(con, "CREATE TABLE keep_me AS SELECT 1 AS a;")
+
+  removed <- drop_joinery_temp_tables(con)
+
+  expect_true("_joinery_emb_y" %in% removed)
+  expect_true("_joinery_tmp_x" %in% removed)
+  expect_false("keep_me" %in% removed)
+  expect_true("keep_me" %in% DBI::dbListTables(con))
+})
+
+
 test_that("detect_duplicates() respects block_by", {
   # All same vector — without blocking, A/B/C would all be one group.
   local_mocked_bindings(
