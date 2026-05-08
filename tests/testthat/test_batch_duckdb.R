@@ -51,12 +51,15 @@ test_that("duckdb_batch_plan handles small tables below min_batch_size", {
     chunk_strategy = "even"
   )
   
-  # Should return single batch
+  # Should return single batch covering the whole table.
+  # row_start/row_end are 1..total_rows so batch_map() can slice via the
+  # windowed branch — emitting NAs here was the source of the small-table
+  # brittleness fixed in notes/batch_duckdb_brittleness.md.
   expect_equal(nrow(plan), 1)
   expect_equal(plan$batch_id, 1)
   expect_equal(plan$row_count, 3300)
-  expect_true(is.na(plan$row_start))
-  expect_true(is.na(plan$row_end))
+  expect_equal(plan$row_start, 1L)
+  expect_equal(plan$row_end, 3300L)
 })
 
 test_that(".compute_block_stats computes block cardinalities from DuckDB", {
@@ -383,3 +386,62 @@ test_that("duckdb_batch_plan produces correct row windows for block batches", {
   expect_equal(plan$row_count[3], plan$row_end[3] - plan$row_start[3] + 1)
 })
 
+
+
+# ── Regression: small-table fast path must produce usable windows ────────────
+# See notes/batch_duckdb_brittleness.md. Previously the small fast-path
+# returned NA windows, causing batch_map() to abort with
+# "Batch plan row contains neither windows nor blocks" on tiny inputs.
+
+test_that("duckdb_batch_plan: empty table returns empty plan", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+
+  empty_df <- data.frame(id = character(0), name = character(0),
+                         stringsAsFactors = FALSE)
+  DBI::dbWriteTable(con, "empty_tbl", empty_df)
+  tbl_ref <- dplyr::tbl(con, "empty_tbl")
+
+  plan <- duckdb_batch_plan(
+    tbl_ref, id = "id",
+    target_batch_size = 1000, min_batch_size = 500,
+    chunk_strategy = "even"
+  )
+
+  expect_equal(nrow(plan), 0)
+})
+
+test_that("duckdb_batch_plan: 3-row table returns single-batch plan with window 1..3", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+
+  tiny <- data.frame(
+    id = c("A", "B", "C"),
+    name = c("alpha", "beta", "gamma"),
+    stringsAsFactors = FALSE
+  )
+  DBI::dbWriteTable(con, "tiny_tbl", tiny)
+  tbl_ref <- dplyr::tbl(con, "tiny_tbl")
+
+  plan <- duckdb_batch_plan(
+    tbl_ref, id = "id",
+    target_batch_size = 1000, min_batch_size = 500,
+    chunk_strategy = "even"
+  )
+
+  expect_equal(nrow(plan), 1)
+  expect_equal(plan$batch_id, 1L)
+  expect_equal(plan$row_count, 3L)
+  expect_equal(plan$row_start, 1L)
+  expect_equal(plan$row_end, 3L)
+  expect_false(any(is.na(plan$row_start)))
+  expect_false(any(is.na(plan$row_end)))
+})

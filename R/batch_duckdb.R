@@ -132,11 +132,19 @@ duckdb_batch_plan <- function(db_tbl,
   # Small-table fast-path ONLY when unblocked
   # -----------------------------------------------
   if (total_rows < min_batch_size && is.null(block_by)) {
+    if (total_rows == 0L) {
+      return(data.table::data.table(
+        batch_id  = integer(),
+        row_count = integer(),
+        row_start = integer(),
+        row_end   = integer()
+      ))
+    }
     return(data.table::data.table(
       batch_id  = 1L,
-      row_count = total_rows,
-      row_start = NA_integer_,
-      row_end   = NA_integer_
+      row_count = as.integer(total_rows),
+      row_start = 1L,
+      row_end   = as.integer(total_rows)
     ))
   }
   

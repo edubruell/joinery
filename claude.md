@@ -20,24 +20,17 @@ The package is built on the **S7 class system**, separating linkage into:
 **Phase 0.3 (SearchEngine Heuristics) is complete.**
 **Phase 0.4 (Test Coverage Hardening) is complete.**
 
-The current work is **embedding implementation design** for the next phase.
+The current work is **embedding implementation** (Phase 0.5).
 
 Implemented Phase 0.3 features:
 - **rIP Smoothing** — log, softmax, and offset smoothing methods prevent over-dominance of rare tokens
 - **Containment** — `max_candidates` limits matches per record, preventing one-token overmatching
 - **Feedback Weighting** — penalizes low token overlap, reduces noise in partial matches
 
-Current priority:
-- Raise package test coverage substantially before starting embeddings.
-- Prefer normal `testthat` tests for deterministic unit and integration behavior.
-- Put genuinely long-running or large-data checks in `local_tests/`, not in CRAN/package tests.
-- Treat `R/generics.R` coverage as structurally unimportant; S7 generic definitions are covered through backend methods.
-- Current coverage baseline (2026-04-29): `preparers.R` 99%, `batch_duckdb.R` 87%, `utilities.R` 64%, `methods_datatable.R` 60%, `search_strategy.R` 42%, `methods_duckdb.R` 34%, `methods_tibble.R` 13%, `embedding_strategy.R` 0%.
-- Primary remaining gap: `R/methods_duckdb.R` (34%) — rarity methods, smoothing variants, empty-result schemas, and error paths need coverage parity with the data.table backend.
-- Secondary gap: `R/search_strategy.R` (42%) — S7 class definition boilerplate limits the ceiling; focus on any remaining validation or constructor branches not yet tested.
-- `R/methods_tibble.R` is intentionally low (~13%); embedding dispatch paths require `tidyllm` and are out of scope until embeddings are undeferred.
-
-Embeddings are deferred until coverage improves. See `notes/roadmap.md` and `notes/test_coverage_plan.md` for planning details.
+Phase 0.4 outcome (2026-05-09): total coverage 87.25%. Per-file:
+- `preparers.R` 99%, `embedding_methods_duckdb.R` 97%, `embedding_methods_datatable.R` 95%, `methods_duckdb.R` 90%, `batch_duckdb.R` 87%, `methods_datatable.R` 87%, `embedding_strategy.R` 75%, `utilities.R` 64%, `methods_tibble.R` 59%, `embedding_methods_tibble.R` 58%, `search_strategy.R` 42%.
+- `methods_duckdb.R` 34→90% closed the primary gap; the small-table `batch_duckdb` brittleness was diagnosed and fixed (see `notes/batch_duckdb_brittleness.md`).
+- Remaining low-coverage files are intentional: `generics.R` is S7 dispatch boilerplate, `search_strategy.R` 42% is mostly S7 class definition, `utilities.R` gaps are interactive progress-spinner branches, `methods_tibble.R` and `embedding_methods_tibble.R` rely on tidyllm/live embedding paths that belong in `local_tests/`.
 
 ## Core S7 Classes
 

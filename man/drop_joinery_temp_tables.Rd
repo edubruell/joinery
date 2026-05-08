@@ -6,7 +6,7 @@
 \usage{
 drop_joinery_temp_tables(
   con,
-  prefixes = c("_joinery_tokens_", "_joinery_tmp_")
+  prefixes = c("_joinery_tokens_", "_joinery_tmp_", "_joinery_emb_")
 )
 }
 \arguments{

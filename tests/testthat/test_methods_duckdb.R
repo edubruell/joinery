@@ -445,3 +445,68 @@ test_that("extract_unmatched() errors on bad inputs in DuckDB", {
   expect_error(extract_unmatched(dplyr::tbl(con, "dt"), "id", dplyr::tbl(con, "mt_bad")))
 })
 
+
+
+# ── Regression: small-table prepare_search_data via batch_map ────────────────
+# See notes/batch_duckdb_brittleness.md. Prior to the small-fast-path fix,
+# these flows aborted with "Batch plan row contains neither windows nor blocks"
+# because the planner emitted NA windows that batch_map() could not slice on.
+
+test_that("prepare_search_data() works on a 3-row DuckDB table", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  tiny <- data.frame(
+    id   = c("A", "B", "C"),
+    name = c("alpha beta", "gamma delta", "alpha beta"),
+    stringsAsFactors = FALSE
+  )
+  duck_tbl <- local_duckdb_table(tiny, table_name = "tiny_prep")
+  strat <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    threshold = 0.5
+  )
+
+  tokens <- prepare_search_data(duck_tbl, "id", strat)
+  out <- dplyr::collect(tokens)
+
+  expect_true(all(c("id", "src_column", "token") %in% names(out)))
+  expect_gt(nrow(out), 0)
+  expect_setequal(unique(out$id), c("A", "B", "C"))
+})
+
+test_that("search_candidates() works on small DuckDB tables (token strategy)", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  base <- data.frame(
+    id = c("A", "B", "C"),
+    name = c("alpha beta", "gamma delta", "alpha beta"),
+    stringsAsFactors = FALSE
+  )
+  target <- data.frame(
+    id = c("X", "Y"),
+    name = c("alpha beta", "epsilon zeta"),
+    stringsAsFactors = FALSE
+  )
+
+  con <- local_duckdb_con()
+  DBI::dbWriteTable(con, "base_tbl",   base)
+  DBI::dbWriteTable(con, "target_tbl", target)
+  base_duck   <- dplyr::tbl(con, "base_tbl")
+  target_duck <- dplyr::tbl(con, "target_tbl")
+
+  strat <- search_strategy(
+    name ~ normalize_text() + word_tokens(),
+    threshold = 0.5
+  )
+
+  out <- search_candidates(base_duck, target_duck, "id", "id", strat)
+  out_df <- dplyr::collect(out)
+
+  expect_true(all(c("match_id", "score", "source", "id", "rank") %in% names(out_df)))
+  # "alpha beta" appears in both, so we expect at least one match pair
+  expect_gt(nrow(out_df), 0)
+})
