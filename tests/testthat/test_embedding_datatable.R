@@ -354,6 +354,90 @@ test_that("detect_duplicates() returns empty result with correct schema when no 
   expect_true(all(c("duplicate_group", "score", "id", "rank") %in% names(out)))
 })
 
+# ── block_by behaviour (data.table) ──────────────────────────────────────────
+
+test_that("score_embeddings() with block_by only scores same-block pairs", {
+  # All-identical vectors: without blocking every pair would score 1.0.
+  base_emb <- data.table::data.table(
+    id        = c("A", "B"),
+    embedding = list(c(1, 0, 0), c(1, 0, 0)),
+    city      = c("Berlin", "Hamburg")
+  )
+  tgt_emb <- data.table::data.table(
+    id        = c("X", "Y"),
+    embedding = list(c(1, 0, 0), c(1, 0, 0)),
+    city      = c("Berlin", "Munich")
+  )
+  str <- make_strategy(block_by = "city")
+
+  out <- score_embeddings(base_emb, tgt_emb, str)
+
+  # Only Berlin↔Berlin pairs should appear (A↔X). Hamburg has no target match;
+  # Munich has no base match.
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$base_id, "A")
+  expect_equal(out$target_id, "X")
+})
+
+test_that("score_embeddings() with block_by errors on missing block column", {
+  base_emb <- data.table::data.table(
+    id = "A", embedding = list(c(1, 0, 0)), city = "Berlin"
+  )
+  tgt_emb <- data.table::data.table(
+    id = "X", embedding = list(c(1, 0, 0))  # no city column
+  )
+  str <- make_strategy(block_by = "city")
+
+  expect_error(
+    score_embeddings(base_emb, tgt_emb, str),
+    "Blocking columns missing from target_embeddings"
+  )
+})
+
+test_that("search_candidates() with block_by filters cross-block pairs", {
+  # Identical vectors for everyone: without blocking all 3×2 = 6 pairs match.
+  local_mocked_bindings(
+    embed = function(text, model) {
+      tibble::tibble(
+        input = text,
+        embeddings = lapply(text, function(t) c(1, 0, 0, 0))
+      )
+    },
+    .package = "tidyllm"
+  )
+
+  str <- make_strategy(threshold = 0.5, block_by = "city")
+  out <- search_candidates(make_base(), make_target(), "id", "id", str)
+
+  base_ids   <- unique(out[source == "base",   id])
+  target_ids <- unique(out[source == "target", id])
+  # base = (A Berlin, B Hamburg, C Berlin); target = (X Berlin, Y Munich)
+  # Hamburg base (B) and Munich target (Y) have no within-block partner.
+  expect_false("B" %in% base_ids)
+  expect_false("Y" %in% target_ids)
+})
+
+test_that("detect_duplicates() with block_by groups only within blocks", {
+  # All-identical vectors → without blocking, A/B/C would form one group.
+  local_mocked_bindings(
+    embed = function(text, model) {
+      tibble::tibble(
+        input = text,
+        embeddings = lapply(text, function(t) c(1, 0, 0, 0))
+      )
+    },
+    .package = "tidyllm"
+  )
+
+  str <- make_strategy(threshold = 0.9, block_by = "city")
+  out <- detect_duplicates(make_base(), id = "id", strategy = str)
+
+  # A and C share city "Berlin"; B is alone in Hamburg.
+  expect_setequal(out$id, c("A", "C"))
+  expect_equal(length(unique(out$duplicate_group)), 1L)
+})
+
+
 test_that("detect_duplicates() rank 1 is highest score within group", {
   local_mocked_bindings(
     embed = function(text, model) {
