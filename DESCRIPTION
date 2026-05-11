@@ -33,10 +33,10 @@ Collate:
     'batch_duckdb.R'
     'methods_duckdb.R'
     'embedding_methods_duckdb.R'
-    'matchstat_generics.R'
-    'matchstat_datatable.R'
-    'matchstat_duckdb.R'
-    'matchstat_tibble.R'
+    'diagnostics_classes.R'
+    'diagnostics_generics.R'
+    'diagnostics_recommendations.R'
+    'summarise_matches.R'
     'data.R'
 RoxygenNote: 7.3.3
 Depends: 
