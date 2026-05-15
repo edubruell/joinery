@@ -21,7 +21,7 @@ The package is built on the **S7 class system**, separating linkage into:
 **Phase 0.4 (Test Coverage Hardening) is complete.**
 **Phase 0.5 (Embedding-Based Matching) is feature-complete** — implementation done, mocked tests pass. Tier B live-provider validation against ollama (cross-model dimensions, live `block_by`, live multi-stage, throughput) is deferred until the user runs it on real yellow-pages data.
 
-**Phase 0.6 (Diagnostics) design is locked.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved and reflected in the document. Implementation now proceeds along the M1–M7 milestones below. The existing `R/matchstat_*.R` stubs are obsolete and will be deleted in M1.
+**Phase 0.6 (Diagnostics) is in progress.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved. M1 and M2 are complete; next step is M3 (`audit_strategy`).
 
 ### Locked design summary
 
@@ -38,18 +38,18 @@ The package is built on the **S7 class system**, separating linkage into:
 
 Implement in order. Do not skip ahead — later milestones depend on conventions established earlier.
 
-**M1 — Skeleton + `summarise_matches` (data.table only).**
-- Create `R/diagnostics_classes.R` with S7 classes `Strategy_Audit`, `Match_Overview`, `Match_Explanation`, `Match_Sample`, `Stage_Comparison`. Each class needs slots per `notes/diagnostics_design.md` §4, plus `format()`, `print()`, `as.data.table()`, `as.data.frame()` methods.
-- Create `R/diagnostics_generics.R` with the five verb generics.
-- Create `R/diagnostics_recommendations.R` with the catalog as a data structure (named list of `(signal, threshold, lever, message)` entries) plus a dispatch helper that takes summary stats and emits applicable recommendation strings.
-- Implement `summarise_matches.data.table()` end-to-end: detect `match_type` from columns, compute score summary/quantiles/histogram bins, coverage (when base/target supplied), cluster_dist or ambiguity_dist as appropriate, top_gap distribution for candidates. Wire recommendations via the catalog. Implement `recommendations()` accessor.
-- Delete `R/matchstat_*.R` stubs.
-- Tests: deterministic small-table cases for both dedup and candidate inputs; print snapshot stable; `recommendations()` returns expected strings on triggering inputs and empty on clean inputs; coercion methods round-trip.
+**M1 — Skeleton + `summarise_matches` (data.table only). COMPLETE (2026-05-11)**
+- `R/diagnostics_classes.R`: S7 classes `Strategy_Audit`, `Match_Overview`, `Match_Explanation`, `Match_Sample`, `Stage_Comparison` with slots, `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods.
+- `R/diagnostics_generics.R`: five verb generics + `recommendations()` accessor.
+- `R/diagnostics_recommendations.R`: catalog (`signal → threshold → message`) + `.dispatch_recommendations()` helper.
+- `R/summarise_matches.R`: `summarise_matches.data.table()` end-to-end (schema detection, score distribution, cluster/ambiguity/top_gap, coverage, recommendations).
+- 47 tests; print snapshots stable.
 
-**M2 — Backend parity for `summarise_matches`.**
-- DuckDB method: SQL-native aggregations using `approx_quantile()` and `histogram()`; pull only summaries to R.
-- Tibble/data.frame: thin wrappers via existing `as_DT` / `back_to_original` pattern.
-- Tests: backend parity (same input → same `Match_Overview` slots within tolerance for approx aggregations).
+**M2 — Backend parity for `summarise_matches`. COMPLETE (2026-05-16)**
+- DuckDB: SQL-native aggregations (`APPROX_QUANTILE`, `FLOOR`-arithmetic histogram); pulls only summary scalars and small distribution tables to R.
+- Tibble/data.frame: thin wrappers delegating to DT method via `as_DT`.
+- `.detect_match_type()` refactored to delegate to `.detect_match_type_cols(cols)` (backend-agnostic).
+- 12 backend parity tests; all 884 tests pass.
 
 **M3 — `audit_strategy` (both backends).**
 - data.table: token counts, unique tokens, rarity quantiles, NA-rate, block size distribution + imbalance metric (gini or top-1 share), comparison-count estimate, optional vocab-overlap when `target` supplied. Honour `sample_n` for large inputs.
