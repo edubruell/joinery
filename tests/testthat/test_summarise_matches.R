@@ -593,3 +593,184 @@ test_that("summarise_matches errors on a candidate-shaped table missing score", 
   )
   expect_error(summarise_matches(bad), "match table")
 })
+
+
+# ---------------------------------------------------------------------------
+# Backend parity (M2): DuckDB
+# ---------------------------------------------------------------------------
+
+test_that("DuckDB backend: match_type and n_records match data.table for duplicates", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_dup <- local_duckdb_table(make_dup_matches(), "dup_matches")
+  dt_res   <- summarise_matches(make_dup_matches())
+  duck_res <- summarise_matches(duck_dup)
+
+  expect_true(S7::S7_inherits(duck_res, Match_Overview))
+  expect_identical(duck_res@match_type, dt_res@match_type)
+  expect_identical(duck_res@n_records$n_pairs_or_groups,  dt_res@n_records$n_pairs_or_groups)
+  expect_identical(duck_res@n_records$n_records_involved, dt_res@n_records$n_records_involved)
+})
+
+test_that("DuckDB backend: score distribution is exact for min/max/mean (duplicates)", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_dup <- local_duckdb_table(make_dup_matches(), "dup_score")
+  dt_res   <- summarise_matches(make_dup_matches())
+  duck_res <- summarise_matches(duck_dup)
+
+  expect_equal(duck_res@score_dist$summary[["min"]],  dt_res@score_dist$summary[["min"]],  tolerance = 1e-10)
+  expect_equal(duck_res@score_dist$summary[["max"]],  dt_res@score_dist$summary[["max"]],  tolerance = 1e-10)
+  expect_equal(duck_res@score_dist$summary[["mean"]], dt_res@score_dist$summary[["mean"]], tolerance = 1e-10)
+})
+
+test_that("DuckDB backend: score quantiles within tolerance (duplicates)", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_dup <- local_duckdb_table(make_dup_matches(), "dup_q")
+  dt_res   <- summarise_matches(make_dup_matches())
+  duck_res <- summarise_matches(duck_dup)
+
+  expect_equal(duck_res@score_dist$quantiles, dt_res@score_dist$quantiles, tolerance = 0.02)
+})
+
+test_that("DuckDB backend: histogram bin counts sum to total rows (duplicates)", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_dup <- local_duckdb_table(make_dup_matches(), "dup_hist")
+  duck_res <- summarise_matches(duck_dup)
+
+  expect_equal(sum(duck_res@score_dist$histogram$count), nrow(make_dup_matches()))
+})
+
+test_that("DuckDB backend: cluster_dist matches data.table (duplicates)", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_dup <- local_duckdb_table(make_dup_matches(), "dup_clust")
+  dt_res   <- summarise_matches(make_dup_matches())
+  duck_res <- summarise_matches(duck_dup)
+
+  expect_equal(duck_res@cluster_dist, dt_res@cluster_dist)
+  expect_identical(duck_res@cluster_summary$max_cluster_size,
+                   dt_res@cluster_summary$max_cluster_size)
+})
+
+test_that("DuckDB backend: coverage matches data.table when base supplied (duplicates)", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  base <- make_base_table()
+  duck_dup  <- local_duckdb_table(make_dup_matches(), "dup_cov")
+  dt_res    <- summarise_matches(make_dup_matches(), base = base)
+  duck_res  <- summarise_matches(duck_dup, base = base)
+
+  expect_equal(duck_res@coverage$base_coverage, dt_res@coverage$base_coverage, tolerance = 1e-10)
+})
+
+test_that("DuckDB backend: match_type, n_records, and ambiguity_dist match for candidates", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_cand <- local_duckdb_table(make_cand_matches(), "cand_match")
+  dt_res    <- summarise_matches(make_cand_matches())
+  duck_res  <- summarise_matches(duck_cand)
+
+  expect_identical(duck_res@match_type, "candidates")
+  expect_identical(duck_res@n_records$n_pairs_or_groups,  dt_res@n_records$n_pairs_or_groups)
+  expect_identical(duck_res@n_records$n_records_involved, dt_res@n_records$n_records_involved)
+  expect_equal(duck_res@ambiguity_dist, dt_res@ambiguity_dist)
+})
+
+test_that("DuckDB backend: top_gap_dist total count equals base records with >=2 candidates", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_cand <- local_duckdb_table(make_cand_matches(), "cand_gap")
+  duck_res  <- summarise_matches(duck_cand)
+
+  # only base record "a" has >=2 candidates
+  expect_equal(sum(duck_res@top_gap_dist$count), 1L)
+})
+
+test_that("DuckDB backend: recommendations() returns same vector as data.table", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_cand <- local_duckdb_table(make_cand_matches(), "cand_rec")
+  dt_res    <- summarise_matches(make_cand_matches())
+  duck_res  <- summarise_matches(duck_cand)
+
+  expect_identical(recommendations(duck_res), recommendations(dt_res))
+})
+
+test_that("DuckDB backend: candidate coverage matches data.table when base/target supplied", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  base   <- make_base_table()
+  target <- make_target_table()
+  duck_cand <- local_duckdb_table(make_cand_matches(), "cand_cov")
+  dt_res    <- summarise_matches(make_cand_matches(), base = base, target = target)
+  duck_res  <- summarise_matches(duck_cand, base = base, target = target)
+
+  expect_equal(duck_res@coverage$base_coverage,   dt_res@coverage$base_coverage,   tolerance = 1e-10)
+  expect_equal(duck_res@coverage$target_coverage, dt_res@coverage$target_coverage, tolerance = 1e-10)
+})
+
+
+# ---------------------------------------------------------------------------
+# Backend parity (M2): tibble / data.frame
+# ---------------------------------------------------------------------------
+
+test_that("tibble input produces identical Match_Overview to data.table", {
+  skip_if_not_installed("tibble")
+
+  tbl_dup <- tibble::as_tibble(make_dup_matches())
+  dt_res  <- summarise_matches(make_dup_matches())
+  tbl_res <- summarise_matches(tbl_dup)
+
+  expect_true(S7::S7_inherits(tbl_res, Match_Overview))
+  expect_identical(tbl_res@match_type, dt_res@match_type)
+  expect_identical(tbl_res@n_records,  dt_res@n_records)
+  expect_equal(tbl_res@score_dist$summary, dt_res@score_dist$summary, tolerance = 1e-10)
+  expect_equal(tbl_res@cluster_dist, dt_res@cluster_dist)
+})
+
+test_that("data.frame input produces identical Match_Overview to data.table", {
+  df_dup <- as.data.frame(make_dup_matches())
+  dt_res <- summarise_matches(make_dup_matches())
+  df_res <- summarise_matches(df_dup)
+
+  expect_true(S7::S7_inherits(df_res, Match_Overview))
+  expect_identical(df_res@match_type, dt_res@match_type)
+  expect_identical(df_res@n_records,  dt_res@n_records)
+  expect_equal(df_res@score_dist$summary, dt_res@score_dist$summary, tolerance = 1e-10)
+})
+
+test_that("tibble candidate input produces identical Match_Overview to data.table", {
+  skip_if_not_installed("tibble")
+
+  tbl_cand <- tibble::as_tibble(make_cand_matches())
+  dt_res   <- summarise_matches(make_cand_matches())
+  tbl_res  <- summarise_matches(tbl_cand)
+
+  expect_identical(tbl_res@match_type, "candidates")
+  expect_identical(tbl_res@n_records,  dt_res@n_records)
+  expect_equal(tbl_res@ambiguity_dist, dt_res@ambiguity_dist)
+  expect_identical(recommendations(tbl_res), recommendations(dt_res))
+})
