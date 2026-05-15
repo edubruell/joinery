@@ -774,3 +774,157 @@ test_that("tibble candidate input produces identical Match_Overview to data.tabl
   expect_equal(tbl_res@ambiguity_dist, dt_res@ambiguity_dist)
   expect_identical(recommendations(tbl_res), recommendations(dt_res))
 })
+
+test_that("tibble candidate input: coverage populated when base/target supplied", {
+  skip_if_not_installed("tibble")
+
+  tbl_cand <- tibble::as_tibble(make_cand_matches())
+  dt_res   <- summarise_matches(make_cand_matches(),
+                                base = make_base_table(), target = make_target_table())
+  tbl_res  <- summarise_matches(tbl_cand,
+                                base = make_base_table(), target = make_target_table())
+
+  expect_equal(tbl_res@coverage$base_coverage,   dt_res@coverage$base_coverage,   tolerance = 1e-10)
+  expect_equal(tbl_res@coverage$target_coverage, dt_res@coverage$target_coverage, tolerance = 1e-10)
+})
+
+test_that("data.frame candidate input produces identical Match_Overview to data.table", {
+  df_cand <- as.data.frame(make_cand_matches())
+  dt_res  <- summarise_matches(make_cand_matches())
+  df_res  <- summarise_matches(df_cand)
+
+  expect_true(S7::S7_inherits(df_res, Match_Overview))
+  expect_identical(df_res@match_type, "candidates")
+  expect_identical(df_res@n_records,  dt_res@n_records)
+  expect_equal(df_res@ambiguity_dist, dt_res@ambiguity_dist)
+  expect_identical(recommendations(df_res), recommendations(dt_res))
+})
+
+
+# ---------------------------------------------------------------------------
+# Backend parity (M2): DuckDB edge cases
+# ---------------------------------------------------------------------------
+
+test_that("DuckDB backend: empty duplicates table returns all-NA score dist and zero counts", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  empty <- data.table::data.table(
+    duplicate_group = integer(),
+    id              = character(),
+    score           = numeric(),
+    rank            = integer()
+  )
+  duck_empty <- local_duckdb_table(empty, "dup_empty")
+  res <- summarise_matches(duck_empty)
+
+  expect_identical(res@match_type, "duplicates")
+  expect_equal(res@n_records$n_pairs_or_groups,  0L)
+  expect_equal(res@n_records$n_records_involved, 0L)
+  expect_true(all(is.na(res@score_dist$summary)))
+  expect_equal(nrow(res@score_dist$histogram), 0L)
+  expect_named(res@score_dist$histogram, c("bin_lower", "bin_upper", "count"))
+})
+
+test_that("DuckDB backend: constant scores produce single-bin histogram", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  const <- data.table::data.table(
+    duplicate_group = c(1L, 1L, 1L),
+    id              = c("a", "b", "c"),
+    score           = rep(0.9, 3L),
+    rank            = 1:3
+  )
+  duck_const <- local_duckdb_table(const, "dup_const")
+  res <- summarise_matches(duck_const)
+
+  hist <- res@score_dist$histogram
+  expect_equal(nrow(hist), 1L)
+  expect_equal(hist$bin_lower, 0.9)
+  expect_equal(hist$bin_upper, 0.9)
+  expect_equal(hist$count, 3L)
+})
+
+test_that("DuckDB backend: bins argument controls histogram row count", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_dup <- local_duckdb_table(make_known_score_dup(), "dup_bins")
+  res10 <- summarise_matches(duck_dup, bins = 10L)
+
+  expect_equal(nrow(res10@score_dist$histogram), 10L)
+  expect_equal(sum(res10@score_dist$histogram$count), 11L)
+})
+
+test_that("DuckDB backend: histogram has correct schema", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_dup <- local_duckdb_table(make_known_score_dup(), "dup_schema")
+  res <- summarise_matches(duck_dup)
+  hist <- res@score_dist$histogram
+
+  expect_s3_class(hist, "data.table")
+  expect_named(hist, c("bin_lower", "bin_upper", "count"))
+  expect_type(hist$count, "integer")
+  expect_equal(nrow(hist), 50L)
+})
+
+test_that("DuckDB backend: top_gap_dist is NULL when no base record has >=2 candidates", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  cand_one_each <- data.table::data.table(
+    match_id = rep(1:4, each = 2L),
+    score    = rep(c(0.85, 0.80, 0.75, 0.70), each = 2L),
+    source   = rep(c("base", "target"), times = 4L),
+    id       = c("a", "x", "b", "y", "c", "z", "d", "w"),
+    rank     = 1L
+  )
+  duck_cand <- local_duckdb_table(cand_one_each, "cand_one_each")
+  res <- summarise_matches(duck_cand)
+
+  expect_null(res@top_gap_dist)
+  expect_false("candidates_weak_decisiveness" %in% attr(res, "recommendation_ids"))
+})
+
+test_that("DuckDB backend: duplicates_mega_cluster fires independently", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  big_cluster <- data.table::data.table(
+    duplicate_group = rep(1L, 60L),
+    id              = paste0("r", seq_len(60L)),
+    score           = runif(60L, 0.85, 0.99),
+    rank            = seq_len(60L)
+  )
+  duck_big <- local_duckdb_table(big_cluster, "dup_mega")
+  res <- summarise_matches(duck_big)
+
+  expect_true("duplicates_mega_cluster" %in% attr(res, "recommendation_ids"))
+})
+
+test_that("DuckDB backend: pct_records_in_cluster correct when base is a DuckDB table", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  duck_dup  <- local_duckdb_table(make_dup_matches(), "dup_pct_base")
+  duck_base <- local_duckdb_table(make_base_table(), "base_pct")
+  dt_res    <- summarise_matches(make_dup_matches(), base = make_base_table())
+  duck_res  <- summarise_matches(duck_dup, base = duck_base)
+
+  expect_equal(duck_res@coverage$base_coverage,
+               dt_res@coverage$base_coverage,
+               tolerance = 1e-10)
+  expect_equal(duck_res@cluster_summary$pct_records_in_cluster,
+               dt_res@cluster_summary$pct_records_in_cluster,
+               tolerance = 1e-10)
+})

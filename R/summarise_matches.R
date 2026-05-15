@@ -318,14 +318,21 @@ method(
     n_groups  <- nrow(sizes)
     n_records <- sum(sizes$cluster_size)
 
-    cluster_size_freq <- as.data.table(
-      as.data.frame(table(sizes$cluster_size))
-    )
-    data.table::setnames(cluster_size_freq, c("cluster_size", "n_clusters"))
-    cluster_size_freq[, cluster_size := as.integer(as.character(cluster_size))]
-    cluster_size_freq[, n_clusters   := as.integer(n_clusters)]
-    data.table::setorder(cluster_size_freq, cluster_size)
-    cluster_dist <- cluster_size_freq
+    if (nrow(sizes) == 0L) {
+      cluster_dist <- data.table::data.table(
+        cluster_size = integer(),
+        n_clusters   = integer()
+      )
+    } else {
+      cluster_size_freq <- as.data.table(
+        as.data.frame(table(sizes$cluster_size))
+      )
+      data.table::setnames(cluster_size_freq, c("cluster_size", "n_clusters"))
+      cluster_size_freq[, cluster_size := as.integer(as.character(cluster_size))]
+      cluster_size_freq[, n_clusters   := as.integer(n_clusters)]
+      data.table::setorder(cluster_size_freq, cluster_size)
+      cluster_dist <- cluster_size_freq
+    }
 
     max_cluster_size <- if (nrow(sizes) > 0L) max(sizes$cluster_size) else 0L
 
@@ -562,8 +569,10 @@ method(
         " GROUP BY bin ORDER BY bin"
       )
     )
-    # FLOOR can yield bin == bins for score == max_s; clamp to bins-1
+    # FLOOR can yield bin == bins for score == max_s; clamp to bins-1 then
+    # re-aggregate so the overflow count is added to (not overwriting) bin bins-1.
     hist_r$bin[hist_r$bin >= bins] <- bins - 1L
+    hist_r <- stats::aggregate(cnt ~ bin, data = hist_r, FUN = sum)
     breaks <- seq(min_s, max_s, length.out = bins + 1L)
     counts <- integer(bins)
     counts[hist_r$bin + 1L] <- as.integer(hist_r$cnt)
