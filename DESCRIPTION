@@ -38,6 +38,7 @@ Collate:
     'diagnostics_recommendations.R'
     'summarise_matches.R'
     'audit_strategy.R'
+    'compare_stages.R'
     'explain_match.R'
     'sample_matches.R'
     'data.R'

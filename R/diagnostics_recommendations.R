@@ -96,6 +96,18 @@
       "column `%s` has %.1f%% of unique tokens with rarity below 0.01; consider `filter_stopwords()` or higher `min_rarity`.",
       col, 100 * v
     )
+  ),
+  list(
+    id         = "low_yield_stage",
+    signal     = "min_stage_base_pct",
+    threshold  = 0.01,
+    op         = "<",
+    lever      = "multi_stage",
+    context_fn = function(signals) signals[["low_yield_stage_name"]],
+    message_fn = function(v, stage_name) sprintf(
+      "stage '%s' added only %.1f%% of base records; consider dropping this stage.",
+      stage_name, 100 * v
+    )
   )
 )
 

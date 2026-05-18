@@ -163,7 +163,8 @@ Stage_Comparison <- new_class(
   properties = list(
     per_stage_overview  = class_list,
     marginal_coverage   = class_any,
-    score_dist_by_stage = class_any
+    score_dist_by_stage = class_any,
+    recommendations     = class_character
   )
 )
 
@@ -209,6 +210,15 @@ as.data.table.Strategy_Audit <- new_external_generic(
 )
 #' @noRd
 as.data.frame.Strategy_Audit <- new_external_generic(
+  "base", "as.data.frame", "x"
+)
+
+#' @noRd
+as.data.table.Stage_Comparison <- new_external_generic(
+  "data.table", "as.data.table", "x"
+)
+#' @noRd
+as.data.frame.Stage_Comparison <- new_external_generic(
   "base", "as.data.frame", "x"
 )
 
@@ -689,12 +699,160 @@ method(print.Match_Sample, Match_Sample) <- function(x, ...) {
   invisible(x)
 }
 
-method(format.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
-  "<joinery::Stage_Comparison> (not yet implemented in M1)"
+#' @noRd
+.format_stage_comparison <- function(x) {
+  lines <- character()
+  push  <- function(...) lines <<- c(lines, paste0(...))
+
+  stages     <- names(x@per_stage_overview)
+  n_stages   <- length(stages)
+  match_type <- if (n_stages > 0L) x@per_stage_overview[[1L]]@match_type else "unknown"
+
+  push("<joinery::Stage_Comparison>")
+  push("")
+  push(sprintf(
+    "stages: %s    match_type: %s",
+    paste(stages, collapse = " → "),
+    match_type
+  ))
+
+  if (n_stages > 0L) {
+    push("")
+    push("per-stage summary:")
+    for (s in stages) {
+      ov <- x@per_stage_overview[[s]]
+      sc <- ov@score_dist$summary
+      n  <- ov@n_records$n_pairs_or_groups %||% NA_integer_
+      bc <- ov@coverage$base_coverage
+      tc <- ov@coverage$target_coverage
+      push(sprintf(
+        "  [%s]  %d pairs   base=%s  target=%s",
+        s, as.integer(n),
+        if (is.null(bc) || is.na(bc)) "NA" else sprintf("%.1f%%", 100 * bc),
+        if (is.null(tc) || is.na(tc)) "NA" else sprintf("%.1f%%", 100 * tc)
+      ))
+      if (!is.null(sc)) {
+        push(sprintf(
+          "         score: min=%.3f  median=%.3f  max=%.3f",
+          sc[["min"]], sc[["median"]], sc[["max"]]
+        ))
+      }
+    }
+  }
+
+  mc <- x@marginal_coverage
+  if (!is.null(mc) && nrow(mc) > 0L) {
+    push("")
+    push("marginal coverage:")
+    has_pct <- "base_pct_added" %in% names(mc) && !all(is.na(mc$base_pct_added))
+    for (i in seq_len(nrow(mc))) {
+      r <- mc[i]
+      pct_part <- if (has_pct && !is.na(r$base_pct_added)) {
+        sprintf("  (%.1f%% of base)", 100 * r$base_pct_added)
+      } else ""
+      push(sprintf(
+        "  %-12s  base_added=%d  target_added=%s  base_cum=%d%s",
+        r$stage,
+        r$base_added,
+        if (is.na(r$target_added)) "NA" else as.character(r$target_added),
+        r$base_cumulative,
+        pct_part
+      ))
+    }
+  }
+
+  if (length(x@recommendations) > 0L) {
+    push("")
+    push("recommendations:")
+    for (r in x@recommendations) push("  ! ", r)
+  }
+
+  lines
 }
+
+method(format.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
+  .format_stage_comparison(x)
+}
+
 method(print.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
-  cli::cli_text(format(x))
+  stages     <- names(x@per_stage_overview)
+  match_type <- if (length(stages) > 0L) x@per_stage_overview[[1L]]@match_type else "unknown"
+  cli::cli_h1(sprintf("Stage_Comparison ({.field %s}, %d stages)", match_type, length(stages)))
+  cli::cli_text(paste(stages, collapse = " → "))
+
+  for (s in stages) {
+    ov <- x@per_stage_overview[[s]]
+    n  <- ov@n_records$n_pairs_or_groups %||% NA_integer_
+    bc <- ov@coverage$base_coverage
+    tc <- ov@coverage$target_coverage
+    sc <- ov@score_dist$summary
+    cli::cli_text(sprintf(
+      "{.strong [%s]}  %d pairs   base=%s  target=%s   score median=%.3f",
+      s, as.integer(n),
+      if (is.null(bc) || is.na(bc)) "NA" else sprintf("%.1f%%", 100 * bc),
+      if (is.null(tc) || is.na(tc)) "NA" else sprintf("%.1f%%", 100 * tc),
+      if (!is.null(sc)) sc[["median"]] else NA_real_
+    ))
+  }
+
+  mc <- x@marginal_coverage
+  if (!is.null(mc) && nrow(mc) > 0L) {
+    cli::cli_text("{.strong marginal coverage}")
+    has_pct <- "base_pct_added" %in% names(mc) && !all(is.na(mc$base_pct_added))
+    for (i in seq_len(nrow(mc))) {
+      r <- mc[i]
+      pct_part <- if (has_pct && !is.na(r$base_pct_added)) {
+        sprintf(" (%.1f%%)", 100 * r$base_pct_added)
+      } else ""
+      cli::cli_text(sprintf(
+        "  %s: +%d base%s",
+        r$stage, r$base_added, pct_part
+      ))
+    }
+  }
+
+  for (r in x@recommendations) cli::cli_alert_warning(r)
+
   invisible(x)
+}
+
+
+# ---------------------------------------------------------------------------
+# Coercion — Stage_Comparison
+# ---------------------------------------------------------------------------
+
+#' @noRd
+.stage_comparison_to_dt <- function(x) {
+  mc <- x@marginal_coverage
+  if (is.null(mc) || nrow(mc) == 0L) {
+    return(data.table::data.table(
+      stage             = character(),
+      n_pairs_or_groups = integer(),
+      base_added        = integer(),
+      target_added      = integer(),
+      base_cumulative   = integer(),
+      target_cumulative = integer()
+    ))
+  }
+  out <- data.table::copy(mc)
+  stages <- names(x@per_stage_overview)
+  n_pairs <- vapply(stages, function(s) {
+    as.integer(x@per_stage_overview[[s]]@n_records$n_pairs_or_groups %||% NA_integer_)
+  }, integer(1L))
+  # only add n_pairs column if all stages present
+  if (length(n_pairs) == nrow(out)) {
+    out[, n_pairs_or_groups := n_pairs]
+    data.table::setcolorder(out, c("stage", "n_pairs_or_groups"))
+  }
+  out
+}
+
+method(as.data.table.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
+  .stage_comparison_to_dt(x)
+}
+
+method(as.data.frame.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
+  as.data.frame(.stage_comparison_to_dt(x))
 }
 
 
