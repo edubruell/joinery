@@ -21,7 +21,7 @@ The package is built on the **S7 class system**, separating linkage into:
 **Phase 0.4 (Test Coverage Hardening) is complete.**
 **Phase 0.5 (Embedding-Based Matching) is feature-complete** — implementation done, mocked tests pass. Tier B live-provider validation against ollama (cross-model dimensions, live `block_by`, live multi-stage, throughput) is deferred until the user runs it on real yellow-pages data.
 
-**Phase 0.6 (Diagnostics) is in progress.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved. M1 and M2 are complete; next step is M3 (`audit_strategy`).
+**Phase 0.6 (Diagnostics) is in progress.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved. M1, M2, and M3 are complete; next step is M4 (`explain_match`).
 
 ### Locked design summary
 
