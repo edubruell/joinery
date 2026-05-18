@@ -529,3 +529,128 @@ test_that("DuckDB backend: sample_n returns Strategy_Audit with n_records <= sam
   expect_true(S7::S7_inherits(res, Strategy_Audit))
   expect_lte(res@n_records, 5L)
 })
+
+test_that("DuckDB backend: column_rarity_stats matches data.table", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+  s      <- make_clean_strategy()
+  dat    <- make_clean_data()
+  duck   <- local_duckdb_table(dat, "audit_duck_crs")
+  res_dt <- audit_strategy(dat,  "id", s)
+  res_dk <- audit_strategy(duck, "id", s)
+  expect_equal(res_dt@column_rarity_stats, res_dk@column_rarity_stats)
+})
+
+test_that("DuckDB backend: est_comparisons matches data.table", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+  s      <- make_clean_strategy()
+  dat    <- make_clean_data()
+  duck   <- local_duckdb_table(dat, "audit_duck_est")
+  res_dt <- audit_strategy(dat,  "id", s)
+  res_dk <- audit_strategy(duck, "id", s)
+  expect_equal(res_dk@est_comparisons, res_dt@est_comparisons, tolerance = 1e-10)
+})
+
+test_that("DuckDB backend: block_summary matches data.table when block_by is set", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+  s      <- make_clean_strategy(block_by = "region")
+  dat    <- make_blocked_data()
+  duck   <- local_duckdb_table(dat, "audit_duck_blk")
+  res_dt <- audit_strategy(dat,  "id", s)
+  res_dk <- audit_strategy(duck, "id", s)
+  expect_equal(res_dk@block_summary$summary$n_blocks,   res_dt@block_summary$summary$n_blocks)
+  expect_equal(res_dk@block_summary$summary$top1_share, res_dt@block_summary$summary$top1_share, tolerance = 1e-10)
+  expect_equal(res_dk@est_comparisons, res_dt@est_comparisons, tolerance = 1e-10)
+})
+
+
+# ---------------------------------------------------------------------------
+# 13. All-NA column edge case
+# ---------------------------------------------------------------------------
+#
+# NA values propagate as NA tokens through the pipeline; the column still
+# appears in column_token_stats with actual token counts. The key invariant
+# is that na_rate = 1.0 is computed correctly from the pre-tokenisation data.
+
+test_that("all-NA column: na_rate = 1.0 and column still appears in column_token_stats", {
+  s   <- make_clean_strategy()
+  dat <- make_clean_data()
+  dat[, first_name := NA_character_]
+  res <- audit_strategy(dat, "id", s)
+  expect_true("first_name" %in% res@column_token_stats$column)
+  fn  <- res@column_token_stats[column == "first_name"]
+  expect_equal(fn$na_rate, 1.0, tolerance = 1e-10)
+})
+
+test_that("all-NA column: pct_unique arithmetic is preserved", {
+  s   <- make_clean_strategy()
+  dat <- make_clean_data()
+  dat[, first_name := NA_character_]
+  res <- audit_strategy(dat, "id", s)
+  fn  <- res@column_token_stats[column == "first_name"]
+  # NA propagates as a single NA token type, so pct_unique = n_unique / n_tokens
+  expect_equal(fn$pct_unique, fn$n_unique_tokens / fn$n_tokens, tolerance = 1e-10)
+})
+
+test_that("all-NA column: column still appears in column_rarity_stats", {
+  s   <- make_clean_strategy()
+  dat <- make_clean_data()
+  dat[, first_name := NA_character_]
+  res <- audit_strategy(dat, "id", s)
+  expect_true("first_name" %in% res@column_rarity_stats$column)
+})
+
+
+# ---------------------------------------------------------------------------
+# 14. Multi-column block_by
+# ---------------------------------------------------------------------------
+
+make_multi_block_data <- function() {
+  dt <- make_clean_data()
+  dt[, region   := rep(c("north", "south"), each = 10L)]
+  dt[, category := rep(c("a", "b", "a", "b", "a"), times = 4L)]
+  dt
+}
+
+make_multi_block_strategy <- function() {
+  search_strategy(
+    first_name ~ normalize_text() + word_tokens(),
+    last_name  ~ normalize_text() + word_tokens(),
+    block_by   = c("region", "category"),
+    threshold  = 0.9
+  )
+}
+
+test_that("multi-column block_by: block_summary is populated", {
+  s   <- make_multi_block_strategy()
+  res <- audit_strategy(make_multi_block_data(), "id", s)
+  expect_false(is.null(res@block_summary))
+  expect_named(res@block_summary$distribution, c("block_key", "n_records", "pct_records"))
+})
+
+test_that("multi-column block_by: block_key combines both columns", {
+  s   <- make_multi_block_strategy()
+  res <- audit_strategy(make_multi_block_data(), "id", s)
+  keys <- res@block_summary$distribution$block_key
+  expect_true(any(grepl(",", keys)))
+})
+
+test_that("multi-column block_by: est_comparisons < unblocked comparisons", {
+  s_blocked   <- make_multi_block_strategy()
+  s_unblocked <- make_clean_strategy()
+  dat         <- make_multi_block_data()
+  res_blocked   <- audit_strategy(dat, "id", s_blocked)
+  res_unblocked <- audit_strategy(dat, "id", s_unblocked)
+  expect_lt(res_blocked@est_comparisons, res_unblocked@est_comparisons)
+})
+
+test_that("multi-column block_by: pct_records sums to 1", {
+  s   <- make_multi_block_strategy()
+  res <- audit_strategy(make_multi_block_data(), "id", s)
+  expect_equal(sum(res@block_summary$distribution$pct_records), 1.0, tolerance = 1e-10)
+})
