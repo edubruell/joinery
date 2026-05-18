@@ -21,7 +21,7 @@ The package is built on the **S7 class system**, separating linkage into:
 **Phase 0.4 (Test Coverage Hardening) is complete.**
 **Phase 0.5 (Embedding-Based Matching) is feature-complete** — implementation done, mocked tests pass. Tier B live-provider validation against ollama (cross-model dimensions, live `block_by`, live multi-stage, throughput) is deferred until the user runs it on real yellow-pages data.
 
-**Phase 0.6 (Diagnostics) is in progress.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved. M1, M2, and M3 are complete; next step is M4 (`explain_match`).
+**Phase 0.6 (Diagnostics) is in progress.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved. M1–M7 are complete; next step is M8 (embedding strategy diagnostics).
 
 ### Locked design summary
 
@@ -65,23 +65,27 @@ Implement in order. Do not skip ahead — later milestones depend on conventions
 - Round-trip contract: `sum(per_column_contrib$contribution) × feedback_factor == score` (exact when no feedback; tolerance 1e-10).
 - 63 new tests covering: round-trip (no feedback), round-trip (with feedback), both calling forms identical, DuckDB parity, candidates, blocking, weight validation, print/format, error cases; all 1051 tests pass.
 
-**M5 — `sample_matches`.**
-- All modes: `high`, `low`, `borderline`, `ambiguous`, `top_gap`, `random`. Both backends.
-- Tests: each mode returns the expected rows on small deterministic fixtures; `top_gap` correctly identifies near-coin-flip pairs; `n` is honoured; `mode` validation errors are clear.
+**M5 — `sample_matches` (both backends). COMPLETE (2026-05-18)**
+- Six modes: `high`, `low`, `borderline`, `ambiguous`, `top_gap`, `random`. DuckDB collects to R and delegates to DT method; tibble/data.frame thin wrappers via `as_DT()`.
+- `format()`/`print()` for `Match_Sample` replaces stub; shows mode, n, threshold (borderline/low), seed (random), and row preview.
+- `DESCRIPTION` Collate updated to include `audit_strategy.R`, `explain_match.R`, `sample_matches.R` (were missing since M3/M4).
+- 76 new tests covering: all modes on duplicates and candidates, n-honoured, correctness, error handling, edge cases (empty table, single-match groups, threshold above all scores), DuckDB parity, tibble/data.frame parity, format/print, snapshot; all 1126 tests pass.
 
-**M6 — `compare_stages` and multi-stage extensions.**
-- Consume a multi-stage matches table (with `stage` column), produce per-stage `Match_Overview` plus marginal coverage and overlaid score distributions.
-- Stage-specific recommendations (e.g. "stage N added <1% coverage").
-- Tests: synthetic two-stage and three-stage matches tables; verify marginal coverage arithmetic; verify recommendations fire for low-yield stages.
+**M6 — `compare_stages` and multi-stage extensions. COMPLETE (2026-05-18)**
+- `R/compare_stages.R`: data.table method (reference), DuckDB (collect→delegate), tibble/data.frame thin wrappers.
+- `Stage_Comparison` class extended with `recommendations` slot; full `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods replace stubs.
+- `marginal_coverage` data.table: base/target records added per stage (and cumulative), with pct columns when base/target supplied.
+- `score_dist_by_stage`: long-form histogram table (stage, bin_lower, bin_upper, count) for overlay plotting.
+- Recommendations catalog extended with `low_yield_stage` (min_stage_base_pct < 0.01); fires only when base is supplied.
+- 73 new tests (validation, class, per_stage_overview, marginal coverage arithmetic, three-stage arithmetic, score_dist_by_stage, recommendations, DuckDB parity, tibble/data.frame parity, format/print, as.data.table, edge cases); all 1199 tests pass.
 
-**M7 — Plot functions and default `plot()` methods.**
-- Add `tinyplot` to `DESCRIPTION` `Imports`.
-- Create `R/diagnostics_plots.R` with the catalog from `notes/diagnostics_design.md` §7.1: `rarity_histogram`, `token_frequency_plot`, `block_size_plot`, `vocab_overlap_plot`, `score_histogram`, `score_density`, `coverage_plot`, `cluster_size_plot`, `ambiguity_plot`, `top_gap_density`, `contribution_plot`, `token_contribution_plot`, `stage_coverage_plot`, `stage_score_plot`.
-- All plot functions take the diagnostic object as first arg, accept `...` passthrough to `tinyplot`, invisibly return the plotted `data.table`.
-- Implement small `joinery` theme overlay (palette, dashed threshold-line style, margins). Plots must look publishable with no arguments.
-- Default `plot()` methods per class (e.g. `plot.Match_Overview` → `score_histogram`).
-- Tests: each plot function runs without error on a representative diagnostic object, returns the expected invisible data.table, and respects `...` overrides. Visual correctness is verified manually; do not snapshot raster output in `tests/testthat/`.
-- pkgdown: one screenshot per plot in `pkgdown/figures/`.
+**M7 — Plot functions and default `plot()` methods. COMPLETE (2026-05-18)**
+- `R/diagnostics_plots.R`: 14 plot functions (`rarity_histogram`, `token_frequency_plot`, `block_size_plot`, `vocab_overlap_plot`, `score_histogram`, `score_density`, `coverage_plot`, `cluster_size_plot`, `ambiguity_plot`, `top_gap_density`, `contribution_plot`, `token_contribution_plot`, `stage_coverage_plot`, `stage_score_plot`).
+- All functions: first arg = diagnostic object, `...` passthrough via `modifyList(defaults, list(...))`, invisible `data.table` return. `theme = "clean"`, `palette = "okabe"` for grouped plots.
+- Default `plot()` S3 methods per class registered via `.onLoad` + `registerS3method` (required because S7 uses package-qualified class names `"joinery::ClassName"`).
+- `notes/tinyplot_guide.md` note: `xaxl` must be a mapper function (e.g. `function(v) labels[as.integer(v)]`), not a character vector — tinyplot 0.6.1 does not accept character vectors for `xaxl`.
+- `tinyplot` and `graphics` added to DESCRIPTION Imports.
+- 91 tests; all 1290 tests pass. `pkgdown/figures/` contains 14 PNGs.
 
 **M8 — Embedding strategy diagnostics.**
 - `Embedding_Audit` S7 class in `R/diagnostics_classes.R` with `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods following established conventions.

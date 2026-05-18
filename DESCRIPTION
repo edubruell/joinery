@@ -6,7 +6,7 @@ Authors@R: person("Eduard", "Brüll", email = "eduard.bruell@zew.de", role = c("
 Description: Index-based heuristic record linkage for R.
 License: MIT
 Encoding: UTF-8
-Imports: 
+Imports:
     S7,
     rlang (>= 1.1.0),
     data.table,
@@ -15,7 +15,9 @@ Imports:
     phonics,
     lubridate,
     cli,
-    glue
+    glue,
+    tinyplot,
+    graphics
 Collate: 
     'joinery-package.R'
     'import-standalone-purrr.R'
@@ -41,6 +43,7 @@ Collate:
     'compare_stages.R'
     'explain_match.R'
     'sample_matches.R'
+    'diagnostics_plots.R'
     'data.R'
 RoxygenNote: 7.3.3
 Depends: 

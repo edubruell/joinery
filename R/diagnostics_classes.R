@@ -856,5 +856,6 @@ method(as.data.frame.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
 }
 
 
+
 # `%||%` is imported from rlang via the package-level `@import` directive
 # in R/joinery-package.R.
