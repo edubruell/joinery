@@ -59,10 +59,11 @@ Implement in order. Do not skip ahead — later milestones depend on conventions
 - Recommendations catalog extended with `block_imbalanced` (top1_share > 0.70) and `high_low_rarity_pressure` (max pct_low_rarity > 0.50 across columns); dispatcher extended with `context_fn` support for column-name-in-message.
 - 46 new tests (audit_strategy + recommendations); all 988 tests pass.
 
-**M4 — `explain_match` (both backends, both calling forms).**
-- Add internal helper to `methods_datatable.R` and `methods_duckdb.R` that returns the per-column contribution table for a single pair, **reusing the engine's scoring path** (no re-implementation — drift would silently break smoothing/feedback). Refactor scoring code if necessary to expose this cleanly.
-- `explain_match()` dispatches on 2nd argument: `Search_Strategy` → reconstruct tokens/rarity for the pair only (DuckDB: `WHERE id IN (...)`); tokens-shaped table → use directly.
-- Tests: round-trip property (sum of per-column contributions == score modulo documented smoothing/feedback adjustments) on both backends; both calling forms produce identical `Match_Explanation`; ergonomic form does not pull full token table on DuckDB.
+**M4 — `explain_match` (both backends, both calling forms). COMPLETE (2026-05-18)**
+- `.pair_attribution_dt()` helper in `methods_datatable.R` reuses `.score_token_pairs()` rIP/smoothing/feedback logic; returns per-token contributions, per-column aggregation, score, and `score_breakdown` (feedback_factor for round-trip).
+- `explain_match()` dispatches on 2nd argument: `Search_Strategy` → runs full `prepare_search_data` + `compute_rarity` pipeline, filters to pair tokens; tokens table → uses directly. DuckDB form collects matches+data to R, delegates to DT method.
+- Round-trip contract: `sum(per_column_contrib$contribution) × feedback_factor == score` (exact when no feedback; tolerance 1e-10).
+- 63 new tests covering: round-trip (no feedback), round-trip (with feedback), both calling forms identical, DuckDB parity, candidates, blocking, weight validation, print/format, error cases; all 1051 tests pass.
 
 **M5 — `sample_matches`.**
 - All modes: `high`, `low`, `borderline`, `ambiguous`, `top_gap`, `random`. Both backends.

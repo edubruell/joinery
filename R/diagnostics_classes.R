@@ -576,10 +576,79 @@ method(as.data.frame.Strategy_Audit, Strategy_Audit) <- function(x, ...) {
 }
 
 method(format.Match_Explanation, Match_Explanation) <- function(x, ...) {
-  "<joinery::Match_Explanation> (not yet implemented in M1)"
+  lines <- character()
+  push  <- function(...) lines <<- c(lines, paste0(...))
+
+  push("<joinery::Match_Explanation>  match ", x@match_id)
+  push("")
+
+  # --- Records ---------------------------------------------------------------
+  push("Records:")
+  if (!is.null(x@pair) && nrow(x@pair) >= 1L) {
+    for (i in seq_len(min(nrow(x@pair), 2L))) {
+      label <- if (i == 1L) "  lhs" else "  rhs"
+      vals  <- paste(
+        vapply(names(x@pair), function(col) {
+          sprintf("%s=%s", col, as.character(x@pair[[col]][i]))
+        }, character(1L)),
+        collapse = "   "
+      )
+      push(label, "  ", vals)
+    }
+  }
+  push("")
+
+  # --- Score -----------------------------------------------------------------
+  sb <- x@score_breakdown
+  ff <- sb$feedback_factor %||% 1.0
+  os <- sb$overlap_share
+
+  score_line <- sprintf("Score: %.4f", x@score)
+  if (!is.null(ff) && !is.na(ff) && abs(ff - 1.0) > 1e-9) {
+    score_line <- paste0(
+      score_line,
+      sprintf(
+        "  [raw=%.4f  x  feedback_factor=%.4f (overlap=%.2f)]",
+        x@score / ff, ff, os
+      )
+    )
+  }
+  push(score_line)
+
+  # --- Per-column contributions ----------------------------------------------
+  if (!is.null(x@per_column_contrib) && nrow(x@per_column_contrib) > 0L) {
+    push("")
+    push("Per-column contributions:")
+    for (i in seq_len(nrow(x@per_column_contrib))) {
+      r <- x@per_column_contrib[i, ]
+      push(sprintf(
+        "  %-20s %.4f  (%d shared token%s)",
+        r$src_column, r$contribution, r$n_shared_tokens,
+        if (r$n_shared_tokens == 1L) "" else "s"
+      ))
+    }
+  }
+
+  # --- Shared tokens (top 10) ------------------------------------------------
+  if (!is.null(x@shared_tokens) && nrow(x@shared_tokens) > 0L) {
+    push("")
+    n_show <- min(nrow(x@shared_tokens), 10L)
+    push(sprintf("Shared tokens (showing %d of %d):", n_show, nrow(x@shared_tokens)))
+    for (i in seq_len(n_show)) {
+      r <- x@shared_tokens[i, ]
+      push(sprintf(
+        "  %-12s / %-15s  rarity=%.4f  rIP=%.4f  weight=%.4f  contrib=%.4f",
+        r$src_column, r$token, r$rarity, r$rIP, r$weight, r$contribution
+      ))
+    }
+  }
+
+  lines
 }
+
 method(print.Match_Explanation, Match_Explanation) <- function(x, ...) {
-  cli::cli_text(format(x))
+  lines <- format(x)
+  for (ln in lines) cli::cli_text(ln)
   invisible(x)
 }
 

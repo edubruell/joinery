@@ -293,7 +293,115 @@ method(
 
 
 
-# Method: detect_duplicates 
+#' Internal helper: per-token attribution for a single matched pair
+#'
+#' Reuses the rIP / smoothing / feedback logic from `.score_token_pairs()` but
+#' returns per-token contributions instead of an aggregate score.  Both
+#' `lhs_tokens` and `rhs_tokens` must already carry a `rarity` column
+#' (output of `compute_rarity()`).
+#'
+#' @noRd
+.pair_attribution_dt <- function(
+    lhs_tokens,
+    rhs_tokens,
+    id_lhs,
+    id_rhs,
+    strategy,
+    weights
+) {
+  lhs <- data.table::copy(lhs_tokens)
+  rhs <- data.table::copy(rhs_tokens)
+
+  block_by <- strategy@block_by %||% character()
+  by_cols  <- c("src_column", "token", block_by)
+
+  # Validate weights — same check as .score_token_pairs()
+  missing_w <- setdiff(
+    unique(c(lhs$src_column, rhs$src_column)),
+    names(weights)
+  )
+  if (length(missing_w) > 0) {
+    stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
+  }
+
+  # Weights
+  lhs[, weight := weights[src_column]]
+  rhs[, weight := weights[src_column]]
+
+  # Base rIP — same formula as .score_token_pairs()
+  lhs[, rIP := rarity / sum(rarity), by = c(id_lhs, "src_column")]
+  rhs[, rIP := rarity / sum(rarity), by = c(id_rhs, "src_column")]
+
+  # Smoothing — identical branches to .score_token_pairs()
+  sm <- strategy@smoothing@method
+  if (sm == "log") {
+    lhs[, rIP := {v <- log1p(rIP); v / sum(v)}, by = c(id_lhs, "src_column")]
+    rhs[, rIP := {v <- log1p(rIP); v / sum(v)}, by = c(id_rhs, "src_column")]
+  } else if (sm == "softmax") {
+    t <- strategy@smoothing@temperature
+    lhs[, rIP := {ex <- exp(rIP / t); ex / sum(ex)}, by = c(id_lhs, "src_column")]
+    rhs[, rIP := {ex <- exp(rIP / t); ex / sum(ex)}, by = c(id_rhs, "src_column")]
+  } else if (sm == "offset") {
+    a <- strategy@smoothing@alpha
+    lhs[, rIP := {v <- rIP + a; v / sum(v)}, by = c(id_lhs, "src_column")]
+    rhs[, rIP := {v <- rIP + a; v / sum(v)}, by = c(id_rhs, "src_column")]
+  }
+
+  # Token overlap join
+  rhs_join <- rhs[, c(id_rhs, "src_column", "token", block_by), with = FALSE]
+  data.table::setnames(rhs_join, id_rhs, "__rhs_id__")
+
+  joined <- lhs[rhs_join, on = by_cols, nomatch = 0L, allow.cartesian = TRUE]
+  joined[, contribution := rIP * weight]
+
+  # Shared tokens table
+  shared_tokens <- joined[, .(
+    src_column   = src_column,
+    token        = token,
+    rarity       = rarity,
+    rIP          = rIP,
+    weight       = weight,
+    contribution = contribution
+  )]
+  data.table::setorder(shared_tokens, src_column, -contribution)
+  shared_tokens[]
+
+  # Per-column aggregation
+  per_column_contrib <- shared_tokens[, .(
+    contribution    = sum(contribution),
+    n_shared_tokens = .N
+  ), by = "src_column"]
+  data.table::setorder(per_column_contrib, -contribution)
+
+  raw_score <- sum(per_column_contrib$contribution)
+
+  # Feedback adjustment — same formula as .score_token_pairs()
+  feedback_factor <- 1.0
+  overlap_share   <- NA_real_
+
+  if (strategy@feedback_strength > 0) {
+    total_rip_lhs <- sum(lhs$rIP)
+    matched_rip   <- sum(joined$rIP)
+    overlap_share <- if (total_rip_lhs > 0) matched_rip / total_rip_lhs else 0
+    s             <- strategy@feedback_strength
+    feedback_factor <- 1 - s * (1 - overlap_share)
+  }
+
+  list(
+    shared_tokens      = shared_tokens,
+    per_column_contrib = per_column_contrib,
+    score              = raw_score * feedback_factor,
+    score_breakdown    = list(
+      smoothing_method  = strategy@smoothing@method,
+      feedback_strength = strategy@feedback_strength,
+      feedback_factor   = feedback_factor,
+      overlap_share     = overlap_share
+    )
+  )
+}
+
+
+# Method: detect_duplicates
 #------------------------------------------------------------------------------
 method(
   detect_duplicates,
