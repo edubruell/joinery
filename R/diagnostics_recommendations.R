@@ -73,6 +73,29 @@
       "only %.1f%% of base matched; consider relaxing threshold or revisiting preparers/blocking.",
       100 * v
     )
+  ),
+  list(
+    id         = "block_imbalanced",
+    signal     = "block_top_share",
+    threshold  = 0.70,
+    op         = ">",
+    lever      = "block_by",
+    message_fn = function(v) sprintf(
+      "largest block holds %.1f%% of records; blocking may be imbalanced, consider a finer blocking key.",
+      100 * v
+    )
+  ),
+  list(
+    id         = "high_low_rarity_pressure",
+    signal     = "max_pct_low_rarity_tokens",
+    threshold  = 0.50,
+    op         = ">",
+    lever      = "preparers / min_rarity",
+    context_fn = function(signals) signals[["worst_rarity_column"]],
+    message_fn = function(v, col) sprintf(
+      "column `%s` has %.1f%% of unique tokens with rarity below 0.01; consider `filter_stopwords()` or higher `min_rarity`.",
+      col, 100 * v
+    )
   )
 )
 
@@ -95,7 +118,7 @@
 
 #' @noRd
 .dispatch_recommendations <- function(signals, catalog = .diagnostics_catalog) {
-  ids <- character()
+  ids  <- character()
   msgs <- character()
 
   for (entry in catalog) {
@@ -105,7 +128,9 @@
     if (is.na(v)) next
     if (.compare(v, entry$threshold, entry$op)) {
       ids <- c(ids, entry$id)
-      msgs <- c(msgs, entry$message_fn(v))
+      ctx <- if (!is.null(entry$context_fn)) entry$context_fn(signals) else NULL
+      msg <- if (!is.null(ctx)) entry$message_fn(v, ctx) else entry$message_fn(v)
+      msgs <- c(msgs, msg)
     }
   }
 

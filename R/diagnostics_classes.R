@@ -203,6 +203,15 @@ as.data.frame.Match_Overview <- new_external_generic(
   "base", "as.data.frame", "x"
 )
 
+#' @noRd
+as.data.table.Strategy_Audit <- new_external_generic(
+  "data.table", "as.data.table", "x"
+)
+#' @noRd
+as.data.frame.Strategy_Audit <- new_external_generic(
+  "base", "as.data.frame", "x"
+)
+
 
 # ---------------------------------------------------------------------------
 # format() / print() — Match_Overview
@@ -386,12 +395,184 @@ method(as.data.frame.Match_Overview, Match_Overview) <- function(x, ...) {
 # Stub format/print for the not-yet-implemented classes (M3–M6)
 # ---------------------------------------------------------------------------
 
-method(format.Strategy_Audit, Strategy_Audit) <- function(x, ...) {
-  "<joinery::Strategy_Audit> (not yet implemented in M1)"
+#' @noRd
+.format_strategy_audit <- function(x) {
+  lines <- character()
+  push <- function(...) lines <<- c(lines, paste0(...))
+
+  push("<joinery::Strategy_Audit>")
+  push("")
+  push(sprintf("n_records: %d", x@n_records))
+
+  cts <- x@column_token_stats
+  if (!is.null(cts) && nrow(cts) > 0L) {
+    push("")
+    push("column token stats:")
+    for (i in seq_len(nrow(cts))) {
+      push(sprintf(
+        "  %s: %d tokens (%d unique, %.1f%% unique, na_rate=%.1f%%, avg_per_record=%.2f)",
+        cts$column[i], cts$n_tokens[i], cts$n_unique_tokens[i],
+        100 * cts$pct_unique[i], 100 * cts$na_rate[i],
+        cts$avg_tokens_per_record[i]
+      ))
+    }
+  }
+
+  crs <- x@column_rarity_stats
+  if (!is.null(crs) && nrow(crs) > 0L) {
+    push("")
+    push("column rarity stats (p05/p25/p50/p75/p95):")
+    for (i in seq_len(nrow(crs))) {
+      push(sprintf(
+        "  %s: %.4f / %.4f / %.4f / %.4f / %.4f  (low_rarity=%.1f%%)",
+        crs$column[i],
+        crs$rarity_p05[i], crs$rarity_p25[i], crs$rarity_p50[i],
+        crs$rarity_p75[i], crs$rarity_p95[i],
+        100 * crs$pct_low_rarity[i]
+      ))
+    }
+  }
+
+  bs <- x@block_summary
+  if (!is.null(bs)) {
+    sm <- bs$summary
+    push("")
+    push(sprintf(
+      "block summary: %d blocks, top1_share=%.1f%%, min=%d, median=%.1f, max=%d",
+      sm$n_blocks, 100 * sm$top1_share,
+      sm$min_size, sm$median_size, sm$max_size
+    ))
+    dist <- utils::head(bs$distribution, 5L)
+    push("  top blocks (up to 5):")
+    for (i in seq_len(nrow(dist))) {
+      push(sprintf(
+        "    %s: %d records (%.1f%%)",
+        dist$block_key[i], dist$n_records[i], 100 * dist$pct_records[i]
+      ))
+    }
+  }
+
+  ec <- x@est_comparisons
+  if (!is.null(ec) && !is.na(ec)) {
+    push("")
+    push(sprintf("est_comparisons: %.0f", ec))
+  }
+
+  vo <- attr(x, "vocab_overlap")
+  if (!is.null(vo) && length(vo) > 0L) {
+    push("")
+    push("vocab overlap (base vs target):")
+    for (col in names(vo)) {
+      push(sprintf("  %s: %.1f%%", col, 100 * vo[[col]]))
+    }
+  }
+
+  if (length(x@recommendations) > 0L) {
+    push("")
+    push("recommendations:")
+    for (r in x@recommendations) push("  ! ", r)
+  }
+
+  lines
 }
+
+method(format.Strategy_Audit, Strategy_Audit) <- function(x, ...) {
+  .format_strategy_audit(x)
+}
+
 method(print.Strategy_Audit, Strategy_Audit) <- function(x, ...) {
-  cli::cli_text(format(x))
+  cli::cli_h1("Strategy_Audit")
+  cli::cli_text("n_records: {.val {x@n_records}}")
+
+  cts <- x@column_token_stats
+  if (!is.null(cts) && nrow(cts) > 0L) {
+    cli::cli_text("{.strong column token stats}")
+    for (i in seq_len(nrow(cts))) {
+      cli::cli_bullets(sprintf(
+        "{.field %s}: %d tokens, %d unique (%.1f%%), na_rate=%.1f%%",
+        cts$column[i], cts$n_tokens[i], cts$n_unique_tokens[i],
+        100 * cts$pct_unique[i], 100 * cts$na_rate[i]
+      ))
+    }
+  }
+
+  crs <- x@column_rarity_stats
+  if (!is.null(crs) && nrow(crs) > 0L) {
+    cli::cli_text("{.strong column rarity quantiles}")
+    for (i in seq_len(nrow(crs))) {
+      cli::cli_bullets(sprintf(
+        "{.field %s}: p50=%.4f, pct_low_rarity=%.1f%%",
+        crs$column[i], crs$rarity_p50[i], 100 * crs$pct_low_rarity[i]
+      ))
+    }
+  }
+
+  bs <- x@block_summary
+  if (!is.null(bs)) {
+    sm <- bs$summary
+    cli::cli_text(
+      "{.strong blocks}: {sm$n_blocks} blocks, top1_share={.val {sprintf('%.1f%%', 100*sm$top1_share)}}"
+    )
+  }
+
+  ec <- x@est_comparisons
+  if (!is.null(ec) && !is.na(ec)) {
+    cli::cli_text("est_comparisons: {.val {sprintf('%.0f', ec)}}")
+  }
+
+  vo <- attr(x, "vocab_overlap")
+  if (!is.null(vo) && length(vo) > 0L) {
+    cli::cli_text("{.strong vocab overlap}")
+    for (col in names(vo)) {
+      cli::cli_bullets(sprintf("{.field %s}: %.1f%%", col, 100 * vo[[col]]))
+    }
+  }
+
+  for (r in x@recommendations) cli::cli_alert_warning(r)
+
   invisible(x)
+}
+
+
+# ---------------------------------------------------------------------------
+# Coercion — Strategy_Audit
+# ---------------------------------------------------------------------------
+
+#' @noRd
+.strategy_audit_to_dt <- function(x) {
+  cts <- x@column_token_stats
+  crs <- x@column_rarity_stats
+  bs  <- x@block_summary
+
+  row <- data.table::data.table(
+    n_records           = x@n_records,
+    n_columns           = if (!is.null(cts)) nrow(cts) else NA_integer_,
+    total_n_tokens      = if (!is.null(cts)) sum(cts$n_tokens) else NA_integer_,
+    mean_na_rate        = if (!is.null(cts)) mean(cts$na_rate) else NA_real_,
+    min_pct_unique      = if (!is.null(cts)) min(cts$pct_unique) else NA_real_,
+    max_pct_low_rarity  = if (!is.null(crs)) max(crs$pct_low_rarity) else NA_real_,
+    est_comparisons     = if (!is.null(x@est_comparisons)) as.numeric(x@est_comparisons) else NA_real_,
+    n_blocks            = if (!is.null(bs)) as.integer(bs$summary$n_blocks) else NA_integer_,
+    block_top1_share    = if (!is.null(bs)) as.numeric(bs$summary$top1_share) else NA_real_,
+    n_recommendations   = length(x@recommendations)
+  )
+
+  vo <- attr(x, "vocab_overlap")
+  if (!is.null(vo)) {
+    for (col in names(vo)) {
+      row[, (paste0("vocab_overlap_", col)) := as.numeric(vo[[col]])]
+    }
+  }
+
+  row
+}
+
+method(as.data.table.Strategy_Audit, Strategy_Audit) <- function(x, ...) {
+  .strategy_audit_to_dt(x)
+}
+
+method(as.data.frame.Strategy_Audit, Strategy_Audit) <- function(x, ...) {
+  as.data.frame(.strategy_audit_to_dt(x))
 }
 
 method(format.Match_Explanation, Match_Explanation) <- function(x, ...) {

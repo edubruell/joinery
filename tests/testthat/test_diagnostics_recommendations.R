@@ -51,3 +51,56 @@ test_that("dispatcher respects each operator", {
   out2 <- joinery:::.dispatch_recommendations(list(max_cluster_size = 49))
   expect_false("duplicates_mega_cluster" %in% out2$ids)
 })
+
+
+# ---------------------------------------------------------------------------
+# M3 additions: block_imbalanced and high_low_rarity_pressure
+# ---------------------------------------------------------------------------
+
+test_that("block_imbalanced fires when block_top_share > 0.70", {
+  out <- joinery:::.dispatch_recommendations(list(block_top_share = 0.80))
+  expect_true("block_imbalanced" %in% out$ids)
+  expect_match(out$messages, "80")
+})
+
+test_that("block_imbalanced does NOT fire at exactly 0.70 (strict >)", {
+  out <- joinery:::.dispatch_recommendations(list(block_top_share = 0.70))
+  expect_false("block_imbalanced" %in% out$ids)
+})
+
+test_that("high_low_rarity_pressure fires and message contains column name and percentage", {
+  out <- joinery:::.dispatch_recommendations(list(
+    max_pct_low_rarity_tokens = 0.60,
+    worst_rarity_column       = "firma"
+  ))
+  expect_true("high_low_rarity_pressure" %in% out$ids)
+  expect_match(out$messages, "firma")
+  expect_match(out$messages, "60\\.0%")
+})
+
+test_that("high_low_rarity_pressure does NOT fire at exactly 0.50 (strict >)", {
+  out <- joinery:::.dispatch_recommendations(list(
+    max_pct_low_rarity_tokens = 0.50,
+    worst_rarity_column       = "firma"
+  ))
+  expect_false("high_low_rarity_pressure" %in% out$ids)
+})
+
+test_that("context_fn extension: existing 4 entries unaffected", {
+  out <- joinery:::.dispatch_recommendations(list(
+    pct_records_with_ge3_matches = 0.20,
+    score_top_gap_median         = 0.01,
+    max_cluster_size             = 100,
+    base_coverage_candidates     = 0.01
+  ))
+  expect_setequal(
+    out$ids,
+    c(
+      "candidates_high_ambiguity",
+      "candidates_weak_decisiveness",
+      "duplicates_mega_cluster",
+      "low_coverage_candidates"
+    )
+  )
+  expect_equal(length(out$messages), 4L)
+})
