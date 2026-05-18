@@ -14,6 +14,14 @@
 # ============================================================
 
 
+# Suppress R CMD check NOTEs for data.table NSE variables created with :=
+utils::globalVariables(c(
+  "bin_lower", "bin_upper", "bin_mid",
+  "stage_idx", "base_pct_cumulative",
+  "token_label", "token", "src_column",
+  "contribution", "overlap"
+))
+
 # Internal: merge defaults with user dots, then call tinyplot.
 # NOTE: `type` lives in call_args, not defaults, so passing type= via ...
 # will cause a duplicate-argument error. ... is intended for label/palette/
@@ -39,11 +47,12 @@ rarity_histogram <- function(x, ...) {
   if (is.null(crs) || nrow(crs) == 0L)
     stop("`column_rarity_stats` is NULL or empty.", call. = FALSE)
   dt <- data.table::as.data.table(crs)
+  # flip=TRUE swaps axes; tinyplot applies xlab to vertical, ylab to horizontal
   .tinyplot_call(
     call_args  = list(rarity_p50 ~ column, data = dt,
                       type = tinyplot::type_barplot(), flip = TRUE),
-    defaults   = list(theme = "clean", xlab = "Median rarity (p50)",
-                      ylab = NULL, main = "Token rarity by column"),
+    defaults   = list(theme = "clean", xlab = "",
+                      ylab = "Median rarity (p50)", main = "Token rarity by column"),
     user_dots  = list(...)
   )
   invisible(dt)
@@ -64,8 +73,8 @@ token_frequency_plot <- function(x, ...) {
   .tinyplot_call(
     call_args = list(avg_tokens_per_record ~ column, data = dt,
                      type = tinyplot::type_barplot(), flip = TRUE),
-    defaults  = list(theme = "clean", xlab = "Avg tokens per record",
-                     ylab = NULL, main = "Token frequency by column"),
+    defaults  = list(theme = "clean", xlab = "",
+                     ylab = "Avg. tokens per record", main = "Token frequency by column"),
     user_dots = list(...)
   )
   invisible(dt)
@@ -89,8 +98,8 @@ block_size_plot <- function(x, ...) {
   .tinyplot_call(
     call_args = list(n_records ~ block_key, data = dt,
                      type = tinyplot::type_barplot(), flip = TRUE),
-    defaults  = list(theme = "clean", xlab = "Records in block",
-                     ylab = NULL, main = "Block size distribution"),
+    defaults  = list(theme = "clean", xlab = "",
+                     ylab = "Records in block", main = "Block size distribution"),
     user_dots = list(...)
   )
   invisible(dt)
@@ -121,8 +130,9 @@ vocab_overlap_plot <- function(x, ...) {
   .tinyplot_call(
     call_args = list(overlap ~ column, data = dt,
                      type = tinyplot::type_barplot(), flip = TRUE),
-    defaults  = list(theme = "clean", xlab = "Vocabulary overlap (base vs target)",
-                     ylab = NULL, main = "Vocab overlap by column", ylim = c(0, 1)),
+    defaults  = list(theme = "clean", xlab = "",
+                     ylab = "Vocabulary overlap (base vs target)",
+                     main = "Vocab overlap by column", ylim = c(0, 1)),
     user_dots = list(...)
   )
   invisible(dt)
@@ -136,13 +146,14 @@ vocab_overlap_plot <- function(x, ...) {
 #' Bar chart of the pre-binned score distribution
 #'
 #' @param x A `Match_Overview` object from [summarise_matches()].
-#' @param threshold Numeric. If not `NA`, draws a dashed vertical line.
+#' @param threshold Numeric. Draws a dashed vertical line. Defaults to the
+#'   threshold stored in `x@score_dist$threshold` when available.
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (histogram with bin_mid column).
 #' @noRd
-score_histogram <- function(x, threshold = NA_real_, ...) {
+score_histogram <- function(x, threshold = x@score_dist$threshold %||% NA_real_, ...) {
   hist_dt <- data.table::copy(x@score_dist$histogram)
-  hist_dt[, bin_mid := (bin_lower + bin_upper) / 2]
+  hist_dt[, bin_mid := round((bin_lower + bin_upper) / 2, 3L)]
   .tinyplot_call(
     call_args = list(count ~ bin_mid, data = hist_dt,
                      type = tinyplot::type_barplot()),
@@ -150,8 +161,10 @@ score_histogram <- function(x, threshold = NA_real_, ...) {
                      ylab = "Count", main = "Score distribution"),
     user_dots = list(...)
   )
-  if (!is.na(threshold))
-    graphics::abline(v = threshold, lty = 2, col = "grey40", lwd = 1)
+  if (!is.na(threshold)) {
+    usr <- graphics::par("usr")
+    graphics::lines(rep(threshold, 2L), usr[3:4], lty = 2, col = "grey40", lwd = 1)
+  }
   invisible(hist_dt)
 }
 
@@ -162,21 +175,27 @@ score_histogram <- function(x, threshold = NA_real_, ...) {
 #' passing to the density estimator.
 #'
 #' @param x A `Match_Overview` object from [summarise_matches()].
+#' @param threshold Numeric. Draws a dashed vertical line. Defaults to the
+#'   threshold stored in `x@score_dist$threshold` when available.
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the `data.table` of expanded scores.
 #' @noRd
-score_density <- function(x, ...) {
+score_density <- function(x, threshold = x@score_dist$threshold %||% NA_real_, ...) {
   hist_dt <- data.table::copy(x@score_dist$histogram)
-  hist_dt[, bin_mid := (bin_lower + bin_upper) / 2]
+  hist_dt[, bin_mid := round((bin_lower + bin_upper) / 2, 3L)]
   scores  <- rep(hist_dt$bin_mid, hist_dt$count)
   dt      <- data.table::data.table(score = scores)
   .tinyplot_call(
     call_args = list(~score, data = dt,
-                     type = tinyplot::type_density(alpha = 0.3, bw = "SJ")),
-    defaults  = list(theme = "clean", xlab = "Score",
-                     ylab = "Density", main = "Score density"),
+                     type = tinyplot::type_density(alpha = 0.3, bw = "nrd0")),
+    defaults  = list(theme = "clean", xlab = "Score", ylab = "Density",
+                     main = "Score density", xlim = c(0, 1)),
     user_dots = list(...)
   )
+  if (!is.na(threshold)) {
+    usr <- graphics::par("usr")
+    graphics::lines(rep(threshold, 2L), usr[3:4], lty = 2, col = "grey40", lwd = 1)
+  }
   invisible(dt)
 }
 
@@ -200,9 +219,18 @@ coverage_plot <- function(x, ...) {
   .tinyplot_call(
     call_args = list(coverage ~ side, data = dt,
                      type = tinyplot::type_barplot()),
-    defaults  = list(theme = "clean", xlab = NULL, ylab = "Coverage",
+    defaults  = list(theme = "clean", xlab = "", ylab = "Coverage",
                      main = "Match coverage", ylim = c(0, 1)),
     user_dots = list(...)
+  )
+  # Annotate bars with percentage values
+  graphics::text(
+    x      = seq_len(nrow(dt)),
+    y      = dt$coverage / 2,
+    labels = sprintf("%.1f%%", 100 * dt$coverage),
+    col    = "white",
+    font   = 2L,
+    cex    = 1.1
   )
   invisible(dt)
 }
@@ -284,7 +312,7 @@ top_gap_density <- function(x, ...) {
   if (is.null(tgd) || nrow(tgd) == 0L)
     stop("`top_gap_dist` is NULL or empty.", call. = FALSE)
   dt <- data.table::copy(tgd)
-  dt[, bin_mid := (bin_lower + bin_upper) / 2]
+  dt[, bin_mid := round((bin_lower + bin_upper) / 2, 3L)]
   .tinyplot_call(
     call_args = list(count ~ bin_mid, data = dt,
                      type = tinyplot::type_barplot()),
@@ -314,7 +342,7 @@ contribution_plot <- function(x, ...) {
   .tinyplot_call(
     call_args = list(contribution ~ src_column, data = dt,
                      type = tinyplot::type_barplot(), flip = TRUE),
-    defaults  = list(theme = "clean", xlab = "Contribution to score", ylab = NULL,
+    defaults  = list(theme = "clean", xlab = "", ylab = "Contribution to score",
                      main = sprintf("Per-column contributions (match %d)", x@match_id)),
     user_dots = list(...)
   )
@@ -322,7 +350,7 @@ contribution_plot <- function(x, ...) {
 }
 
 
-#' Horizontal bar chart of per-token score contributions
+#' Horizontal bar chart of per-token score contributions, coloured by column
 #'
 #' @param x A `Match_Explanation` object from [explain_match()].
 #' @param ... Passed to [tinyplot::tinyplot()].
@@ -334,11 +362,13 @@ token_contribution_plot <- function(x, ...) {
     stop("`shared_tokens` is NULL or empty.", call. = FALSE)
   dt <- data.table::copy(data.table::as.data.table(st))
   dt[, token_label := paste0(src_column, ": ", token)]
-  data.table::setorder(dt, -contribution)
+  data.table::setorder(dt, src_column, -contribution)
   .tinyplot_call(
-    call_args = list(contribution ~ token_label, data = dt,
-                     type = tinyplot::type_barplot(), flip = TRUE),
-    defaults  = list(theme = "clean", xlab = "Token contribution", ylab = NULL,
+    call_args = list(contribution ~ token_label | src_column, data = dt,
+                     type = tinyplot::type_barplot(), flip = TRUE,
+                     palette = "okabe",
+                     legend = list(title = "Column")),
+    defaults  = list(theme = "clean", xlab = "", ylab = "Token contribution",
                      main = sprintf("Token contributions (match %d)", x@match_id)),
     user_dots = list(...)
   )
@@ -372,10 +402,12 @@ stage_coverage_plot <- function(x, ...) {
   stage_names <- mc$stage
   xaxl_fn <- function(v) stage_names[as.integer(round(v))]
   if (use_pct) {
+    y_min <- max(0, min(mc$base_pct_cumulative, na.rm = TRUE) - 0.05)
     .tinyplot_call(
       call_args = list(base_pct_cumulative ~ stage_idx, data = mc,
-                       type = tinyplot::type_lines(),
-                       xaxb = seq_len(n), xaxl = xaxl_fn, ylim = c(0, 1)),
+                       type = "b",
+                       xaxb = seq_len(n), xaxl = xaxl_fn,
+                       ylim = c(y_min, 1)),
       defaults  = list(theme = "clean", xlab = "Stage",
                        ylab = "Cumulative base coverage",
                        main = "Marginal coverage by stage"),
@@ -384,7 +416,7 @@ stage_coverage_plot <- function(x, ...) {
   } else {
     .tinyplot_call(
       call_args = list(base_cumulative ~ stage_idx, data = mc,
-                       type = tinyplot::type_lines(),
+                       type = "b",
                        xaxb = seq_len(n), xaxl = xaxl_fn),
       defaults  = list(theme = "clean", xlab = "Stage",
                        ylab = "Cumulative base records matched",
@@ -407,7 +439,7 @@ stage_score_plot <- function(x, ...) {
   if (is.null(sds) || nrow(sds) == 0L)
     stop("`score_dist_by_stage` is NULL or empty.", call. = FALSE)
   sds <- data.table::copy(sds)
-  sds[, bin_mid := (bin_lower + bin_upper) / 2]
+  sds[, bin_mid := round((bin_lower + bin_upper) / 2, 3L)]
   .tinyplot_call(
     call_args = list(count ~ bin_mid | stage, data = sds,
                      type = tinyplot::type_barplot(), palette = "okabe"),
