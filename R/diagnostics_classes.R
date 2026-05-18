@@ -652,11 +652,40 @@ method(print.Match_Explanation, Match_Explanation) <- function(x, ...) {
   invisible(x)
 }
 
+.format_match_sample <- function(x) {
+  lines <- character()
+  push  <- function(...) lines <<- c(lines, paste0(...))
+
+  push("<joinery::Match_Sample>")
+  push(sprintf("  mode : %s", x@mode))
+  push(sprintf("  n    : %d", x@criteria$n %||% NA_integer_))
+
+  if (x@mode == "borderline" && !is.null(x@criteria$threshold))
+    push(sprintf("  threshold : %.4f", x@criteria$threshold))
+  if (x@mode == "random" && !is.null(x@criteria$seed))
+    push(sprintf("  seed : %d", as.integer(x@criteria$seed)))
+
+  push("")
+  n_rows <- if (!is.null(x@rows)) nrow(x@rows) else 0L
+  push(sprintf("rows: %d row(s)", n_rows))
+
+  if (!is.null(x@rows) && n_rows > 0L) {
+    push("")
+    preview <- utils::head(x@rows, 10L)
+    for (r in utils::capture.output(print(preview))) push("  ", r)
+    if (n_rows > 10L)
+      push(sprintf("  ... and %d more row(s)", n_rows - 10L))
+  }
+
+  lines
+}
+
 method(format.Match_Sample, Match_Sample) <- function(x, ...) {
-  "<joinery::Match_Sample> (not yet implemented in M1)"
+  .format_match_sample(x)
 }
 method(print.Match_Sample, Match_Sample) <- function(x, ...) {
-  cli::cli_text(format(x))
+  lines <- format(x)
+  for (ln in lines) cli::cli_text(ln)
   invisible(x)
 }
 

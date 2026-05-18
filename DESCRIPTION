@@ -37,6 +37,9 @@ Collate:
     'diagnostics_generics.R'
     'diagnostics_recommendations.R'
     'summarise_matches.R'
+    'audit_strategy.R'
+    'explain_match.R'
+    'sample_matches.R'
     'data.R'
 RoxygenNote: 7.3.3
 Depends: 
