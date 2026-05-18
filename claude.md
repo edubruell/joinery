@@ -26,11 +26,12 @@ The package is built on the **S7 class system**, separating linkage into:
 ### Locked design summary
 
 - **Five verbs** organised around four user questions (Q1 will-it-work, Q2 did-it-work, Q3 why-this-pair, Q4 where-to-look) plus multi-stage:
-  - `audit_strategy()` → `Strategy_Audit` (Q1, pre-match)
+  - `audit_strategy()` → `Strategy_Audit` (Q1, token strategies) or `Embedding_Audit` (Q1, embedding strategies) — dispatches on strategy class
   - `summarise_matches()` → `Match_Overview` (Q2, post-match overview, unified across dedup/candidates via `match_type` slot)
-  - `explain_match()` → `Match_Explanation` (Q3, attribution; dispatch on 2nd arg: `Search_Strategy` reconstructs, tokens table uses directly)
+  - `explain_match()` → `Match_Explanation` (Q3, attribution; dispatch on 2nd arg: `Search_Strategy` reconstructs, tokens table uses directly; `Embedding_Strategy` returns pair+score only — no per-token decomposition)
   - `sample_matches()` → `Match_Sample` (Q4, modes incl. `top_gap`, `ambiguous`)
   - `compare_stages()` → `Stage_Comparison` (multi-stage; `summarise_matches` does NOT auto-detect `stage`)
+- **`Embedding_Audit`** is the Q1 result class for `Embedding_Strategy`. Slots: `n_records`, `n_embedded`, `coverage_rate`, `norm_summary`, `similarity_sample` (pairwise cosine distribution from a random subsample, computed eagerly during `audit_strategy`), `block_summary`, `est_comparisons`, `recommendations`. Token-specific slots (`column_token_stats`, `column_rarity_stats`) are absent — a separate class, not optional slots on `Strategy_Audit`.
 - **Recommendations catalog** in dedicated `R/diagnostics_recommendations.R`; surfaced both via inline `cli` warnings in `print()` and via `recommendations(x)` accessor.
 - **Plotting** is first-class with `tinyplot` as a hard `Imports` dependency. Diagnostic verbs return data only. Each plot is a separately named function (no `plot(x, type=...)`); pipe-composable: `summarise_matches(m) |> score_histogram()`. Default `plot()` method per class calls the most-useful single view.
 
@@ -51,11 +52,12 @@ Implement in order. Do not skip ahead — later milestones depend on conventions
 - `.detect_match_type()` refactored to delegate to `.detect_match_type_cols(cols)` (backend-agnostic).
 - 12 backend parity tests; all 884 tests pass.
 
-**M3 — `audit_strategy` (both backends).**
-- data.table: token counts, unique tokens, rarity quantiles, NA-rate, block size distribution + imbalance metric (gini or top-1 share), comparison-count estimate, optional vocab-overlap when `target` supplied. Honour `sample_n` for large inputs.
-- DuckDB equivalent.
-- Extend recommendations catalog with pre-match triggers (low-rarity stopword pressure, block imbalance, low vocab overlap).
-- Tests: small fixtures with known token vocabularies; verify recommendations fire on planted symptoms; verify `sample_n` returns audit slots within sampling tolerance.
+**M3 — `audit_strategy` (both backends). COMPLETE (2026-05-18)**
+- data.table: token counts, unique tokens, rarity quantiles, NA-rate, block size distribution + imbalance metric (top-1 share), comparison-count estimate, optional vocab-overlap when `target` supplied. Honour `sample_n` for large inputs.
+- DuckDB: sample to R, delegate to data.table method.
+- Tibble/data.frame: thin wrappers via `as_DT`.
+- Recommendations catalog extended with `block_imbalanced` (top1_share > 0.70) and `high_low_rarity_pressure` (max pct_low_rarity > 0.50 across columns); dispatcher extended with `context_fn` support for column-name-in-message.
+- 46 new tests (audit_strategy + recommendations); all 988 tests pass.
 
 **M4 — `explain_match` (both backends, both calling forms).**
 - Add internal helper to `methods_datatable.R` and `methods_duckdb.R` that returns the per-column contribution table for a single pair, **reusing the engine's scoring path** (no re-implementation — drift would silently break smoothing/feedback). Refactor scoring code if necessary to expose this cleanly.
@@ -79,6 +81,14 @@ Implement in order. Do not skip ahead — later milestones depend on conventions
 - Default `plot()` methods per class (e.g. `plot.Match_Overview` → `score_histogram`).
 - Tests: each plot function runs without error on a representative diagnostic object, returns the expected invisible data.table, and respects `...` overrides. Visual correctness is verified manually; do not snapshot raster output in `tests/testthat/`.
 - pkgdown: one screenshot per plot in `pkgdown/figures/`.
+
+**M8 — Embedding strategy diagnostics.**
+- `Embedding_Audit` S7 class in `R/diagnostics_classes.R` with `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods following established conventions.
+- `audit_strategy` dispatch for `Embedding_Strategy` in `R/audit_strategy.R`: coverage rate, norm distribution, pairwise similarity sample (computed eagerly), block summary, `est_comparisons`, recommendations.
+- Recommendations catalog extended: `low_embedding_coverage` (coverage_rate < 0.90), `unnormalised_embeddings` (norm IQR > 0.1 or median norm far from 1.0).
+- `explain_match` dispatch for `Embedding_Strategy`: returns `Match_Explanation` with `pair` and `score` populated, `per_column_contrib` and `shared_tokens` NULL; `print()` states explicitly that per-token attribution is unavailable.
+- Plot functions for `Embedding_Audit`: `similarity_histogram`, `norm_plot`; `block_size_plot` reused as-is. Default `plot.Embedding_Audit` → `similarity_histogram`.
+- Tests: coverage/norm computation on a deterministic embedding fixture; recommendations fire at correct thresholds; `explain_match` on embedding match returns NULL contribution slots without error; DuckDB parity.
 
 ### Testing policy specific to Phase 0.6
 
