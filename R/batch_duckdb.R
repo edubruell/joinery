@@ -69,8 +69,6 @@ if (!rlang::is_installed(c("duckdb", "DBI", "dplyr", "dbplyr"))) {
 #' )
 #' }
 #'
-#' Create a Batch Plan for DuckDB Table Processing
-#'
 #' @export
 duckdb_batch_plan <- function(db_tbl,
                               id,

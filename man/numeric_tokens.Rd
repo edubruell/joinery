@@ -20,8 +20,8 @@ A list of character vectors, one per input element. Each vector
   contains numeric tokens, with ranges expanded into sequences.
 }
 \description{
-Turns numeric/house-number–like text into a list of tokens.
-Expands ranges such as "12-14" or "7–9" into c("12","13","14").
+Turns numeric/house-number-like text into a list of tokens.
+Expands ranges such as "12-14" or "7-9" into c("12","13","14").
 Uses original spacing/separators to detect ranges, while normalization
 cleans text for tokenization.
 }

@@ -2,8 +2,8 @@
 # Diagnostic result classes (Phase 0.6)
 # ============================================================
 #
-# Five small S7 result classes — one per question the diagnostics
-# module is organised around. See notes/diagnostics_design.md §4.
+# Five small S7 result classes -- one per question the diagnostics
+# module is organised around. See notes/diagnostics_design.md Section4.
 #
 # Each class carries summary structures only (small data.tables and
 # named lists) plus a `recommendations` character vector drawn from
@@ -12,7 +12,7 @@
 # Conventions (mirrored on every class):
 #   - format(x, ...) returns the printable lines as a character vector
 #     (used by print() internally and by tests for snapshotting; this
-#     avoids cli-capture brittleness — see commit 72e6722).
+#     avoids cli-capture brittleness -- see commit 72e6722).
 #   - print(x, ...) emits formatted output via cli and returns invisible(x).
 #   - as.data.table(x) / as.data.frame(x) flatten to a single-row
 #     summary table; distributions remain accessible via slot accessors.
@@ -224,7 +224,7 @@ as.data.frame.Stage_Comparison <- new_external_generic(
 
 
 # ---------------------------------------------------------------------------
-# format() / print() — Match_Overview
+# format() / print() -- Match_Overview
 # ---------------------------------------------------------------------------
 
 #' @noRd
@@ -366,7 +366,7 @@ method(print.Match_Overview, Match_Overview) <- function(x, ...) {
 
 
 # ---------------------------------------------------------------------------
-# Coercion — Match_Overview
+# Coercion -- Match_Overview
 # ---------------------------------------------------------------------------
 
 #' @noRd
@@ -402,7 +402,7 @@ method(as.data.frame.Match_Overview, Match_Overview) <- function(x, ...) {
 
 
 # ---------------------------------------------------------------------------
-# Stub format/print for the not-yet-implemented classes (M3–M6)
+# Stub format/print for the not-yet-implemented classes (M3-M6)
 # ---------------------------------------------------------------------------
 
 #' @noRd
@@ -545,7 +545,7 @@ method(print.Strategy_Audit, Strategy_Audit) <- function(x, ...) {
 
 
 # ---------------------------------------------------------------------------
-# Coercion — Strategy_Audit
+# Coercion -- Strategy_Audit
 # ---------------------------------------------------------------------------
 
 #' @noRd
@@ -712,7 +712,7 @@ method(print.Match_Sample, Match_Sample) <- function(x, ...) {
   push("")
   push(sprintf(
     "stages: %s    match_type: %s",
-    paste(stages, collapse = " → "),
+    paste(stages, collapse = " -> "),
     match_type
   ))
 
@@ -778,7 +778,7 @@ method(print.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
   stages     <- names(x@per_stage_overview)
   match_type <- if (length(stages) > 0L) x@per_stage_overview[[1L]]@match_type else "unknown"
   cli::cli_h1(sprintf("Stage_Comparison ({.field %s}, %d stages)", match_type, length(stages)))
-  cli::cli_text(paste(stages, collapse = " → "))
+  cli::cli_text(paste(stages, collapse = " -> "))
 
   for (s in stages) {
     ov <- x@per_stage_overview[[s]]
@@ -818,7 +818,7 @@ method(print.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
 
 
 # ---------------------------------------------------------------------------
-# Coercion — Stage_Comparison
+# Coercion -- Stage_Comparison
 # ---------------------------------------------------------------------------
 
 #' @noRd

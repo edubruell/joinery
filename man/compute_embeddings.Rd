@@ -13,6 +13,8 @@ compute_embeddings(data, id, strategy, ...)
 
 \item{strategy}{An `Embedding_Strategy` object specifying columns,
 embedding model, and normalization settings.}
+
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
 A backend-specific table with columns: `id` and `embedding`

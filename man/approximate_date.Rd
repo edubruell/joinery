@@ -15,11 +15,11 @@ approximate_date(
 \item{x}{A character or Date vector containing dates to approximate.}
 
 \item{unit}{Character string specifying the rounding unit. One of:
-* `"month"` — round to first day of month (default)
-* `"quarter"` — round to first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
-* `"half"` — round to first day of half-year (Jan 1 or Jul 1)
-* `"year"` — round to January 1
-* `"decade"` — round to first year of decade (e.g., 2020-01-01)}
+* `"month"` -- round to first day of month (default)
+* `"quarter"` -- round to first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
+* `"half"` -- round to first day of half-year (Jan 1 or Jul 1)
+* `"year"` -- round to January 1
+* `"decade"` -- round to first year of decade (e.g., 2020-01-01)}
 
 \item{format}{Optional format string for parsing (passed to `as.Date()`).
 If `NULL` (default), attempts automatic parsing via lubridate.}
@@ -40,11 +40,11 @@ same general time period.
 }
 \details{
 Rounding always goes to the **start** of the period:
-* `"month"`: 2023-03-15 → 2023-03-01
-* `"quarter"`: 2023-03-15 → 2023-01-01 (Q1), 2023-05-20 → 2023-04-01 (Q2)
-* `"half"`: 2023-03-15 → 2023-01-01 (H1), 2023-08-20 → 2023-07-01 (H2)
-* `"year"`: 2023-03-15 → 2023-01-01
-* `"decade"`: 2023-03-15 → 2020-01-01
+* `"month"`: 2023-03-15 -> 2023-03-01
+* `"quarter"`: 2023-03-15 -> 2023-01-01 (Q1), 2023-05-20 -> 2023-04-01 (Q2)
+* `"half"`: 2023-03-15 -> 2023-01-01 (H1), 2023-08-20 -> 2023-07-01 (H2)
+* `"year"`: 2023-03-15 -> 2023-01-01
+* `"decade"`: 2023-03-15 -> 2020-01-01
 }
 \examples{
 approximate_date("2023-03-15", unit = "month")

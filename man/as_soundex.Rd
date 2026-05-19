@@ -17,6 +17,6 @@ This function converts a text string to its Soundex encoding. The Soundex algori
 encode words phonetically by reducing them to a simplified representation based on their pronunciation.
 }
 \examples{
-as_soundex("Café")
-as_soundex("Straße")
+as_soundex("Cafe")
+as_soundex("Strasse")
 }

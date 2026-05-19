@@ -1,7 +1,6 @@
 if (!requireNamespace("duckdb",   quietly = TRUE) ||
     !requireNamespace("DBI",      quietly = TRUE) ||
-    !requireNamespace("dplyr",    quietly = TRUE) ||
-    !requireNamespace("tidyllm",  quietly = TRUE)) {
+    !requireNamespace("dplyr",    quietly = TRUE)) {
   return(invisible(NULL))
 }
 
@@ -54,6 +53,11 @@ method(
   compute_embeddings,
   list(Duck_tbl, class_character, Embedding_Strategy)
 ) <- function(data, id, strategy) {
+
+  if (!requireNamespace("tidyllm", quietly = TRUE)) {
+    stop("Package 'tidyllm' is required for embedding-based matching. ",
+         "Install it with install.packages('tidyllm').", call. = FALSE)
+  }
 
   con        <- data$src$con
   .ensure_vss(con)

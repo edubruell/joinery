@@ -1,11 +1,14 @@
-if (requireNamespace("tidyllm", quietly = TRUE)) {
-
 # Method: compute_embeddings for data.table and Embedding_Strategy
 #--------------------------------------------------------------------------
 method(
   compute_embeddings,
   list(DT_tbl, class_character, Embedding_Strategy)
 ) <- function(data, id, strategy) {
+
+  if (!requireNamespace("tidyllm", quietly = TRUE)) {
+    stop("Package 'tidyllm' is required for embedding-based matching. ",
+         "Install it with install.packages('tidyllm').", call. = FALSE)
+  }
 
   dt <- data.table::copy(data)
 
@@ -312,5 +315,3 @@ method(
   data.table::setorder(result_dt, duplicate_group, rank)
   result_dt[]
 }
-
-} # end if (requireNamespace("tidyllm"))

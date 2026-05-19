@@ -36,9 +36,9 @@ match on specific date parts rather than full dates.
 }
 \details{
 Components are returned as zero-padded strings:
-* `"year"` — 4-digit year (e.g., `"2023"`)
-* `"month"` — 2-digit month (e.g., `"01"`, `"12"`)
-* `"day"` — 2-digit day (e.g., `"05"`, `"31"`)
+* `"year"` -- 4-digit year (e.g., `"2023"`)
+* `"month"` -- 2-digit month (e.g., `"01"`, `"12"`)
+* `"day"` -- 2-digit day (e.g., `"05"`, `"31"`)
 
 The order of tokens in the output follows the order of `components`.
 }

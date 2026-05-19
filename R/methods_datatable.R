@@ -29,11 +29,13 @@ method(
 ) <- function(data, id, strategy) {
   
   dt <- data.table::copy(data)
-  
+
   if (!id %in% names(dt)) {
     stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
   }
-  
+
+  .check_reserved_names(names(dt), id)
+
   preparers <- strategy@preparers
   block_by  <- strategy@block_by
   

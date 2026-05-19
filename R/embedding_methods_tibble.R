@@ -1,5 +1,3 @@
-if (requireNamespace("tidyllm", quietly = TRUE)) {
-
 # compute_embeddings
 #--------------------------------------------------------------------------
 
@@ -108,4 +106,3 @@ method(
   back_to_original(out, base_table)
 }
 
-} # end if (requireNamespace("tidyllm"))

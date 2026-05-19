@@ -14,11 +14,11 @@ Character vector with vowels removed.
 }
 \description{
 Removes vowels (A, E, I, O, U) including accented and umlaut variants.
-Useful for fuzzy matching (e.g. "MÜLLER" -> "MLLR", "JOSÉ" -> "JS").
+Useful for fuzzy matching (e.g. "MUELLER" -> "MLLR", "JOSE" -> "JS").
 }
 \examples{
-strip_vowels("Müller")   # "MLLR"
-strip_vowels("Café Noir") # "CF NR"
+strip_vowels("Mueller")   # "MLLR"
+strip_vowels("Cafe Noir") # "CF NR"
 strip_vowels(c("Anna", "Peter"))
 
 }

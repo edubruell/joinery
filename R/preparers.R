@@ -16,16 +16,16 @@
 #' This function converts a text string to upper case, transliterates it based on the specified
 #' transliteration scheme, retains only alphanumeric characters and spaces, and removes extra spaces.
 #'
-#' @param .text A character string or vector to be normalized.
-#' @param .transliteration A character string specifying the transliteration scheme to be used,
+#' @param text A character string or vector to be normalized.
+#' @param transliteration A character string specifying the transliteration scheme to be used,
 #'        defaulting to "De-ASCII".
 #'
 #' @return Returns a normalized, upper-case version of the input text, with non-alphanumeric characters
 #'         and extra spaces removed.
 #'
 #' @examples
-#' normalize_text("Café Coñac")
-#' normalize_text("Straße", .transliteration = "Latin-ASCII")
+#' normalize_text("Cafe Conac")
+#' normalize_text("Strasse", transliteration = "Latin-ASCII")
 #' @export
 #' @import stringi
 normalize_text <- function(text, transliteration = "De-ASCII") {
@@ -55,9 +55,9 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
 #' before replacing known street-type variants.
 #'
 #' Exact matches (e.g., `"st"`, `"rd."`, `"via"`) are always replaced.  
-#' Suffix matches (e.g., German `"straße"` endings or Dutch `"straat"`)
+#' Suffix matches (e.g., German `"strasse"` endings or Dutch `"straat"`)
 #' are applied **only when `lang` is explicitly specified**, preventing unsafe
-#' substitutions such as `"LINCOLANE"` → `"LINCOLANE"`.
+#' substitutions such as `"LINCOLANE"` -> `"LINCOLANE"`.
 #'
 #' @param x A character vector containing street names or address fragments.
 #' @param lang Optional language code (e.g., `"de"`, `"en"`, `"fr"`).  
@@ -65,17 +65,17 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
 #'   language-specific suffix matching is enabled.
 #' @param dict A dictionary of street-type definitions, typically
 #'   [joinery::street_types], containing the columns:
-#'   * `canonical` — canonical uppercase form  
-#'   * `variant`   — lowercased normalized variant form  
-#'   * `type`      — `"exact"` or `"suffix"`  
-#'   * `lang`      — ISO language code
+#'   * `canonical` -- canonical uppercase form  
+#'   * `variant`   -- lowercased normalized variant form  
+#'   * `type`      -- `"exact"` or `"suffix"`  
+#'   * `lang`      -- ISO language code
 #'
 #' @return A character vector of normalized street names. `NA` inputs are
 #'   preserved as `NA`.
 #'
 #' @details
 #' Normalization steps include:
-#' * Unicode → Latin transliteration and ASCII folding (`stri_trans_general`)
+#' * Unicode -> Latin transliteration and ASCII folding (`stri_trans_general`)
 #' * Conversion to uppercase
 #' * Removal of non-alphanumeric characters
 #' * Tokenization on spaces and per-token replacement
@@ -86,7 +86,7 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
 #' * the token ends with a known variant suffix for that language.
 #'
 #' @examples
-#' normalize_street("Müllerstraße", lang = "de")
+#' normalize_street("Muellerstrasse", lang = "de")
 #' # "MUELLERSTRASSE"
 #'
 #' normalize_street("123 Main St.")
@@ -259,9 +259,9 @@ normalize_date <- function(x, format = NULL, orders = c("ymd", "dmy", "mdy")) {
 #'
 #' @details
 #' Components are returned as zero-padded strings:
-#' * `"year"` — 4-digit year (e.g., `"2023"`)
-#' * `"month"` — 2-digit month (e.g., `"01"`, `"12"`)
-#' * `"day"` — 2-digit day (e.g., `"05"`, `"31"`)
+#' * `"year"` -- 4-digit year (e.g., `"2023"`)
+#' * `"month"` -- 2-digit month (e.g., `"01"`, `"12"`)
+#' * `"day"` -- 2-digit day (e.g., `"05"`, `"31"`)
 #'
 #' The order of tokens in the output follows the order of `components`.
 #'
@@ -338,11 +338,11 @@ date_tokens <- function(x,
 #'
 #' @param x A character or Date vector containing dates to approximate.
 #' @param unit Character string specifying the rounding unit. One of:
-#'   * `"month"` — round to first day of month (default)
-#'   * `"quarter"` — round to first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
-#'   * `"half"` — round to first day of half-year (Jan 1 or Jul 1)
-#'   * `"year"` — round to January 1
-#'   * `"decade"` — round to first year of decade (e.g., 2020-01-01)
+#'   * `"month"` -- round to first day of month (default)
+#'   * `"quarter"` -- round to first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
+#'   * `"half"` -- round to first day of half-year (Jan 1 or Jul 1)
+#'   * `"year"` -- round to January 1
+#'   * `"decade"` -- round to first year of decade (e.g., 2020-01-01)
 #' @param format Optional format string for parsing (passed to `as.Date()`).
 #'   If `NULL` (default), attempts automatic parsing via lubridate.
 #' @param orders Optional character vector of lubridate order specifications.
@@ -354,11 +354,11 @@ date_tokens <- function(x,
 #'
 #' @details
 #' Rounding always goes to the **start** of the period:
-#' * `"month"`: 2023-03-15 → 2023-03-01
-#' * `"quarter"`: 2023-03-15 → 2023-01-01 (Q1), 2023-05-20 → 2023-04-01 (Q2)
-#' * `"half"`: 2023-03-15 → 2023-01-01 (H1), 2023-08-20 → 2023-07-01 (H2)
-#' * `"year"`: 2023-03-15 → 2023-01-01
-#' * `"decade"`: 2023-03-15 → 2020-01-01
+#' * `"month"`: 2023-03-15 -> 2023-03-01
+#' * `"quarter"`: 2023-03-15 -> 2023-01-01 (Q1), 2023-05-20 -> 2023-04-01 (Q2)
+#' * `"half"`: 2023-03-15 -> 2023-01-01 (H1), 2023-08-20 -> 2023-07-01 (H2)
+#' * `"year"`: 2023-03-15 -> 2023-01-01
+#' * `"decade"`: 2023-03-15 -> 2020-01-01
 #'
 #' @examples
 #' approximate_date("2023-03-15", unit = "month")
@@ -447,15 +447,15 @@ approximate_date <- function(x,
 #' Strip vowels from text
 #'
 #' Removes vowels (A, E, I, O, U) including accented and umlaut variants.
-#' Useful for fuzzy matching (e.g. "MÜLLER" -> "MLLR", "JOSÉ" -> "JS").
+#' Useful for fuzzy matching (e.g. "MUELLER" -> "MLLR", "JOSE" -> "JS").
 #'
 #' @param text Character vector.
 #'
 #' @return Character vector with vowels removed.
 #'
 #' @examples
-#' strip_vowels("Müller")   # "MLLR"
-#' strip_vowels("Café Noir") # "CF NR"
+#' strip_vowels("Mueller")   # "MLLR"
+#' strip_vowels("Cafe Noir") # "CF NR"
 #' strip_vowels(c("Anna", "Peter"))
 #'
 #' @export
@@ -465,14 +465,14 @@ strip_vowels <- function(text) {
   
   if (length(text) == 0L) return(text)
   
-  # Normalize accents → Latin → ASCII
+  # Normalize accents -> Latin -> ASCII
   x <- text |>
     stringi::stri_trans_general("Any-Latin") |>
     stringi::stri_trans_general("Latin-ASCII") |>
     toupper()
   
   # Remove vowels A/E/I/O/U
-  # Includes letter Y only if you want it – typical Germanic/Romance matching leaves Y in.
+  # Includes letter Y only if you want it - typical Germanic/Romance matching leaves Y in.
   x <- stringi::stri_replace_all_regex(
     x,
     pattern = "[AEIOU]",
@@ -495,16 +495,16 @@ strip_vowels <- function(text) {
 #'
 #' @return Returns the Metaphone encoded version of the input text.
 #' @examples
-#' as_metaphone("Café")
-#' as_metaphone("Straße")
+#' as_metaphone("Cafe")
+#' as_metaphone("Strasse")
 #' @export
 #' @import phonics
 as_metaphone <- function(text) {
-  # Normalize accents: Café → Cafe
+  # Normalize accents: Caf\u00e9 -> Cafe
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
   
-  # Handle ß separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
-  x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
+  # Handle \u00df separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
+  x_norm <- gsub("\u00df", "ss", x_norm, ignore.case = TRUE)
   
   phonics::metaphone(x_norm,clean = FALSE)
 }
@@ -519,8 +519,8 @@ as_metaphone <- function(text) {
 #'
 #' @return Returns the Soundex encoded version of the input text.
 #' @examples
-#' as_soundex("Café")
-#' as_soundex("Straße")
+#' as_soundex("Cafe")
+#' as_soundex("Strasse")
 #' @export
 #' @import phonics
 as_soundex <- function(text){
@@ -529,11 +529,11 @@ as_soundex <- function(text){
   ) |>
     validate_inputs()
   
-  # Normalize accents: Café → Cafe
+  # Normalize accents: Caf\u00e9 -> Cafe
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
   
-  # Handle ß separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
-  x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
+  # Handle \u00df separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
+  x_norm <- gsub("\u00df", "ss", x_norm, ignore.case = TRUE)
   
   phonics::soundex(x_norm,clean = FALSE)
 }
@@ -549,8 +549,8 @@ as_soundex <- function(text){
 #'
 #' @return Returns the Cologne Phonetic encoded version of the input text.
 #' @examples
-#' as_cologne("Café")
-#' as_cologne("Straße")
+#' as_cologne("Cafe")
+#' as_cologne("Strasse")
 #' @export
 #' @import phonics
 as_cologne <- function(text){
@@ -558,7 +558,7 @@ as_cologne <- function(text){
     validate_inputs()
   
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
-  x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
+  x_norm <- gsub("\u00df", "ss", x_norm, ignore.case = TRUE)
   
   phonics::cologne(x_norm, clean = FALSE)
 }
@@ -657,7 +657,10 @@ generate_ngrams <- function(text, n) {
 #' @return Returns the token group corresponding to the input token.
 #'
 #' @examples
-#' dict <- data.table(tokens = c("example", "sample"), token_group = c("example/sample", "example/sample"))
+#' dict <- data.table::data.table(
+#'   tokens = c("example", "sample"),
+#'   token_group = c("example/sample", "example/sample")
+#' )
 #' use_dictionary("example", dict)
 #' use_dictionary("nonexistent", dict)
 #' @export
@@ -677,8 +680,8 @@ use_dictionary <- function(text, dict) {
 #' Tokenize numeric fields, expanding ranges into individual numbers
 #'
 #' @description
-#' Turns numeric/house-number–like text into a list of tokens.
-#' Expands ranges such as "12-14" or "7–9" into c("12","13","14").
+#' Turns numeric/house-number-like text into a list of tokens.
+#' Expands ranges such as "12-14" or "7-9" into c("12","13","14").
 #' Uses original spacing/separators to detect ranges, while normalization
 #' cleans text for tokenization.
 #'
@@ -834,12 +837,13 @@ extract_initials <- function(tokens) {
 
 #' Fuzzy tokens using igraph components (fast, sparse)
 #'
-#' @param text Character vector
+#' @param x Character vector
 #' @param min_nchar Minimum token size
 #' @param max_dist Maximum string distance to consider an edge
 #' @param method stringdist method ("osa", "lv", "jw", ...)
 #'
 #' @return List of fuzzy tokens (list-column)
+#' @importFrom stats setNames
 #' @export
 fuzzy_tokens <- function(x,
                          max_dist = 2,
@@ -885,7 +889,7 @@ fuzzy_tokens <- function(x,
   # ---------------------------------------------------------------------------
   D <- stringdist::stringdistmatrix(all_tokens, all_tokens, method = method)
   
-  # For JW: max_dist is similarity threshold → convert accordingly
+  # For JW: max_dist is similarity threshold -> convert accordingly
   if (method == "jw" && max_dist < 1) {
     # jw distance = 1 - similarity
     dist_threshold <- max_dist
@@ -917,7 +921,7 @@ fuzzy_tokens <- function(x,
   
   # ---------------------------------------------------------------------------
   # Canonical selection function:
-  # longest → min mean distance → lexicographically smallest
+  # longest -> min mean distance -> lexicographically smallest
   # ---------------------------------------------------------------------------
   choose_canon <- function(g) {
     if (length(g) == 1L) return(g)

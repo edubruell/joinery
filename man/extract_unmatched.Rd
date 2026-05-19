@@ -13,6 +13,8 @@ containing the original records.}
 \item{id}{Character scalar naming the ID column in `data`.}
 
 \item{matches}{A table of matched record pairs, containing the ID column.}
+
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
 A subset of `data` containing only records whose IDs do not appear

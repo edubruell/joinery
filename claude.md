@@ -35,7 +35,7 @@ The package is built on the **S7 class system**, separating linkage into:
 - **Recommendations catalog** in dedicated `R/diagnostics_recommendations.R`; surfaced both via inline `cli` warnings in `print()` and via `recommendations(x)` accessor.
 - **Plotting** is first-class with `tinyplot` as a hard `Imports` dependency. Diagnostic verbs return data only. Each plot is a separately named function (no `plot(x, type=...)`); pipe-composable: `summarise_matches(m) |> score_histogram()`. Default `plot()` method per class calls the most-useful single view.
 
-### Next implementation steps (M1 → M7)
+### Implementation steps (M1 → M8) — M1–M7 complete, M8 next
 
 Implement in order. Do not skip ahead — later milestones depend on conventions established earlier.
 

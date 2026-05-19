@@ -42,7 +42,7 @@ Step <- new_class("Step",
 #'
 #' @description
 #' An S7 class representing the preprocessing definition for a **single column**
-#' in a joinery record‐linkage workflow.  
+#' in a joinery record-linkage workflow.  
 #'
 #' A `Search_Preparer` does **not** perform any computation directly.  
 #' Instead, it stores:
@@ -385,7 +385,7 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
       bullets[[i]] <- sprintf(
         "{.field %s}: %s",
         prep@column,
-        paste(step_labels, collapse = " → ")
+        paste(step_labels, collapse = " -> ")
       )
     }
     
@@ -592,6 +592,15 @@ search_strategy <- function(...,
   if (length(weights) > 0 &&
       (is.null(names(weights)) || any(names(weights) == ""))) {
     rlang::abort("`weights` must be a named numeric vector.")
+  }
+  if (length(weights) > 0) {
+    preparer_cols <- vapply(preparers, function(p) p@column, character(1))
+    bad_wt <- setdiff(names(weights), preparer_cols)
+    if (length(bad_wt) > 0L)
+      rlang::abort(paste0(
+        "`weights` names not found in any preparer column: ",
+        paste(bad_wt, collapse = ", ")
+      ))
   }
   if (!is.character(rarity) || length(rarity) != 1L) {
     rlang::abort("`rarity` must be a single character string.")

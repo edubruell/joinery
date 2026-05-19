@@ -15,10 +15,10 @@ language-specific suffix matching is enabled.}
 
 \item{dict}{A dictionary of street-type definitions, typically
 [joinery::street_types], containing the columns:
-* `canonical` — canonical uppercase form  
-* `variant`   — lowercased normalized variant form  
-* `type`      — `"exact"` or `"suffix"`  
-* `lang`      — ISO language code}
+* `canonical` -- canonical uppercase form  
+* `variant`   -- lowercased normalized variant form  
+* `type`      -- `"exact"` or `"suffix"`  
+* `lang`      -- ISO language code}
 }
 \value{
 A character vector of normalized street names. `NA` inputs are
@@ -32,13 +32,13 @@ before replacing known street-type variants.
 }
 \details{
 Exact matches (e.g., `"st"`, `"rd."`, `"via"`) are always replaced.  
-Suffix matches (e.g., German `"straße"` endings or Dutch `"straat"`)
+Suffix matches (e.g., German `"strasse"` endings or Dutch `"straat"`)
 are applied **only when `lang` is explicitly specified**, preventing unsafe
-substitutions such as `"LINCOLANE"` → `"LINCOLANE"`.
+substitutions such as `"LINCOLANE"` -> `"LINCOLANE"`.
 
 
 Normalization steps include:
-* Unicode → Latin transliteration and ASCII folding (`stri_trans_general`)
+* Unicode -> Latin transliteration and ASCII folding (`stri_trans_general`)
 * Conversion to uppercase
 * Removal of non-alphanumeric characters
 * Tokenization on spaces and per-token replacement
@@ -49,7 +49,7 @@ Suffix variants are replaced only when:
 * the token ends with a known variant suffix for that language.
 }
 \examples{
-normalize_street("Müllerstraße", lang = "de")
+normalize_street("Muellerstrasse", lang = "de")
 # "MUELLERSTRASSE"
 
 normalize_street("123 Main St.")

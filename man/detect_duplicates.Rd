@@ -15,11 +15,9 @@ table to deduplicate.}
 \item{strategy}{A `Search_Strategy` object defining preprocessing steps,
 blocking variables, rarity metric, and optional column weights.}
 
-\item{threshold}{Numeric scalar specifying the minimum similarity score
-required for two records to be considered duplicates.}
-
-\item{weights}{Optional named numeric vector overriding the weights stored
-in `strategy`. If `NULL`, the strategy's weights (or uniform weights) are used.}
+\item{...}{Additional arguments passed to backend-specific methods,
+including `threshold` (minimum similarity score) and `weights`
+(named numeric vector overriding strategy weights).}
 }
 \value{
 A backend-specific table containing at least:

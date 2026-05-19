@@ -18,6 +18,6 @@ is used to encode words phonetically by reducing them to a simplified representa
 pronunciation, particularly suited for German language.
 }
 \examples{
-as_cologne("Café")
-as_cologne("Straße")
+as_cologne("Cafe")
+as_cologne("Strasse")
 }

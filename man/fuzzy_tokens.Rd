@@ -7,13 +7,13 @@
 fuzzy_tokens(x, max_dist = 2, method = "osa", min_nchar = 1)
 }
 \arguments{
+\item{x}{Character vector}
+
 \item{max_dist}{Maximum string distance to consider an edge}
 
 \item{method}{stringdist method ("osa", "lv", "jw", ...)}
 
 \item{min_nchar}{Minimum token size}
-
-\item{text}{Character vector}
 }
 \value{
 List of fuzzy tokens (list-column)

@@ -7,9 +7,9 @@
 normalize_text(text, transliteration = "De-ASCII")
 }
 \arguments{
-\item{.text}{A character string or vector to be normalized.}
+\item{text}{A character string or vector to be normalized.}
 
-\item{.transliteration}{A character string specifying the transliteration scheme to be used,
+\item{transliteration}{A character string specifying the transliteration scheme to be used,
 defaulting to "De-ASCII".}
 }
 \value{
@@ -21,6 +21,6 @@ This function converts a text string to upper case, transliterates it based on t
 transliteration scheme, retains only alphanumeric characters and spaces, and removes extra spaces.
 }
 \examples{
-normalize_text("Café Coñac")
-normalize_text("Straße", .transliteration = "Latin-ASCII")
+normalize_text("Cafe Conac")
+normalize_text("Strasse", transliteration = "Latin-ASCII")
 }

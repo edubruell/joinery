@@ -14,14 +14,6 @@
 # ============================================================
 
 
-# Suppress R CMD check NOTEs for data.table NSE variables created with :=
-utils::globalVariables(c(
-  "bin_lower", "bin_upper", "bin_mid",
-  "stage_idx", "base_pct_cumulative",
-  "token_label", "token", "src_column",
-  "contribution", "overlap"
-))
-
 # Internal: merge defaults with user dots, then call tinyplot.
 # NOTE: `type` lives in call_args, not defaults, so passing type= via ...
 # will cause a duplicate-argument error. ... is intended for label/palette/

@@ -3,3 +3,10 @@
 ^\.positai$
 ^\.claude$
 ^local_tests$
+^notes$
+^examples$
+^localwip$
+^pkgdown$
+^Rplots\.pdf$
+^claude\.md$
+^data-raw$

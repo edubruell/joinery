@@ -12,6 +12,8 @@ score_embeddings(base_embeddings, target_embeddings, strategy, ...)
 \item{target_embeddings}{A table with columns: `id` and `embedding`.}
 
 \item{strategy}{An `Embedding_Strategy` object (used for normalization settings).}
+
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
 A backend-specific table with columns: `base_id`, `target_id`, `score`.

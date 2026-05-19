@@ -1,10 +1,10 @@
 Package: joinery
 Type: Package
 Title: Heuristic Index-Based Record Linkage in R
-Version: 0.3.1
+Version: 0.6.0
 Authors@R: person("Eduard", "Brüll", email = "eduard.bruell@zew.de", role = c("aut", "cre"))
 Description: Index-based heuristic record linkage for R.
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 Imports:
     S7,
@@ -46,12 +46,16 @@ Collate:
     'diagnostics_plots.R'
     'data.R'
 RoxygenNote: 7.3.3
-Depends: 
-    R (>= 3.5)
+Depends:
+    R (>= 4.1.0)
 LazyData: true
 Suggests:
     duckdb,
     DBI,
     dbplyr,
     dplyr,
-    tidyllm
+    tidyllm,
+    tibble,
+    stringdist,
+    testthat (>= 3.0.0),
+    withr

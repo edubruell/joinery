@@ -86,6 +86,4 @@ plan2 <- duckdb_batch_plan(
 )
 }
 
-Create a Batch Plan for DuckDB Table Processing
-
 }

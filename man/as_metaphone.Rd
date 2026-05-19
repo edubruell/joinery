@@ -17,6 +17,6 @@ This function converts a text string to its Metaphone encoding. The Metaphone al
 encode words phonetically by reducing them to a simplified representation based on their pronunciation.
 }
 \examples{
-as_metaphone("Café")
-as_metaphone("Straße")
+as_metaphone("Cafe")
+as_metaphone("Strasse")
 }

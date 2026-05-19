@@ -18,7 +18,10 @@ Returns the token group corresponding to the input token.
 This function looks up a token in the similarity dictionary and returns the corresponding token group for a token.
 }
 \examples{
-dict <- data.table(tokens = c("example", "sample"), token_group = c("example/sample", "example/sample"))
+dict <- data.table::data.table(
+  tokens = c("example", "sample"),
+  token_group = c("example/sample", "example/sample")
+)
 use_dictionary("example", dict)
 use_dictionary("nonexistent", dict)
 }

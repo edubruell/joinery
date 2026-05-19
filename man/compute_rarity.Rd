@@ -13,6 +13,8 @@ and `row_id`, plus any `block_by` columns.}
 
 \item{strategy}{A `Search_Strategy` defining the rarity method, blocking
 variables, and field structure.}
+
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
 The same token table with an added `rarity` column.

@@ -16,6 +16,8 @@ search_candidates(base_table, target_table, base_id, target_id, strategy, ...)
 \item{target_id}{Character scalar naming the ID column in `target_table`.}
 
 \item{strategy}{A `Search_Strategy` object defining matching criteria.}
+
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
 Data with candidate matches

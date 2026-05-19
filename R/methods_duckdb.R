@@ -236,7 +236,9 @@ method(
   lazy  <- data
   con   <- lazy$src$con
   table <- lazy$lazy_query$x
-  
+
+  .check_reserved_names(dplyr::tbl_vars(data), id)
+
   block_by <- strategy@block_by %||% NULL
   
   out_name <- output_table %||%

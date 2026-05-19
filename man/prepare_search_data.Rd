@@ -12,6 +12,8 @@ prepare_search_data(data, id, strategy, ...)
 \item{id}{Character scalar naming the ID column in `data`.}
 
 \item{strategy}{A `Search_Strategy` object.}
+
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \description{
 Prepare Data for Record Linkage Search
