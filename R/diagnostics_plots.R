@@ -132,6 +132,95 @@ vocab_overlap_plot <- function(x, ...) {
 
 
 # ---------------------------------------------------------------------------
+# Embedding_Audit plots (Phase 0.6 M8)
+# ---------------------------------------------------------------------------
+
+#' Histogram of sampled pairwise cosine similarities
+#'
+#' @param x An `Embedding_Audit` object from [audit_strategy()].
+#' @param threshold Numeric. Draws a dashed vertical line at the strategy
+#'   threshold (default: `attr(x, "threshold")`).
+#' @param bins Integer. Number of histogram bins.
+#' @param ... Passed to [tinyplot::tinyplot()].
+#' @return Invisibly, the histogram `data.table` with columns
+#'   `bin_lower`, `bin_upper`, `bin_mid`, `count`.
+#' @noRd
+similarity_histogram <- function(x,
+                                 threshold = attr(x, "threshold"),
+                                 bins      = 30L,
+                                 ...) {
+  ss <- x@similarity_sample
+  if (is.null(ss) || nrow(ss) == 0L)
+    stop("`similarity_sample` is NULL or empty.", call. = FALSE)
+  sims <- ss$similarity
+  sims <- sims[is.finite(sims)]
+  if (length(sims) == 0L)
+    stop("All similarity values are NA/non-finite.", call. = FALSE)
+
+  breaks <- seq(min(sims), max(sims), length.out = bins + 1L)
+  if (length(unique(breaks)) < 2L) {
+    breaks <- c(breaks[1L] - 0.5, breaks[1L] + 0.5)
+  }
+  h <- graphics::hist(sims, breaks = breaks, plot = FALSE)
+  dt <- data.table::data.table(
+    bin_lower = utils::head(h$breaks, -1L),
+    bin_upper = utils::tail(h$breaks, -1L),
+    count     = as.integer(h$counts)
+  )
+  dt[, bin_mid := round((bin_lower + bin_upper) / 2, 4L)]
+
+  .tinyplot_call(
+    call_args = list(count ~ bin_mid, data = dt,
+                     type = tinyplot::type_barplot()),
+    defaults  = list(theme = "clean", xlab = "Cosine similarity",
+                     ylab = "Pair count",
+                     main = "Sampled pairwise similarity"),
+    user_dots = list(...)
+  )
+  if (!is.null(threshold) && !is.na(threshold)) {
+    usr <- graphics::par("usr")
+    graphics::lines(rep(threshold, 2L), usr[3:4],
+                    lty = 2, col = "grey40", lwd = 1)
+  }
+  invisible(dt)
+}
+
+
+#' Bar chart of embedding norm quantiles
+#'
+#' Plots p05/p25/p50/p75/p95 of the embedding vector norms. A norm of 1
+#' is annotated; for an L2-normalised strategy all bars should sit on it.
+#'
+#' @param x An `Embedding_Audit` object from [audit_strategy()].
+#' @param ... Passed to [tinyplot::tinyplot()].
+#' @return Invisibly, the plotted `data.table` (quantile, norm).
+#' @noRd
+norm_plot <- function(x, ...) {
+  ns <- x@norm_summary
+  if (length(ns) == 0L || is.null(ns$quantiles) ||
+      all(is.na(ns$quantiles))) {
+    stop("`norm_summary` is empty or all-NA.", call. = FALSE)
+  }
+  q <- ns$quantiles
+  dt <- data.table::data.table(
+    quantile = factor(names(q), levels = names(q)),
+    norm     = as.numeric(unname(q))
+  )
+  .tinyplot_call(
+    call_args = list(norm ~ quantile, data = dt,
+                     type = tinyplot::type_barplot()),
+    defaults  = list(theme = "clean", xlab = "Quantile",
+                     ylab = "Embedding L2 norm",
+                     main = "Embedding norm quantiles"),
+    user_dots = list(...)
+  )
+  usr <- graphics::par("usr")
+  graphics::lines(usr[1:2], c(1, 1), lty = 2, col = "grey40", lwd = 1)
+  invisible(dt)
+}
+
+
+# ---------------------------------------------------------------------------
 # Match_Overview plots
 # ---------------------------------------------------------------------------
 
@@ -452,6 +541,9 @@ plot.Match_Overview <- function(x, ...) score_histogram(x, ...)
 
 #' @noRd
 plot.Strategy_Audit <- function(x, ...) rarity_histogram(x, ...)
+
+#' @noRd
+plot.Embedding_Audit <- function(x, ...) similarity_histogram(x, ...)
 
 #' @noRd
 plot.Match_Explanation <- function(x, ...) contribution_plot(x, ...)

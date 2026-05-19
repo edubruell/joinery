@@ -98,6 +98,28 @@
     )
   ),
   list(
+    id         = "low_embedding_coverage",
+    signal     = "coverage_rate",
+    threshold  = 0.90,
+    op         = "<",
+    lever      = "input quality / assemble_record_text",
+    message_fn = function(v) sprintf(
+      "embedding coverage is %.1f%%; many records have empty/NA text in the configured columns.",
+      100 * v
+    )
+  ),
+  list(
+    id         = "unnormalised_embeddings",
+    signal     = "norm_iqr",
+    threshold  = 0.10,
+    op         = ">",
+    lever      = "Embedding_Strategy(normalize = TRUE)",
+    message_fn = function(v) sprintf(
+      "embedding norm IQR is %.3f; vectors are not unit-length, set `normalize = TRUE` on the strategy.",
+      v
+    )
+  ),
+  list(
     id         = "low_yield_stage",
     signal     = "min_stage_base_pct",
     threshold  = 0.01,

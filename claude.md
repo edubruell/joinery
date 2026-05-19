@@ -21,7 +21,7 @@ The package is built on the **S7 class system**, separating linkage into:
 **Phase 0.4 (Test Coverage Hardening) is complete.**
 **Phase 0.5 (Embedding-Based Matching) is feature-complete** — implementation done, mocked tests pass. Tier B live-provider validation against ollama (cross-model dimensions, live `block_by`, live multi-stage, throughput) is deferred until the user runs it on real yellow-pages data.
 
-**Phase 0.6 (Diagnostics) is in progress.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved. M1–M7 are complete; next step is M8 (embedding strategy diagnostics).
+**Phase 0.6 (Diagnostics) is complete.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved. M1–M8 are all complete.
 
 ### Locked design summary
 
@@ -87,13 +87,13 @@ Implement in order. Do not skip ahead — later milestones depend on conventions
 - `tinyplot` and `graphics` added to DESCRIPTION Imports.
 - 91 tests; all 1290 tests pass. `pkgdown/figures/` contains 14 PNGs.
 
-**M8 — Embedding strategy diagnostics.**
-- `Embedding_Audit` S7 class in `R/diagnostics_classes.R` with `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods following established conventions.
-- `audit_strategy` dispatch for `Embedding_Strategy` in `R/audit_strategy.R`: coverage rate, norm distribution, pairwise similarity sample (computed eagerly), block summary, `est_comparisons`, recommendations.
-- Recommendations catalog extended: `low_embedding_coverage` (coverage_rate < 0.90), `unnormalised_embeddings` (norm IQR > 0.1 or median norm far from 1.0).
-- `explain_match` dispatch for `Embedding_Strategy`: returns `Match_Explanation` with `pair` and `score` populated, `per_column_contrib` and `shared_tokens` NULL; `print()` states explicitly that per-token attribution is unavailable.
-- Plot functions for `Embedding_Audit`: `similarity_histogram`, `norm_plot`; `block_size_plot` reused as-is. Default `plot.Embedding_Audit` → `similarity_histogram`.
-- Tests: coverage/norm computation on a deterministic embedding fixture; recommendations fire at correct thresholds; `explain_match` on embedding match returns NULL contribution slots without error; DuckDB parity.
+**M8 — Embedding strategy diagnostics. COMPLETE (2026-05-20)**
+- `Embedding_Audit` S7 class in `R/diagnostics_classes.R` with `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods. Slots: `n_records`, `n_embedded`, `coverage_rate`, `norm_summary`, `similarity_sample`, `block_summary`, `est_comparisons`, `recommendations`.
+- `audit_strategy` dispatch for `Embedding_Strategy` in `R/audit_strategy.R`: coverage is measured against `assemble_record_text` output (records with all-NA / empty columns drop from `n_embedded`). Norm distribution computed from embedding vectors; pairwise cosine similarity sample drawn eagerly (default 1000 pairs, capped at `n*(n-1)/2`). Block summary and `est_comparisons` reuse `.compute_block_summary` from the token path. DuckDB samples to R and delegates; tibble/data.frame are thin `as_DT` wrappers.
+- Recommendations catalog extended in `R/diagnostics_recommendations.R`: `low_embedding_coverage` (coverage_rate < 0.90), `unnormalised_embeddings` (norm IQR > 0.10). `block_imbalanced` is shared with the token path.
+- `explain_match` dispatch for `Embedding_Strategy` in `R/explain_match.R`: returns `Match_Explanation` with `pair` and `score` populated, `per_column_contrib` and `shared_tokens` NULL, `score_breakdown = list(method = "cosine_similarity", note = ...)`. `format.Match_Explanation` patched to surface "Per-token attribution is not available for embedding matches." when both contribution slots are NULL and method is `"cosine_similarity"`.
+- Plot functions in `R/diagnostics_plots.R`: `similarity_histogram` (with threshold annotation from `attr(audit, "threshold")`), `norm_plot` (quantile bar chart with norm=1 reference line). `block_size_plot` reused on `Embedding_Audit` without changes. Default `plot.Embedding_Audit` → `similarity_histogram`, registered in `.onLoad`.
+- 84 new tests covering: clean fixture, low-coverage trigger, unnormalised trigger (fires + does-not-fire), block imbalanced, both `.compute_similarity_sample` branches (enumerate-all-pairs and rejection-sampling), validation errors (missing id / block_by), tibble + data.frame + DuckDB parity, coercion shape, format/print, plot smoke tests and error paths. All 1380 tests pass; `R CMD check` clean.
 
 ### Testing policy specific to Phase 0.6
 

@@ -103,6 +103,12 @@
 }
 
 
+#' Block-size summary.
+#'
+#' Accepts any data.table that has the `id_col` and `block_by` columns —
+#' typically the tokens frame from the token-path audit, but the
+#' embedding-path audit (M8) also calls this with a plain
+#' `(id, block_by)` subset of the raw data.
 #' @noRd
 .compute_block_summary <- function(tokens, block_by, id_col) {
   # Count distinct records per block (de-duplicate on id within each block)
@@ -332,4 +338,300 @@ method(
   target_dt <- if (!is.null(target)) as_DT(target) else NULL
   audit_strategy(as_DT(data), id, strategy,
                  target = target_dt, sample_n = sample_n, ...)
+}
+
+
+# ============================================================
+# audit_strategy() for Embedding_Strategy (Phase 0.6 M8)
+# ============================================================
+#
+# Coverage + embedding-norm + sampled pairwise cosine similarity.
+# data.table is the reference implementation; DuckDB samples and
+# delegates; tibble/data.frame are thin as_DT wrappers.
+# ============================================================
+
+
+#' Quantiles + median + IQR of the embedding vector norms.
+#' @noRd
+.compute_norm_summary <- function(embeddings) {
+  if (!"embedding" %in% names(embeddings) || nrow(embeddings) == 0L) {
+    return(list(
+      quantiles = stats::setNames(rep(NA_real_, 5L),
+                                  c("p05", "p25", "p50", "p75", "p95")),
+      median    = NA_real_,
+      iqr       = NA_real_
+    ))
+  }
+  norms <- vapply(
+    embeddings$embedding,
+    function(v) sqrt(sum(as.numeric(v)^2)),
+    numeric(1L)
+  )
+  norms <- norms[is.finite(norms)]
+  if (length(norms) == 0L) {
+    return(list(
+      quantiles = stats::setNames(rep(NA_real_, 5L),
+                                  c("p05", "p25", "p50", "p75", "p95")),
+      median    = NA_real_,
+      iqr       = NA_real_
+    ))
+  }
+  q <- stats::quantile(norms, probs = c(0.05, 0.25, 0.5, 0.75, 0.95),
+                       names = FALSE)
+  list(
+    quantiles = stats::setNames(q, c("p05", "p25", "p50", "p75", "p95")),
+    median    = as.numeric(q[3L]),
+    iqr       = as.numeric(q[4L] - q[2L])
+  )
+}
+
+
+#' Random sample of unordered pairs, with their cosine similarity.
+#' Returns NULL when there are fewer than two embedded records.
+#' @noRd
+.compute_similarity_sample <- function(embeddings, id_col,
+                                       n_pairs = 1000L) {
+  n <- nrow(embeddings)
+  if (n < 2L) return(NULL)
+  max_pairs <- as.numeric(n) * (n - 1L) / 2
+  n_pairs   <- as.integer(min(as.numeric(n_pairs), max_pairs))
+  if (n_pairs < 1L) return(NULL)
+
+  # Sample (i, j) pairs with i < j by sampling distinct random pairs.
+  # For very small n we enumerate; otherwise rejection-sample.
+  if (max_pairs <= n_pairs) {
+    pair_grid <- utils::combn(n, 2L)
+    i <- pair_grid[1L, ]
+    j <- pair_grid[2L, ]
+  } else {
+    seen <- new.env(hash = TRUE, parent = emptyenv())
+    i_acc <- integer(0L)
+    j_acc <- integer(0L)
+    # rejection sample with a small safety cap
+    attempts <- 0L
+    max_attempts <- as.integer(20L * n_pairs)
+    while (length(i_acc) < n_pairs && attempts < max_attempts) {
+      attempts <- attempts + 1L
+      a <- sample.int(n, 2L, replace = FALSE)
+      key <- if (a[1L] < a[2L]) paste0(a[1L], "_", a[2L])
+             else                paste0(a[2L], "_", a[1L])
+      if (is.null(seen[[key]])) {
+        seen[[key]] <- TRUE
+        i_acc <- c(i_acc, min(a))
+        j_acc <- c(j_acc, max(a))
+      }
+    }
+    i <- i_acc
+    j <- j_acc
+  }
+
+  emb <- embeddings$embedding
+  sims <- vapply(seq_along(i), function(k) {
+    v1 <- as.numeric(emb[[i[k]]])
+    v2 <- as.numeric(emb[[j[k]]])
+    n1 <- sqrt(sum(v1^2))
+    n2 <- sqrt(sum(v2^2))
+    if (n1 == 0 || n2 == 0) NA_real_
+    else sum(v1 * v2) / (n1 * n2)
+  }, numeric(1L))
+
+  ids <- as.character(embeddings[[id_col]])
+  data.table::data.table(
+    base_id    = ids[i],
+    target_id  = ids[j],
+    similarity = sims
+  )
+}
+
+
+# ---------------------------------------------------------------------------
+# data.table method (reference implementation)
+# ---------------------------------------------------------------------------
+
+method(
+  audit_strategy,
+  list(DT_tbl, class_character, Embedding_Strategy)
+) <- function(data, id, strategy,
+              sample_n          = NULL,
+              similarity_n_pairs = 1000L,
+              ...) {
+
+  dt <- data.table::copy(data.table::as.data.table(data))
+
+  # --- 1. Optional sampling ----------------------------------------------
+  if (!is.null(sample_n)) {
+    sample_n <- as.integer(sample_n)
+    if (sample_n < nrow(dt)) {
+      dt <- dt[sample.int(nrow(dt), sample_n)]
+    }
+  }
+
+  n_records <- nrow(dt)
+
+  if (!id %in% names(dt)) {
+    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+  }
+
+  # --- 2. Embeddable-text coverage ---------------------------------------
+  # assemble_record_text always returns one row per record, so coverage is
+  # measured by non-empty (after-trim) text strings — records whose
+  # configured columns are all NA/empty.
+  assembled <- assemble_record_text(
+    data = dt, id = id,
+    columns = strategy@columns,
+    sep     = strategy@collapse_sep
+  )
+  has_text   <- nchar(trimws(assembled$text)) > 0L
+  n_embedded <- as.integer(sum(has_text))
+  coverage_rate <- if (n_records > 0L) n_embedded / n_records else NA_real_
+
+  # --- 3. Compute embeddings for non-empty records -----------------------
+  norm_summary <- list(
+    quantiles = stats::setNames(rep(NA_real_, 5L),
+                                c("p05", "p25", "p50", "p75", "p95")),
+    median    = NA_real_,
+    iqr       = NA_real_
+  )
+  similarity_sample <- NULL
+  embeddings_dt     <- NULL
+
+  if (n_embedded > 0L) {
+    # Subset to embeddable records so the underlying embed() call never
+    # sees empty strings (some providers error on those).
+    keep_ids <- assembled$id[has_text]
+    .id_vals <- dt[[id]]
+    dt_embed <- dt[.id_vals %in% keep_ids]
+    embeddings_dt <- compute_embeddings(dt_embed, id, strategy)
+    norm_summary  <- .compute_norm_summary(embeddings_dt)
+    similarity_sample <- .compute_similarity_sample(
+      embeddings_dt, id,
+      n_pairs = similarity_n_pairs
+    )
+  }
+
+  # --- 4. Block summary --------------------------------------------------
+  block_by   <- strategy@block_by
+  block_summ <- NULL
+  est_comp   <- as.numeric(n_records) * (n_records - 1L) / 2
+
+  if (!is.null(block_by)) {
+    missing_cols <- setdiff(block_by, names(dt))
+    if (length(missing_cols) > 0L) {
+      stop("Blocking columns not found in data: ",
+           paste(missing_cols, collapse = ", "), call. = FALSE)
+    }
+    # Use a tokens-shaped frame so we can reuse .compute_block_summary().
+    block_dt <- dt[, c(id, block_by), with = FALSE]
+    block_summ <- .compute_block_summary(block_dt, block_by, id)
+    bc <- block_summ$distribution$n_records
+    est_comp <- sum(as.numeric(bc) * (bc - 1L) / 2)
+  }
+
+  # --- 5. Signals + recommendations --------------------------------------
+  signals <- list(coverage_rate = coverage_rate,
+                  norm_iqr      = norm_summary$iqr)
+  if (!is.null(block_summ)) {
+    signals[["block_top_share"]] <- block_summ$summary$top1_share
+  }
+  recs <- .dispatch_recommendations(signals)
+
+  # --- 6. Assemble result ------------------------------------------------
+  out <- Embedding_Audit(
+    n_records         = as.integer(n_records),
+    n_embedded        = n_embedded,
+    coverage_rate     = as.numeric(coverage_rate),
+    norm_summary      = norm_summary,
+    similarity_sample = similarity_sample,
+    block_summary     = block_summ,
+    est_comparisons   = as.numeric(est_comp),
+    recommendations   = recs$messages
+  )
+  attr(out, "recommendation_ids") <- recs$ids
+  attr(out, "threshold")          <- strategy@threshold
+  out
+}
+
+
+# ---------------------------------------------------------------------------
+# DuckDB method: sample to R, delegate to data.table
+# ---------------------------------------------------------------------------
+
+method(
+  audit_strategy,
+  list(Duck_tbl, class_character, Embedding_Strategy)
+) <- function(data, id, strategy,
+              sample_n          = NULL,
+              similarity_n_pairs = 1000L,
+              ...) {
+
+  con      <- data$src$con
+  tbl_name <- data$lazy_query$x
+
+  if (is.null(sample_n)) {
+    n_total  <- DBI::dbGetQuery(
+      con, paste0("SELECT COUNT(*) AS n FROM \"", tbl_name, "\"")
+    )$n
+    sample_n <- as.integer(n_total)
+  } else {
+    sample_n <- as.integer(sample_n)
+  }
+
+  dt_sample <- data.table::as.data.table(
+    DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT * FROM \"", tbl_name, "\" USING SAMPLE ",
+        sample_n, " ROWS"
+      )
+    )
+  )
+
+  audit_strategy(dt_sample, id, strategy,
+                 sample_n = NULL,
+                 similarity_n_pairs = similarity_n_pairs,
+                 ...)
+}
+
+
+# ---------------------------------------------------------------------------
+# Tibble / data.frame thin wrappers
+# ---------------------------------------------------------------------------
+
+method(
+  audit_strategy,
+  list(.jyDF, class_character, Embedding_Strategy)
+) <- function(data, id, strategy,
+              sample_n          = NULL,
+              similarity_n_pairs = 1000L,
+              ...) {
+  audit_strategy(as_DT(data), id, strategy,
+                 sample_n = sample_n,
+                 similarity_n_pairs = similarity_n_pairs,
+                 ...)
+}
+
+method(
+  audit_strategy,
+  list(.jyTBL_DF, class_character, Embedding_Strategy)
+) <- function(data, id, strategy,
+              sample_n          = NULL,
+              similarity_n_pairs = 1000L,
+              ...) {
+  audit_strategy(as_DT(data), id, strategy,
+                 sample_n = sample_n,
+                 similarity_n_pairs = similarity_n_pairs,
+                 ...)
+}
+
+method(
+  audit_strategy,
+  list(.jyTBL, class_character, Embedding_Strategy)
+) <- function(data, id, strategy,
+              sample_n          = NULL,
+              similarity_n_pairs = 1000L,
+              ...) {
+  audit_strategy(as_DT(data), id, strategy,
+                 sample_n = sample_n,
+                 similarity_n_pairs = similarity_n_pairs,
+                 ...)
 }

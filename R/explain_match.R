@@ -371,3 +371,75 @@ method(
   explain_match(as_DT(matches), x, id = id, strategy = strategy,
                 match_id = match_id, ...)
 }
+
+
+# ============================================================
+# Embedding_Strategy form (Phase 0.6 M8)
+# ============================================================
+#
+# Returns pair + score only. Per-token attribution is not available for
+# embedding matches; `per_column_contrib` and `shared_tokens` are NULL
+# and `score_breakdown$method` is `"cosine_similarity"`. The
+# `Match_Explanation` print method surfaces this explicitly.
+# ============================================================
+
+method(
+  explain_match,
+  list(DT_tbl, Embedding_Strategy)
+) <- function(matches, x, match_id = 1L, ...) {
+
+  matches_dt <- data.table::as.data.table(matches)
+  match_id   <- as.integer(match_id)
+
+  pair_info <- .get_pair_ids(matches_dt, match_id)
+  pair_dt   <- .pair_dt_from_matches(matches_dt, match_id, pair_info)
+
+  mt <- pair_info$match_type
+  if (mt == "duplicates") {
+    idx <- which(matches_dt[["duplicate_group"]] == match_id)
+  } else {
+    idx <- which(matches_dt[["match_id"]] == match_id)
+  }
+  score_val <- as.numeric(matches_dt[["score"]][idx][1L])
+
+  Match_Explanation(
+    match_id           = match_id,
+    pair               = pair_dt,
+    per_column_contrib = NULL,
+    shared_tokens      = NULL,
+    score              = score_val,
+    score_breakdown    = list(
+      method = "cosine_similarity",
+      note   = "per-token attribution is not available for embedding strategies"
+    )
+  )
+}
+
+method(
+  explain_match,
+  list(Duck_tbl, Embedding_Strategy)
+) <- function(matches, x, match_id = 1L, ...) {
+  matches_dt <- data.table::as.data.table(dplyr::collect(matches))
+  explain_match(matches_dt, x, match_id = match_id, ...)
+}
+
+method(
+  explain_match,
+  list(.jyDF, Embedding_Strategy)
+) <- function(matches, x, match_id = 1L, ...) {
+  explain_match(as_DT(matches), x, match_id = match_id, ...)
+}
+
+method(
+  explain_match,
+  list(.jyTBL_DF, Embedding_Strategy)
+) <- function(matches, x, match_id = 1L, ...) {
+  explain_match(as_DT(matches), x, match_id = match_id, ...)
+}
+
+method(
+  explain_match,
+  list(.jyTBL, Embedding_Strategy)
+) <- function(matches, x, match_id = 1L, ...) {
+  explain_match(as_DT(matches), x, match_id = match_id, ...)
+}

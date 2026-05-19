@@ -52,6 +52,47 @@ Strategy_Audit <- new_class(
 )
 
 
+#' Embedding Audit Result
+#'
+#' @description
+#' Result of [audit_strategy()] (Phase 0.6 Q1, pre-match) when called on
+#' an [`Embedding_Strategy`]. A separate class from [`Strategy_Audit`]
+#' because the diagnostic surface is different: no per-column token /
+#' rarity statistics, but a coverage rate, embedding-norm distribution,
+#' and a sampled pairwise cosine similarity distribution.
+#'
+#' @slot n_records Integer. Number of records audited.
+#' @slot n_embedded Integer. Records with non-empty assembled text (i.e.
+#'   records that produce a usable embedding).
+#' @slot coverage_rate Numeric. `n_embedded / n_records`.
+#' @slot norm_summary Named list with `quantiles` (named numeric at
+#'   `c(.05, .25, .5, .75, .95)`), `median`, and `iqr`. Norms close to 1
+#'   indicate L2-normalised embeddings.
+#' @slot similarity_sample `data.table` (`base_id`, `target_id`,
+#'   `similarity`) or `NULL`. Pairwise cosine similarities from a random
+#'   subsample, computed eagerly.
+#' @slot block_summary `list` or `NULL`. Same structure as on
+#'   [`Strategy_Audit`] when `block_by` is set on the strategy.
+#' @slot est_comparisons Numeric scalar. Estimated number of pairwise
+#'   comparisons given blocking.
+#' @slot recommendations Character. Strings from the recommendations catalog.
+#'
+#' @noRd
+Embedding_Audit <- new_class(
+  "Embedding_Audit",
+  properties = list(
+    n_records         = class_integer,
+    n_embedded        = class_integer,
+    coverage_rate     = class_numeric,
+    norm_summary      = class_list,
+    similarity_sample = class_any,
+    block_summary     = class_any,
+    est_comparisons   = class_any,
+    recommendations   = class_character
+  )
+)
+
+
 #' Match Overview Result
 #'
 #' @description
@@ -183,6 +224,8 @@ print.Match_Explanation <- new_external_generic("base", "print", "x")
 print.Match_Sample <- new_external_generic("base", "print", "x")
 #' @noRd
 print.Stage_Comparison <- new_external_generic("base", "print", "x")
+#' @noRd
+print.Embedding_Audit <- new_external_generic("base", "print", "x")
 
 #' @noRd
 format.Match_Overview <- new_external_generic("base", "format", "x")
@@ -194,6 +237,8 @@ format.Match_Explanation <- new_external_generic("base", "format", "x")
 format.Match_Sample <- new_external_generic("base", "format", "x")
 #' @noRd
 format.Stage_Comparison <- new_external_generic("base", "format", "x")
+#' @noRd
+format.Embedding_Audit <- new_external_generic("base", "format", "x")
 
 #' @noRd
 as.data.table.Match_Overview <- new_external_generic(
@@ -219,6 +264,15 @@ as.data.table.Stage_Comparison <- new_external_generic(
 )
 #' @noRd
 as.data.frame.Stage_Comparison <- new_external_generic(
+  "base", "as.data.frame", "x"
+)
+
+#' @noRd
+as.data.table.Embedding_Audit <- new_external_generic(
+  "data.table", "as.data.table", "x"
+)
+#' @noRd
+as.data.frame.Embedding_Audit <- new_external_generic(
   "base", "as.data.frame", "x"
 )
 
@@ -625,6 +679,14 @@ method(format.Match_Explanation, Match_Explanation) <- function(x, ...) {
   }
   push(score_line)
 
+  # --- Embedding-strategy note ----------------------------------------------
+  sb_method <- x@score_breakdown$method
+  if (is.null(x@per_column_contrib) && is.null(x@shared_tokens) &&
+      !is.null(sb_method) && identical(sb_method, "cosine_similarity")) {
+    push("")
+    push("Per-token attribution is not available for embedding matches.")
+  }
+
   # --- Per-column contributions ----------------------------------------------
   if (!is.null(x@per_column_contrib) && nrow(x@per_column_contrib) > 0L) {
     push("")
@@ -855,6 +917,169 @@ method(as.data.frame.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
   as.data.frame(.stage_comparison_to_dt(x))
 }
 
+
+# ---------------------------------------------------------------------------
+# format() / print() -- Embedding_Audit
+# ---------------------------------------------------------------------------
+
+#' @noRd
+.format_embedding_audit <- function(x) {
+  lines <- character()
+  push <- function(...) lines <<- c(lines, paste0(...))
+
+  push("<joinery::Embedding_Audit>")
+  push("")
+  push(sprintf(
+    "n_records: %d   n_embedded: %d   coverage_rate: %.1f%%",
+    x@n_records, x@n_embedded, 100 * x@coverage_rate
+  ))
+
+  ns <- x@norm_summary
+  if (length(ns) > 0L && !is.null(ns$quantiles)) {
+    q <- ns$quantiles
+    push("")
+    push("norm quantiles (p05/p25/p50/p75/p95):")
+    push(sprintf(
+      "  %.4f / %.4f / %.4f / %.4f / %.4f   (median=%.4f, iqr=%.4f)",
+      q[1L], q[2L], q[3L], q[4L], q[5L],
+      ns$median %||% NA_real_, ns$iqr %||% NA_real_
+    ))
+  }
+
+  ss <- x@similarity_sample
+  if (!is.null(ss) && nrow(ss) > 0L) {
+    s <- ss$similarity
+    push("")
+    push(sprintf(
+      "similarity sample: %d pairs   min=%.3f  median=%.3f  max=%.3f",
+      nrow(ss),
+      min(s, na.rm = TRUE),
+      stats::median(s, na.rm = TRUE),
+      max(s, na.rm = TRUE)
+    ))
+  }
+
+  bs <- x@block_summary
+  if (!is.null(bs)) {
+    sm <- bs$summary
+    push("")
+    push(sprintf(
+      "block summary: %d blocks, top1_share=%.1f%%, min=%d, median=%.1f, max=%d",
+      sm$n_blocks, 100 * sm$top1_share,
+      sm$min_size, sm$median_size, sm$max_size
+    ))
+    dist <- utils::head(bs$distribution, 5L)
+    push("  top blocks (up to 5):")
+    for (i in seq_len(nrow(dist))) {
+      push(sprintf(
+        "    %s: %d records (%.1f%%)",
+        dist$block_key[i], dist$n_records[i], 100 * dist$pct_records[i]
+      ))
+    }
+  }
+
+  ec <- x@est_comparisons
+  if (!is.null(ec) && !is.na(ec)) {
+    push("")
+    push(sprintf("est_comparisons: %.0f", ec))
+  }
+
+  if (length(x@recommendations) > 0L) {
+    push("")
+    push("recommendations:")
+    for (r in x@recommendations) push("  ! ", r)
+  }
+
+  lines
+}
+
+method(format.Embedding_Audit, Embedding_Audit) <- function(x, ...) {
+  .format_embedding_audit(x)
+}
+
+method(print.Embedding_Audit, Embedding_Audit) <- function(x, ...) {
+  cli::cli_h1("Embedding_Audit")
+  cli::cli_text(sprintf(
+    "n_records: {.val %d}   n_embedded: {.val %d}   coverage_rate: {.val %s}",
+    x@n_records, x@n_embedded,
+    sprintf("%.1f%%", 100 * x@coverage_rate)
+  ))
+
+  ns <- x@norm_summary
+  if (length(ns) > 0L && !is.null(ns$quantiles)) {
+    q <- ns$quantiles
+    cli::cli_text(sprintf(
+      "{.strong norm}: median=%.4f, iqr=%.4f (p05=%.4f, p95=%.4f)",
+      ns$median %||% NA_real_, ns$iqr %||% NA_real_,
+      q[1L], q[5L]
+    ))
+  }
+
+  ss <- x@similarity_sample
+  if (!is.null(ss) && nrow(ss) > 0L) {
+    s <- ss$similarity
+    cli::cli_text(sprintf(
+      "{.strong similarity sample}: %d pairs  min=%.3f  median=%.3f  max=%.3f",
+      nrow(ss),
+      min(s, na.rm = TRUE),
+      stats::median(s, na.rm = TRUE),
+      max(s, na.rm = TRUE)
+    ))
+  }
+
+  bs <- x@block_summary
+  if (!is.null(bs)) {
+    sm <- bs$summary
+    cli::cli_text(
+      "{.strong blocks}: {sm$n_blocks} blocks, top1_share={.val {sprintf('%.1f%%', 100*sm$top1_share)}}"
+    )
+  }
+
+  ec <- x@est_comparisons
+  if (!is.null(ec) && !is.na(ec)) {
+    cli::cli_text("est_comparisons: {.val {sprintf('%.0f', ec)}}")
+  }
+
+  for (r in x@recommendations) cli::cli_alert_warning(r)
+
+  invisible(x)
+}
+
+
+# ---------------------------------------------------------------------------
+# Coercion -- Embedding_Audit
+# ---------------------------------------------------------------------------
+
+#' @noRd
+.embedding_audit_to_dt <- function(x) {
+  ns <- x@norm_summary
+  bs <- x@block_summary
+  ss <- x@similarity_sample
+
+  data.table::data.table(
+    n_records         = x@n_records,
+    n_embedded        = x@n_embedded,
+    coverage_rate     = as.numeric(x@coverage_rate),
+    norm_median       = if (!is.null(ns)) as.numeric(ns$median %||% NA_real_) else NA_real_,
+    norm_iqr          = if (!is.null(ns)) as.numeric(ns$iqr    %||% NA_real_) else NA_real_,
+    similarity_median = if (!is.null(ss) && nrow(ss) > 0L)
+                          as.numeric(stats::median(ss$similarity, na.rm = TRUE))
+                        else NA_real_,
+    similarity_n_pairs = if (!is.null(ss)) as.integer(nrow(ss)) else NA_integer_,
+    est_comparisons   = if (!is.null(x@est_comparisons)) as.numeric(x@est_comparisons) else NA_real_,
+    n_blocks          = if (!is.null(bs)) as.integer(bs$summary$n_blocks) else NA_integer_,
+    block_top1_share  = if (!is.null(bs)) as.numeric(bs$summary$top1_share) else NA_real_,
+    n_recommendations = length(x@recommendations)
+  )
+}
+
+method(as.data.table.Embedding_Audit, Embedding_Audit) <- function(x, ...) {
+  .embedding_audit_to_dt(x)
+}
+
+method(as.data.frame.Embedding_Audit, Embedding_Audit) <- function(x, ...) {
+  as.data.frame(.embedding_audit_to_dt(x))
+}
 
 
 # `%||%` is imported from rlang via the package-level `@import` directive
