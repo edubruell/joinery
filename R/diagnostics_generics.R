@@ -1,5 +1,5 @@
 # ============================================================
-# Diagnostic verb generics (Phase 0.6)
+# Diagnostic verb generics
 # ============================================================
 #
 # Five verbs organised around the four user questions defined in
@@ -9,24 +9,17 @@
 #   Q3 (attribution)      : explain_match()         -> Match_Explanation
 #   Q4 (sample for review): sample_matches()        -> Match_Sample
 #   multi-stage           : compare_stages()        -> Stage_Comparison
-#
-# M1 implements only summarise_matches() on the data.table backend.
-# The other generics are registered here so the surface is locked
-# from day one; their methods land in M3–M6 (see CLAUDE.md).
 # ============================================================
 
 
 #' Audit a Search Strategy Against Data
 #'
 #' @description
-#' Pre-match diagnostic (Phase 0.6 Q1). Runs preparation and rarity
+#' Pre-match diagnostic (Q1). Runs preparation and rarity
 #' computation, reports per-column token / rarity statistics and
 #' (when `block_by` is set) block-size distribution and estimated
 #' comparison count. Surfaces recommendations linking pre-match
 #' symptoms to strategy levers.
-#'
-#' Implementation lands in M3; this generic is registered here so
-#' the API surface is stable.
 #'
 #' @param data A data.frame / tibble / data.table (or backend-specific table).
 #' @param id Character scalar naming the ID column in `data`.
@@ -47,7 +40,7 @@ audit_strategy <- new_generic(
 #' Summarise a Match Result
 #'
 #' @description
-#' Post-match overview (Phase 0.6 Q2). Auto-detects whether the input
+#' Post-match overview (Q2). Auto-detects whether the input
 #' is a duplicate table (presence of `duplicate_group` column) or a
 #' candidate table (presence of `match_id` and `source` columns), and
 #' reports score distribution, coverage (when `base` / `target` are
@@ -84,11 +77,11 @@ summarise_matches <- new_generic(
 #' Explain a Single Match
 #'
 #' @description
-#' Attribution diagnostic (Phase 0.6 Q3). Reconstructs per-column and
+#' Attribution diagnostic (Q3). Reconstructs per-column and
 #' per-token contributions to a single match score. Dispatches on the
 #' second positional argument: a [`Search_Strategy`] triggers
 #' reconstruction from raw inputs; a tokens-shaped table is used
-#' directly. Implementation lands in M4.
+#' directly.
 #'
 #' @param matches Match output table.
 #' @param x Either a [`Search_Strategy`] (ergonomic form) or a tokens
@@ -108,9 +101,8 @@ explain_match <- new_generic(
 #' Sample Matches for Review
 #'
 #' @description
-#' Sampling diagnostic (Phase 0.6 Q4). Modes: `"high"`, `"low"`,
-#' `"borderline"`, `"ambiguous"`, `"top_gap"`, `"random"`. Implementation
-#' lands in M5.
+#' Sampling diagnostic (Q4). Modes: `"high"`, `"low"`,
+#' `"borderline"`, `"ambiguous"`, `"top_gap"`, `"random"`.
 #'
 #' @param matches Match output table.
 #' @param ... Method-specific arguments. Standard arguments: `mode`
@@ -129,12 +121,12 @@ sample_matches <- new_generic(
 #' Compare Stages of a Multi-Stage Match
 #'
 #' @description
-#' Multi-stage diagnostic (Phase 0.6). Produces per-stage
+#' Multi-stage diagnostic. Produces per-stage
 #' [`Match_Overview`]s, marginal coverage per stage, and overlaid
 #' per-stage score distributions. Note that [summarise_matches()] does
 #' **not** auto-detect a `stage` column — users explicitly call this
 #' verb when they want per-stage analysis (see
-#' `notes/diagnostics_design.md` §10). Implementation lands in M6.
+#' `notes/diagnostics_design.md` §10).
 #'
 #' @param matches Multi-stage match table with a `stage` column.
 #' @param ... Method-specific arguments. The data.table method will

@@ -17,7 +17,6 @@ and mode-specific extras (e.g. `threshold` for `"borderline"`).}
 A `Match_Sample` object.
 }
 \description{
-Sampling diagnostic (Phase 0.6 Q4). Modes: `"high"`, `"low"`,
-`"borderline"`, `"ambiguous"`, `"top_gap"`, `"random"`. Implementation
-lands in M5.
+Sampling diagnostic (Q4). Modes: `"high"`, `"low"`,
+`"borderline"`, `"ambiguous"`, `"top_gap"`, `"random"`.
 }

@@ -1,6 +1,6 @@
-# Tests for audit_strategy() (Phase 0.6 M3).
+# Tests for audit_strategy().
 #
-# Fixture convention (M2+): one clean fixture (zero recommendations) + one
+# Fixture convention: one clean fixture (zero recommendations) + one
 # trigger fixture per recommendation rule (fires only that rule).
 
 library(data.table)

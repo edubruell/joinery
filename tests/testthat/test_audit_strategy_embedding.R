@@ -1,4 +1,4 @@
-# Tests for audit_strategy() on Embedding_Strategy (Phase 0.6 M8).
+# Tests for audit_strategy() on Embedding_Strategy.
 #
 # Same fixture-convention as test_audit_strategy.R: one clean fixture
 # (zero recommendations) + one trigger fixture per recommendation rule.

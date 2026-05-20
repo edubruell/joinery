@@ -1,5 +1,5 @@
 # ============================================================
-# sample_matches() — all backends (Phase 0.6 M5)
+# sample_matches() — all backends
 # ============================================================
 #
 # Six sampling modes for user review (Q4: "where should I look first?"):

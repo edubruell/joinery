@@ -1,5 +1,5 @@
 # ============================================================
-# compare_stages() — all backends (Phase 0.6 M6)
+# compare_stages() — all backends
 # ============================================================
 #
 # Consumes a multi-stage matches table (with a `stage` column,

@@ -1,4 +1,4 @@
-# Tests for the recommendations catalog and dispatcher (Phase 0.6 M1).
+# Tests for the recommendations catalog and dispatcher.
 
 test_that("dispatcher returns empty when no signals trigger", {
   out <- joinery:::.dispatch_recommendations(list(
@@ -54,7 +54,7 @@ test_that("dispatcher respects each operator", {
 
 
 # ---------------------------------------------------------------------------
-# M3 additions: block_imbalanced and high_low_rarity_pressure
+# block_imbalanced and high_low_rarity_pressure
 # ---------------------------------------------------------------------------
 
 test_that("block_imbalanced fires when block_top_share > 0.70", {

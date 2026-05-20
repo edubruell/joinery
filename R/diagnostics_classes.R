@@ -1,5 +1,5 @@
 # ============================================================
-# Diagnostic result classes (Phase 0.6)
+# Diagnostic result classes
 # ============================================================
 #
 # Five small S7 result classes -- one per question the diagnostics
@@ -26,7 +26,7 @@
 #' Strategy Audit Result
 #'
 #' @description
-#' Result of [audit_strategy()] (Phase 0.6 Q1, pre-match).
+#' Result of [audit_strategy()] (Q1, pre-match).
 #'
 #' @slot n_records Integer. Number of records audited.
 #' @slot block_summary `data.table` or `NULL`. Distribution of block sizes
@@ -55,7 +55,7 @@ Strategy_Audit <- new_class(
 #' Embedding Audit Result
 #'
 #' @description
-#' Result of [audit_strategy()] (Phase 0.6 Q1, pre-match) when called on
+#' Result of [audit_strategy()] (Q1, pre-match) when called on
 #' an [`Embedding_Strategy`]. A separate class from [`Strategy_Audit`]
 #' because the diagnostic surface is different: no per-column token /
 #' rarity statistics, but a coverage rate, embedding-norm distribution,
@@ -96,7 +96,7 @@ Embedding_Audit <- new_class(
 #' Match Overview Result
 #'
 #' @description
-#' Result of [summarise_matches()] (Phase 0.6 Q2, post-match overview).
+#' Result of [summarise_matches()] (Q2, post-match overview).
 #' Unified across duplicate and candidate match types via the
 #' `match_type` slot.
 #'
@@ -139,8 +139,7 @@ Match_Overview <- new_class(
 #' Match Explanation Result
 #'
 #' @description
-#' Result of [explain_match()] (Phase 0.6 Q3, attribution). Slots are
-#' defined now to lock the surface; method dispatch is implemented in M4.
+#' Result of [explain_match()] (Q3, attribution).
 #'
 #' @slot match_id Integer scalar. Identifier of the explained pair / group.
 #' @slot pair `data.table`. Original column values for the records in the pair.
@@ -167,8 +166,7 @@ Match_Explanation <- new_class(
 #' Match Sample Result
 #'
 #' @description
-#' Result of [sample_matches()] (Phase 0.6 Q4, sampling for review).
-#' Slots are defined now to lock the surface; implementation lands in M5.
+#' Result of [sample_matches()] (Q4, sampling for review).
 #'
 #' @slot mode Character scalar. One of `"high"`, `"low"`, `"borderline"`,
 #'   `"ambiguous"`, `"top_gap"`, `"random"`.
@@ -190,8 +188,7 @@ Match_Sample <- new_class(
 #' Stage Comparison Result
 #'
 #' @description
-#' Result of [compare_stages()] (Phase 0.6 multi-stage diagnostics).
-#' Slots are defined now to lock the surface; implementation lands in M6.
+#' Result of [compare_stages()] (multi-stage diagnostics).
 #'
 #' @slot per_stage_overview Named list of `Match_Overview` objects.
 #' @slot marginal_coverage `data.table`. Records added by each stage.
@@ -456,7 +453,7 @@ method(as.data.frame.Match_Overview, Match_Overview) <- function(x, ...) {
 
 
 # ---------------------------------------------------------------------------
-# Stub format/print for the not-yet-implemented classes (M3-M6)
+# Stub format/print for classes whose full methods live in their own files
 # ---------------------------------------------------------------------------
 
 #' @noRd

@@ -1,5 +1,5 @@
 # ============================================================
-# audit_strategy() — all backends (Phase 0.6 M3)
+# audit_strategy() — all backends
 # ============================================================
 #
 # Pre-match diagnostic (Q1). Runs prepare_search_data +
@@ -107,7 +107,7 @@
 #'
 #' Accepts any data.table that has the `id_col` and `block_by` columns —
 #' typically the tokens frame from the token-path audit, but the
-#' embedding-path audit (M8) also calls this with a plain
+#' embedding-path audit also calls this with a plain
 #' `(id, block_by)` subset of the raw data.
 #' @noRd
 .compute_block_summary <- function(tokens, block_by, id_col) {
@@ -342,7 +342,7 @@ method(
 
 
 # ============================================================
-# audit_strategy() for Embedding_Strategy (Phase 0.6 M8)
+# audit_strategy() for Embedding_Strategy
 # ============================================================
 #
 # Coverage + embedding-norm + sampled pairwise cosine similarity.

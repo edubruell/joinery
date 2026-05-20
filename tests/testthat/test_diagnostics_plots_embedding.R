@@ -1,4 +1,4 @@
-# Smoke tests for Embedding_Audit plot functions (Phase 0.6 M8).
+# Smoke tests for Embedding_Audit plot functions.
 #
 # No image snapshots: we verify the functions run without error and return
 # the expected invisible data.table.

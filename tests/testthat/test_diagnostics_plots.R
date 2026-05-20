@@ -1,5 +1,5 @@
 # ============================================================
-# Tests for diagnostic plot functions — Phase 0.6 M7
+# Tests for diagnostic plot functions
 # ============================================================
 #
 # Policy (CLAUDE.md):

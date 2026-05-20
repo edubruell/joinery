@@ -21,12 +21,9 @@ and `sample_n` (optional integer; if set, audit a random sample of rows).}
 A `Strategy_Audit` object.
 }
 \description{
-Pre-match diagnostic (Phase 0.6 Q1). Runs preparation and rarity
+Pre-match diagnostic (Q1). Runs preparation and rarity
 computation, reports per-column token / rarity statistics and
 (when `block_by` is set) block-size distribution and estimated
 comparison count. Surfaces recommendations linking pre-match
 symptoms to strategy levers.
-
-Implementation lands in M3; this generic is registered here so
-the API surface is stable.
 }

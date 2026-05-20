@@ -35,6 +35,7 @@ Collate:
     'batch_duckdb.R'
     'methods_duckdb.R'
     'embedding_methods_duckdb.R'
+    'aip.R'
     'diagnostics_classes.R'
     'diagnostics_generics.R'
     'diagnostics_recommendations.R'

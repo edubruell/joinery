@@ -15,103 +15,6 @@ The package is built on the **S7 class system**, separating linkage into:
 1. **A declarative search strategy** — defines *how* text fields should be normalized, tokenized, encoded, weighted, scored, and blocked.
 2. **Backend-specific execution** — defines *how* data is matched using the IR.
 
-## Current Development Stage
-
-**Phase 0.3 (SearchEngine Heuristics) is complete.**
-**Phase 0.4 (Test Coverage Hardening) is complete.**
-**Phase 0.5 (Embedding-Based Matching) is feature-complete** — implementation done, mocked tests pass. Tier B live-provider validation against ollama (cross-model dimensions, live `block_by`, live multi-stage, throughput) is deferred until the user runs it on real yellow-pages data.
-
-**Phase 0.6 (Diagnostics) is complete.** See `notes/diagnostics_design.md` — all §13 user decisions are resolved. M1–M8 are all complete.
-
-### Locked design summary
-
-- **Five verbs** organised around four user questions (Q1 will-it-work, Q2 did-it-work, Q3 why-this-pair, Q4 where-to-look) plus multi-stage:
-  - `audit_strategy()` → `Strategy_Audit` (Q1, token strategies) or `Embedding_Audit` (Q1, embedding strategies) — dispatches on strategy class
-  - `summarise_matches()` → `Match_Overview` (Q2, post-match overview, unified across dedup/candidates via `match_type` slot)
-  - `explain_match()` → `Match_Explanation` (Q3, attribution; dispatch on 2nd arg: `Search_Strategy` reconstructs, tokens table uses directly; `Embedding_Strategy` returns pair+score only — no per-token decomposition)
-  - `sample_matches()` → `Match_Sample` (Q4, modes incl. `top_gap`, `ambiguous`)
-  - `compare_stages()` → `Stage_Comparison` (multi-stage; `summarise_matches` does NOT auto-detect `stage`)
-- **`Embedding_Audit`** is the Q1 result class for `Embedding_Strategy`. Slots: `n_records`, `n_embedded`, `coverage_rate`, `norm_summary`, `similarity_sample` (pairwise cosine distribution from a random subsample, computed eagerly during `audit_strategy`), `block_summary`, `est_comparisons`, `recommendations`. Token-specific slots (`column_token_stats`, `column_rarity_stats`) are absent — a separate class, not optional slots on `Strategy_Audit`.
-- **Recommendations catalog** in dedicated `R/diagnostics_recommendations.R`; surfaced both via inline `cli` warnings in `print()` and via `recommendations(x)` accessor.
-- **Plotting** is first-class with `tinyplot` as a hard `Imports` dependency. Diagnostic verbs return data only. Each plot is a separately named function (no `plot(x, type=...)`); pipe-composable: `summarise_matches(m) |> score_histogram()`. Default `plot()` method per class calls the most-useful single view.
-
-### Implementation steps (M1 → M8) — M1–M7 complete, M8 next
-
-Implement in order. Do not skip ahead — later milestones depend on conventions established earlier.
-
-**M1 — Skeleton + `summarise_matches` (data.table only). COMPLETE (2026-05-11)**
-- `R/diagnostics_classes.R`: S7 classes `Strategy_Audit`, `Match_Overview`, `Match_Explanation`, `Match_Sample`, `Stage_Comparison` with slots, `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods.
-- `R/diagnostics_generics.R`: five verb generics + `recommendations()` accessor.
-- `R/diagnostics_recommendations.R`: catalog (`signal → threshold → message`) + `.dispatch_recommendations()` helper.
-- `R/summarise_matches.R`: `summarise_matches.data.table()` end-to-end (schema detection, score distribution, cluster/ambiguity/top_gap, coverage, recommendations).
-- 47 tests; print snapshots stable.
-
-**M2 — Backend parity for `summarise_matches`. COMPLETE (2026-05-16)**
-- DuckDB: SQL-native aggregations (`APPROX_QUANTILE`, `FLOOR`-arithmetic histogram); pulls only summary scalars and small distribution tables to R.
-- Tibble/data.frame: thin wrappers delegating to DT method via `as_DT`.
-- `.detect_match_type()` refactored to delegate to `.detect_match_type_cols(cols)` (backend-agnostic).
-- 12 backend parity tests; all 884 tests pass.
-
-**M3 — `audit_strategy` (both backends). COMPLETE (2026-05-18)**
-- data.table: token counts, unique tokens, rarity quantiles, NA-rate, block size distribution + imbalance metric (top-1 share), comparison-count estimate, optional vocab-overlap when `target` supplied. Honour `sample_n` for large inputs.
-- DuckDB: sample to R, delegate to data.table method.
-- Tibble/data.frame: thin wrappers via `as_DT`.
-- Recommendations catalog extended with `block_imbalanced` (top1_share > 0.70) and `high_low_rarity_pressure` (max pct_low_rarity > 0.50 across columns); dispatcher extended with `context_fn` support for column-name-in-message.
-- 46 new tests (audit_strategy + recommendations); all 988 tests pass.
-
-**M4 — `explain_match` (both backends, both calling forms). COMPLETE (2026-05-18)**
-- `.pair_attribution_dt()` helper in `methods_datatable.R` reuses `.score_token_pairs()` rIP/smoothing/feedback logic; returns per-token contributions, per-column aggregation, score, and `score_breakdown` (feedback_factor for round-trip).
-- `explain_match()` dispatches on 2nd argument: `Search_Strategy` → runs full `prepare_search_data` + `compute_rarity` pipeline, filters to pair tokens; tokens table → uses directly. DuckDB form collects matches+data to R, delegates to DT method.
-- Round-trip contract: `sum(per_column_contrib$contribution) × feedback_factor == score` (exact when no feedback; tolerance 1e-10).
-- 63 new tests covering: round-trip (no feedback), round-trip (with feedback), both calling forms identical, DuckDB parity, candidates, blocking, weight validation, print/format, error cases; all 1051 tests pass.
-
-**M5 — `sample_matches` (both backends). COMPLETE (2026-05-18)**
-- Six modes: `high`, `low`, `borderline`, `ambiguous`, `top_gap`, `random`. DuckDB collects to R and delegates to DT method; tibble/data.frame thin wrappers via `as_DT()`.
-- `format()`/`print()` for `Match_Sample` replaces stub; shows mode, n, threshold (borderline/low), seed (random), and row preview.
-- `DESCRIPTION` Collate updated to include `audit_strategy.R`, `explain_match.R`, `sample_matches.R` (were missing since M3/M4).
-- 76 new tests covering: all modes on duplicates and candidates, n-honoured, correctness, error handling, edge cases (empty table, single-match groups, threshold above all scores), DuckDB parity, tibble/data.frame parity, format/print, snapshot; all 1126 tests pass.
-
-**M6 — `compare_stages` and multi-stage extensions. COMPLETE (2026-05-18)**
-- `R/compare_stages.R`: data.table method (reference), DuckDB (collect→delegate), tibble/data.frame thin wrappers.
-- `Stage_Comparison` class extended with `recommendations` slot; full `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods replace stubs.
-- `marginal_coverage` data.table: base/target records added per stage (and cumulative), with pct columns when base/target supplied.
-- `score_dist_by_stage`: long-form histogram table (stage, bin_lower, bin_upper, count) for overlay plotting.
-- Recommendations catalog extended with `low_yield_stage` (min_stage_base_pct < 0.01); fires only when base is supplied.
-- 73 new tests (validation, class, per_stage_overview, marginal coverage arithmetic, three-stage arithmetic, score_dist_by_stage, recommendations, DuckDB parity, tibble/data.frame parity, format/print, as.data.table, edge cases); all 1199 tests pass.
-
-**M7 — Plot functions and default `plot()` methods. COMPLETE (2026-05-18)**
-- `R/diagnostics_plots.R`: 14 plot functions (`rarity_histogram`, `token_frequency_plot`, `block_size_plot`, `vocab_overlap_plot`, `score_histogram`, `score_density`, `coverage_plot`, `cluster_size_plot`, `ambiguity_plot`, `top_gap_density`, `contribution_plot`, `token_contribution_plot`, `stage_coverage_plot`, `stage_score_plot`).
-- All functions: first arg = diagnostic object, `...` passthrough via `modifyList(defaults, list(...))`, invisible `data.table` return. `theme = "clean"`, `palette = "okabe"` for grouped plots.
-- Default `plot()` S3 methods per class registered via `.onLoad` + `registerS3method` (required because S7 uses package-qualified class names `"joinery::ClassName"`).
-- `notes/tinyplot_guide.md` note: `xaxl` must be a mapper function (e.g. `function(v) labels[as.integer(v)]`), not a character vector — tinyplot 0.6.1 does not accept character vectors for `xaxl`.
-- `tinyplot` and `graphics` added to DESCRIPTION Imports.
-- 91 tests; all 1290 tests pass. `pkgdown/figures/` contains 14 PNGs.
-
-**M8 — Embedding strategy diagnostics. COMPLETE (2026-05-20)**
-- `Embedding_Audit` S7 class in `R/diagnostics_classes.R` with `format()`/`print()`/`as.data.table()`/`as.data.frame()` methods. Slots: `n_records`, `n_embedded`, `coverage_rate`, `norm_summary`, `similarity_sample`, `block_summary`, `est_comparisons`, `recommendations`.
-- `audit_strategy` dispatch for `Embedding_Strategy` in `R/audit_strategy.R`: coverage is measured against `assemble_record_text` output (records with all-NA / empty columns drop from `n_embedded`). Norm distribution computed from embedding vectors; pairwise cosine similarity sample drawn eagerly (default 1000 pairs, capped at `n*(n-1)/2`). Block summary and `est_comparisons` reuse `.compute_block_summary` from the token path. DuckDB samples to R and delegates; tibble/data.frame are thin `as_DT` wrappers.
-- Recommendations catalog extended in `R/diagnostics_recommendations.R`: `low_embedding_coverage` (coverage_rate < 0.90), `unnormalised_embeddings` (norm IQR > 0.10). `block_imbalanced` is shared with the token path.
-- `explain_match` dispatch for `Embedding_Strategy` in `R/explain_match.R`: returns `Match_Explanation` with `pair` and `score` populated, `per_column_contrib` and `shared_tokens` NULL, `score_breakdown = list(method = "cosine_similarity", note = ...)`. `format.Match_Explanation` patched to surface "Per-token attribution is not available for embedding matches." when both contribution slots are NULL and method is `"cosine_similarity"`.
-- Plot functions in `R/diagnostics_plots.R`: `similarity_histogram` (with threshold annotation from `attr(audit, "threshold")`), `norm_plot` (quantile bar chart with norm=1 reference line). `block_size_plot` reused on `Embedding_Audit` without changes. Default `plot.Embedding_Audit` → `similarity_histogram`, registered in `.onLoad`.
-- 84 new tests covering: clean fixture, low-coverage trigger, unnormalised trigger (fires + does-not-fire), block imbalanced, both `.compute_similarity_sample` branches (enumerate-all-pairs and rejection-sampling), validation errors (missing id / block_by), tibble + data.frame + DuckDB parity, coercion shape, format/print, plot smoke tests and error paths. All 1380 tests pass; `R CMD check` clean.
-
-### Testing policy specific to Phase 0.6
-
-- `tests/testthat/` contains only small deterministic fixtures, parity checks, recommendations catalog tests, and round-trip property tests. No large-data benchmarks, no live embedding providers, no plot-image snapshots.
-- Backend parity tests should use the existing `as_DT` / DuckDB harness pattern from earlier phases.
-- The `explain_match` round-trip property test is mandatory on both backends — it is the contract that prevents scoring drift.
-- Larger end-to-end checks (e.g. `audit_strategy` on millions of rows, multi-stage on real yellow-pages data) live in `local_tests/`.
-
-Implemented Phase 0.3 features:
-- **rIP Smoothing** — log, softmax, and offset smoothing methods prevent over-dominance of rare tokens
-- **Containment** — `max_candidates` limits matches per record, preventing one-token overmatching
-- **Feedback Weighting** — penalizes low token overlap, reduces noise in partial matches
-
-Phase 0.4 outcome (2026-05-09): total coverage 87.25%. Per-file:
-- `preparers.R` 99%, `embedding_methods_duckdb.R` 97%, `embedding_methods_datatable.R` 95%, `methods_duckdb.R` 90%, `batch_duckdb.R` 87%, `methods_datatable.R` 87%, `embedding_strategy.R` 75%, `utilities.R` 64%, `methods_tibble.R` 59%, `embedding_methods_tibble.R` 58%, `search_strategy.R` 42%.
-- `methods_duckdb.R` 34→90% closed the primary gap; the small-table `batch_duckdb` brittleness was diagnosed and fixed (see `notes/batch_duckdb_brittleness.md`).
-- Remaining low-coverage files are intentional: `generics.R` is S7 dispatch boilerplate, `search_strategy.R` 42% is mostly S7 class definition, `utilities.R` gaps are interactive progress-spinner branches, `methods_tibble.R` and `embedding_methods_tibble.R` rely on tidyllm/live embedding paths that belong in `local_tests/`.
-
 ## Core S7 Classes
 
 ### `Step`
@@ -180,6 +83,27 @@ multi_stage_match(base_table, target_table, base_id, target_id, strategies)
 6. **Residual Generation** — extract unmatched records via `extract_unmatched()` for multi-pass workflows.
 7. **Multi-Stage Matching** — sequential strategies with residual extraction; stop early if either residual becomes empty.
 
+## Diagnostics
+
+Five diagnostic verbs, organised around four user questions (Q1 will-it-work, Q2 did-it-work, Q3 why-this-pair, Q4 where-to-look) plus multi-stage:
+
+- `audit_strategy()` → `Strategy_Audit` (token strategies) or `Embedding_Audit` (embedding strategies) — dispatches on strategy class
+- `summarise_matches()` → `Match_Overview` (unified across dedup/candidates via `match_type` slot)
+- `explain_match()` → `Match_Explanation` (per-token attribution for `Search_Strategy`; pair+score only for `Embedding_Strategy`)
+- `sample_matches()` → `Match_Sample` (modes: `high`, `low`, `borderline`, `ambiguous`, `top_gap`, `random`)
+- `compare_stages()` → `Stage_Comparison` (multi-stage diagnostics)
+
+Recommendations live in `R/diagnostics_recommendations.R` (signal → threshold → message), surfaced via inline `cli` warnings in `print()` and the `recommendations(x)` accessor.
+
+Plotting is first-class via `tinyplot` (hard `Imports` dependency). Diagnostic verbs return data only. Each plot is a separately named function (no `plot(x, type=...)`); pipe-composable: `summarise_matches(m) |> score_histogram()`. Default `plot()` methods per class call the most-useful single view.
+
+The `explain_match` round-trip contract (`sum(per_column_contrib$contribution) × feedback_factor == score`, exact to 1e-10 with no feedback) is mandatory on both backends — it is the property test that prevents scoring drift.
+
+## Calibration Primitives (Phase 0.7, in progress)
+
+- **`prepare_auxiliary_registry()`** — internal generic. Builds a per-column token-occurrence registry on the auxiliary (search / target) side. Block-agnostic and cross-table by construction (distinct from the per-block retrieval-time `compute_rarity()`).
+- **`compute_aip()`** — internal helper. Implements Doherr (2023) eq. (9) on a pair of registries, producing `aip` per `(src_column, token)`. The output is consumed by the forthcoming `match_features()` verb (Phase 0.7 M2). Lives in `R/aip.R`; design in `notes/calibration_design.md` §5.
+
 ## Expected Output Schemas
 
 ### Duplicate Detection
@@ -237,8 +161,10 @@ For detailed guidance on specific topics, consult:
 - **`notes/duckdb_performance.md`** — Performance tuning guide, batch size recommendations, optimization strategies.
 
 **Project Planning:**
-- **`notes/roadmap.md`** — Strategic roadmap (phases 0.4–1.0, feature priorities, current phase).
-- **`notes/test_coverage_plan.md`** — Coverage-hardening plan and local-test policy (Phase 0.4, complete).
-- **`notes/embedding_design.md`** — Implementation design for embedding-based matching (Phase 0.5).
-- **`notes/diagnostics_design.md`** — Locked design for Phase 0.6 (diagnostics). All §13 user decisions resolved; M1–M7 implementation roadmap is the source of truth for next steps.
+- **`notes/roadmap.md`** — Strategic roadmap, feature priorities, current phase.
+- **`notes/embedding_design.md`** — Implementation design for embedding-based matching.
+- **`notes/diagnostics_design.md`** — Design notes for the diagnostics verbs.
+- **`notes/calibration_design.md`** — Phase 0.7 design: post-match false-positive filter, `aIP` primitive, `match_features()` schema, `calibrate_matches()` verb, tidymodels boundary.
+- **`notes/searchengine_lessons_for_v07.md`** — Distilled lessons from Doherr's SearchEngine whitepaper informing the Phase 0.7 design.
+- **`notes/HolisticMatching.md`** — OCR'd full text of the SearchEngine whitepaper (Doherr 2023) for reference.
 - **`notes/batch_duckdb_brittleness.md`** — Investigation and fix notes for the small-table batch_map brittleness.

@@ -1,4 +1,4 @@
-# Tests for summarise_matches() — Phase 0.6 M1 (data.table backend).
+# Tests for summarise_matches() (data.table backend).
 #
 # Uses hand-built match tables (duplicate and candidate schemas) so the
 # tests do not depend on the matching engine working correctly. Engine
@@ -346,8 +346,7 @@ test_that("score_dist$summary, quantiles, threshold are populated correctly", {
     ))
   )
 
-  # threshold is intentionally not propagated yet (M2 follow-up). Pin it
-  # so any future change is explicit.
+  # threshold is intentionally not propagated. Pin it so any future change is explicit.
   expect_identical(res@score_dist$threshold, NA_real_)
 })
 
@@ -596,7 +595,7 @@ test_that("summarise_matches errors on a candidate-shaped table missing score", 
 
 
 # ---------------------------------------------------------------------------
-# Backend parity (M2): DuckDB
+# Backend parity: DuckDB
 # ---------------------------------------------------------------------------
 
 test_that("DuckDB backend: match_type and n_records match data.table for duplicates", {
@@ -734,7 +733,7 @@ test_that("DuckDB backend: candidate coverage matches data.table when base/targe
 
 
 # ---------------------------------------------------------------------------
-# Backend parity (M2): tibble / data.frame
+# Backend parity: tibble / data.frame
 # ---------------------------------------------------------------------------
 
 test_that("tibble input produces identical Match_Overview to data.table", {
@@ -802,7 +801,7 @@ test_that("data.frame candidate input produces identical Match_Overview to data.
 
 
 # ---------------------------------------------------------------------------
-# Backend parity (M2): DuckDB edge cases
+# Backend parity: DuckDB edge cases
 # ---------------------------------------------------------------------------
 
 test_that("DuckDB backend: empty duplicates table returns all-NA score dist and zero counts", {

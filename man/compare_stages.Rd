@@ -16,10 +16,10 @@ accept `base` and `target` for coverage.}
 A `Stage_Comparison` object.
 }
 \description{
-Multi-stage diagnostic (Phase 0.6). Produces per-stage
+Multi-stage diagnostic. Produces per-stage
 [`Match_Overview`]s, marginal coverage per stage, and overlaid
 per-stage score distributions. Note that [summarise_matches()] does
 **not** auto-detect a `stage` column — users explicitly call this
 verb when they want per-stage analysis (see
-`notes/diagnostics_design.md` §10). Implementation lands in M6.
+`notes/diagnostics_design.md` §10).
 }

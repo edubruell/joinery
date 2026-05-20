@@ -1,5 +1,5 @@
 # ============================================================
-# Diagnostics recommendations catalog (Phase 0.6 §6)
+# Diagnostics recommendations catalog
 # ============================================================
 #
 # A finite, testable map from (diagnostic_signal, threshold) tuples to

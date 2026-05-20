@@ -1,5 +1,5 @@
 # ============================================================
-# explain_match() — all backends (Phase 0.6 M4)
+# explain_match() — all backends
 # ============================================================
 #
 # Attribution diagnostic (Q3). Reconstructs per-column and per-token
@@ -374,7 +374,7 @@ method(
 
 
 # ============================================================
-# Embedding_Strategy form (Phase 0.6 M8)
+# Embedding_Strategy form
 # ============================================================
 #
 # Returns pair + score only. Per-token attribution is not available for

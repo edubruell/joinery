@@ -1,5 +1,5 @@
 # ============================================================
-# summarise_matches() — all backends (Phase 0.6 M1/M2)
+# summarise_matches() — all backends
 # ============================================================
 #
 # Implements the post-match overview verb end-to-end. Auto-detects
@@ -13,7 +13,7 @@
 #   * ambiguity_dist + top_gap_dist   (candidates only)
 #   * recommendations (catalog dispatch)
 #
-# Backends: data.table (M1), DuckDB (M2), tibble/data.frame thin wrappers (M2).
+# Backends: data.table (reference), DuckDB, tibble/data.frame thin wrappers.
 # ============================================================
 
 
@@ -119,7 +119,7 @@
     summary   = summary_vec,
     quantiles = quantiles_vec,
     histogram = hist_dt,
-    threshold = NA_real_   # not propagated into match tables; M2 follow-up
+    threshold = NA_real_   # not propagated into match tables
   )
 }
 
@@ -279,7 +279,7 @@ method(
 
 
 # ---------------------------------------------------------------------------
-# Method: summarise_matches on DuckDB (M2)
+# Method: summarise_matches on DuckDB
 # ---------------------------------------------------------------------------
 
 method(
@@ -593,7 +593,7 @@ method(
 
 
 # ---------------------------------------------------------------------------
-# Methods: summarise_matches on tibble / data.frame (M2)
+# Methods: summarise_matches on tibble / data.frame
 # ---------------------------------------------------------------------------
 
 method(

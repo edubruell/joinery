@@ -1,4 +1,4 @@
-# Tests for explain_match() (Phase 0.6 M4).
+# Tests for explain_match().
 #
 # Fixture convention: small deterministic tables with known exact scores.
 # Round-trip property: sum(per_column_contrib$contribution) == score (no feedback);

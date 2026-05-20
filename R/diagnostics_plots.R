@@ -1,5 +1,5 @@
 # ============================================================
-# Diagnostic plot functions (Phase 0.6 M7)
+# Diagnostic plot functions
 # ============================================================
 #
 # 14 named plot functions, one per diagnostic view, plus
@@ -132,7 +132,7 @@ vocab_overlap_plot <- function(x, ...) {
 
 
 # ---------------------------------------------------------------------------
-# Embedding_Audit plots (Phase 0.6 M8)
+# Embedding_Audit plots
 # ---------------------------------------------------------------------------
 
 #' Histogram of sampled pairwise cosine similarities

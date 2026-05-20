@@ -19,7 +19,7 @@ number of histogram bins for the score distribution; default `50`).}
 A `Match_Overview` object.
 }
 \description{
-Post-match overview (Phase 0.6 Q2). Auto-detects whether the input
+Post-match overview (Q2). Auto-detects whether the input
 is a duplicate table (presence of `duplicate_group` column) or a
 candidate table (presence of `match_id` and `source` columns), and
 reports score distribution, coverage (when `base` / `target` are

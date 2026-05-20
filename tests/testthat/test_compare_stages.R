@@ -1,8 +1,8 @@
 # ============================================================
-# Tests for compare_stages() — Phase 0.6 M6
+# Tests for compare_stages()
 # ============================================================
 #
-# Conventions (matching M1–M5 pattern):
+# Conventions:
 #   - All fixtures are small, deterministic, hand-crafted tables
 #   - DuckDB parity tests use local_duckdb_table() from helper-duckdb.R
 #   - Tibble/data.frame parity tests use tibble::as_tibble() / as.data.frame()

@@ -19,9 +19,9 @@ table with `rarity` (power-user form).}
 A `Match_Explanation` object.
 }
 \description{
-Attribution diagnostic (Phase 0.6 Q3). Reconstructs per-column and
+Attribution diagnostic (Q3). Reconstructs per-column and
 per-token contributions to a single match score. Dispatches on the
 second positional argument: a [`Search_Strategy`] triggers
 reconstruction from raw inputs; a tokens-shaped table is used
-directly. Implementation lands in M4.
+directly.
 }

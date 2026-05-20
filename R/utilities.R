@@ -26,6 +26,8 @@ utils::globalVariables(c(
   "token_label", "overlap",
   # preparers.R
   "tokens", "len_text", "ngrams",
+  # aip.R
+  "occ", "maxocc", "occ_R", "maxocc_R", "occ_A", "maxocc_A", "aip",
   # purrr-shim dot
   "."
 ))

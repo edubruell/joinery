@@ -1,5 +1,5 @@
 # tests/testthat/test_sample_matches.R
-# Phase 0.6 M5 — sample_matches() tests
+# sample_matches() tests
 
 library(data.table)
 

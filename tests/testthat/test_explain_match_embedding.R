@@ -1,4 +1,4 @@
-# Tests for explain_match() on Embedding_Strategy (Phase 0.6 M8).
+# Tests for explain_match() on Embedding_Strategy.
 #
 # Embedding strategy returns pair + score only; per-column and per-token
 # attribution slots are NULL.
