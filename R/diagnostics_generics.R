@@ -141,6 +141,46 @@ compare_stages <- new_generic(
 )
 
 
+#' Build a Match Feature Table (Phase 0.7 M2)
+#'
+#' @description
+#' Computes a wide, one-row-per-pair feature `data.table` from a joinery
+#' match result, suitable for downstream calibration / false-positive
+#' filtering. The schema is documented in
+#' `notes/calibration_design.md` §6 and treated as the public API of
+#' v0.7. Additions are allowed; reorders or renames are not.
+#'
+#' Dispatches on `(matches, strategy)`. A [`Search_Strategy`] returns
+#' the full token schema (core + token-side columns). An
+#' [`Embedding_Strategy`] returns the reduced "embedding" schema (core
+#' columns only at M2; cosine / norm columns land in M3).
+#'
+#' @param matches A match result table (data.table / tibble / data.frame
+#'   / DuckDB lazy `tbl`) from [detect_duplicates()] or
+#'   [search_candidates()].
+#' @param strategy The [`Search_Strategy`] or [`Embedding_Strategy`]
+#'   used to produce `matches`.
+#' @param ... Method-specific arguments. The [`Search_Strategy`]
+#'   methods accept: `base` (the base table used as input to matching),
+#'   `id` (character scalar naming the ID column in `base`), `target`
+#'   (optional target table for cross-table candidate matches),
+#'   `target_id` (ID column in `target`, defaults to `id`), `top_n`
+#'   (named integer / list controlling per-column top-N counts for the
+#'   `m_/f_/s_` columns; use a `default` entry as fallback; set a
+#'   column to 0 to suppress its set), `include_string_sim` (reserved
+#'   for M3; currently ignored), and `include_block_stats` (logical;
+#'   whether to compute `cnt` / `icnt` / `ipos`).
+#'
+#' @return A [`Match_Features`] object wrapping a wide feature
+#'   `data.table`.
+#'
+#' @export
+match_features <- new_generic(
+  "match_features",
+  c("matches", "strategy")
+)
+
+
 #' Recommendations from a Diagnostic Object
 #'
 #' @description

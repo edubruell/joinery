@@ -28,6 +28,11 @@ utils::globalVariables(c(
   "tokens", "len_text", "ngrams",
   # aip.R
   "occ", "maxocc", "occ_R", "maxocc_R", "occ_A", "maxocc_A", "aip",
+  # match_features.R
+  "_rid_", ".pair", ".pos", "..cols_pick",
+  "row_id_placeholder", "aip_s", "aip_f",
+  "n_cols", "max_aip", "cnt", "icnt", "ipos", "scnt", "rcnt",
+  "searched", "found",
   # purrr-shim dot
   "."
 ))

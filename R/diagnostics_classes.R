@@ -207,6 +207,50 @@ Stage_Comparison <- new_class(
 )
 
 
+#' Match Features Result (Phase 0.7 M2)
+#'
+#' @description
+#' Result of [match_features()]. A wide, one-row-per-pair feature table
+#' suitable for downstream calibration / filtering (Phase 0.7 M5+).
+#' Schema is documented in `notes/calibration_design.md` §6 and is treated
+#' as the public API of v0.7 — additions only, never reorder or rename.
+#'
+#' @slot features `data.table`. The wide feature matrix.
+#' @slot schema Character. One of `"token"` (full schema) or
+#'   `"embedding"` (reduced schema — no token columns).
+#' @slot strategy_class Character. Class name of the strategy used.
+#' @slot top_n Named integer. Effective per-column `top_n` (after defaulting).
+#' @slot columns Character. Strategy column names in their canonical order.
+#' @slot aip_summary Named list or `NULL`. Diagnostic statistics over the
+#'   per-token aIP values consumed (token strategies only).
+#'
+#' @noRd
+Match_Features <- new_class(
+  "Match_Features",
+  properties = list(
+    features       = class_any,
+    schema         = class_character,
+    strategy_class = class_character,
+    top_n          = class_any,
+    columns        = class_character,
+    aip_summary    = class_any
+  )
+)
+
+#' @noRd
+print.Match_Features <- new_external_generic("base", "print", "x")
+#' @noRd
+format.Match_Features <- new_external_generic("base", "format", "x")
+#' @noRd
+as.data.table.Match_Features <- new_external_generic(
+  "data.table", "as.data.table", "x"
+)
+#' @noRd
+as.data.frame.Match_Features <- new_external_generic(
+  "base", "as.data.frame", "x"
+)
+
+
 # ---------------------------------------------------------------------------
 # External generics for print, format, as.data.table, as.data.frame
 # ---------------------------------------------------------------------------
@@ -1076,6 +1120,76 @@ method(as.data.table.Embedding_Audit, Embedding_Audit) <- function(x, ...) {
 
 method(as.data.frame.Embedding_Audit, Embedding_Audit) <- function(x, ...) {
   as.data.frame(.embedding_audit_to_dt(x))
+}
+
+
+# ---------------------------------------------------------------------------
+# format() / print() -- Match_Features
+# ---------------------------------------------------------------------------
+
+#' @noRd
+.format_match_features <- function(x) {
+  lines <- character()
+  push  <- function(...) lines <<- c(lines, paste0(...))
+
+  ft <- x@features
+  push("<joinery::Match_Features>")
+  push(sprintf("  schema         : %s", x@schema))
+  push(sprintf("  strategy_class : %s", x@strategy_class))
+  push(sprintf("  n_pairs        : %d", if (is.null(ft)) 0L else nrow(ft)))
+  push(sprintf("  n_features     : %d", if (is.null(ft)) 0L else ncol(ft)))
+
+  if (length(x@columns) > 0L) {
+    push(sprintf("  strategy cols  : %s", paste(x@columns, collapse = ", ")))
+  }
+  if (length(x@top_n) > 0L) {
+    push(sprintf(
+      "  top_n          : %s",
+      paste(sprintf("%s=%d", names(x@top_n), as.integer(x@top_n)), collapse = ", ")
+    ))
+  }
+
+  if (!is.null(ft) && nrow(ft) > 0L) {
+    push("")
+    push("preview:")
+    for (r in utils::capture.output(print(utils::head(ft, 5L)))) push("  ", r)
+  }
+  lines
+}
+
+method(format.Match_Features, Match_Features) <- function(x, ...) {
+  .format_match_features(x)
+}
+
+method(print.Match_Features, Match_Features) <- function(x, ...) {
+  ft <- x@features
+  cli::cli_h1(sprintf("Match_Features ({.field %s})", x@schema))
+  cli::cli_text(sprintf(
+    "strategy_class: {.val %s}   n_pairs: {.val %d}   n_features: {.val %d}",
+    x@strategy_class,
+    if (is.null(ft)) 0L else nrow(ft),
+    if (is.null(ft)) 0L else ncol(ft)
+  ))
+  if (length(x@columns) > 0L) {
+    cli::cli_text("strategy columns: {.field {x@columns}}")
+  }
+  if (!is.null(ft) && nrow(ft) > 0L) {
+    cli::cli_text("{.strong preview}")
+    print(utils::head(ft, 5L))
+  }
+  invisible(x)
+}
+
+method(as.data.table.Match_Features, Match_Features) <- function(x, ...) {
+  if (is.null(x@features)) {
+    return(data.table::data.table())
+  }
+  data.table::copy(x@features)
+}
+
+method(as.data.frame.Match_Features, Match_Features) <- function(x, ...) {
+  if (is.null(x@features)) return(as.data.frame(data.table::data.table()))
+  as.data.frame(data.table::copy(x@features))
 }
 
 
