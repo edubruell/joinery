@@ -1,5 +1,5 @@
 # ============================================================
-# match_features() — Phase 0.7 M2
+# match_features() — Phase 0.7 M2 (token schema) + M3 (string sim + embedding)
 # ============================================================
 #
 # Builds a wide, one-row-per-pair feature `data.table` from a joinery
@@ -14,8 +14,11 @@
 #   scnt, rcnt, r1..rn, m_<col>_1..topN, f_<col>_1..topN,
 #   s_<col>_1..topN
 #
-# String similarity columns (§6.3) and embedding-norm columns
-# (§6.4 beyond `cosine_sim`) land in M3.
+# String similarity columns (§6.3, M3, both strategy classes):
+#   sim_sf_<col>, sim_fs_<col>      (search→found, found→search)
+#
+# Embedding-strategy columns (§6.4, M3, Embedding_Strategy only):
+#   cosine_sim, embedding_norm_s, embedding_norm_f
 # ============================================================
 
 
@@ -195,6 +198,91 @@
 }
 
 
+# ---------- string similarity (§6.3) --------------------------------
+
+#' Per-pair, per-column string similarity using `stringdist`.
+#'
+#' @param pairs data.table with columns `searched`, `found` (character ids).
+#' @param base_dt data.table with `id_col` and the columns in `columns`.
+#' @param target_dt data.table or NULL. When NULL (dedup), `base_dt` is also
+#'   used for the found-side lookup.
+#' @param base_id character scalar — id column in `base_dt`.
+#' @param target_id character scalar — id column in `target_dt` (defaults
+#'   to `base_id`).
+#' @param columns character vector — columns to compute string similarity on.
+#'   Columns absent from `base_dt` or `target_dt` are silently skipped.
+#' @param method stringdist method name (default `"jw"`).
+#'
+#' @return data.table with one row per input pair (in input order) carrying
+#'   `sim_sf_<col>` and `sim_fs_<col>` columns for each col in `columns`.
+#' @noRd
+.string_sim_block <- function(pairs, base_dt, target_dt = NULL,
+                              base_id, target_id = NULL,
+                              columns, method = "jw") {
+  if (!requireNamespace("stringdist", quietly = TRUE)) {
+    cli::cli_abort(c(
+      "String similarity columns require the {.pkg stringdist} package.",
+      "i" = "Install it with {.code install.packages('stringdist')}.",
+      "i" = "Or call {.code match_features(..., include_string_sim = FALSE)}."
+    ))
+  }
+  if (is.null(target_id)) target_id <- base_id
+  if (is.null(target_dt)) target_dt <- base_dt
+
+  out <- data.table::data.table(
+    searched = as.character(pairs$searched),
+    found    = as.character(pairs$found)
+  )
+
+  # Build named lookups id -> field value for fast indexing
+  base_ids   <- as.character(base_dt[[base_id]])
+  target_ids <- as.character(target_dt[[target_id]])
+
+  for (col in columns) {
+    if (!col %in% names(base_dt) || !col %in% names(target_dt)) next
+    s_vals <- as.character(base_dt[[col]])[match(out$searched, base_ids)]
+    f_vals <- as.character(target_dt[[col]])[match(out$found,   target_ids)]
+
+    sim_sf <- stringdist::stringsim(s_vals, f_vals, method = method)
+    sim_fs <- stringdist::stringsim(f_vals, s_vals, method = method)
+
+    out[[paste0("sim_sf_", col)]] <- sim_sf
+    out[[paste0("sim_fs_", col)]] <- sim_fs
+  }
+
+  out
+}
+
+
+#' Compute pre-normalization L2 norm per record by recomputing embeddings
+#' under a strategy with `normalize = FALSE`.
+#'
+#' Returns a `data.table(id, norm)` keyed by `id`. The `id` column is named
+#' as supplied (`id_col`).
+#'
+#' @noRd
+.embedding_norms <- function(data, id_col, strategy, ids_needed) {
+  s_unnorm <- strategy
+  S7::prop(s_unnorm, "normalize") <- FALSE
+
+  data <- data.table::copy(data.table::as.data.table(data))
+  data[[id_col]] <- as.character(data[[id_col]])
+  subset <- data[data[[id_col]] %in% ids_needed]
+
+  if (nrow(subset) == 0L) {
+    return(data.table::data.table(
+      id = character(), norm = numeric()
+    ))
+  }
+
+  emb <- compute_embeddings(subset, id_col, s_unnorm)
+  # `compute_embeddings` returns id column named after `id_col`.
+  id_vals <- as.character(emb[[id_col]])
+  norms <- vapply(emb$embedding, function(v) sqrt(sum(v * v)), numeric(1))
+  data.table::data.table(id = id_vals, norm = norms)
+}
+
+
 # ---------- core implementation: data.table backend, token strategy ---
 
 #' @noRd
@@ -202,7 +290,8 @@
                                      target = NULL, target_id = NULL,
                                      top_n = NULL,
                                      include_string_sim = TRUE,
-                                     include_block_stats = TRUE) {
+                                     include_block_stats = TRUE,
+                                     method = "jw") {
 
   pair_info  <- .pairs_from_matches(matches)
   pairs      <- pair_info$pairs
@@ -436,6 +525,21 @@
   data.table::setorder(out, .pair)
   out[, .pair := NULL]
 
+  # --- string similarity (§6.3) -------------------------------------
+  if (isTRUE(include_string_sim) && length(columns) > 0L) {
+    sim_dt <- .string_sim_block(
+      pairs      = out[, .(searched, found)],
+      base_dt    = base_dt,
+      target_dt  = target_dt,
+      base_id    = id,
+      target_id  = target_id,
+      columns    = columns,
+      method     = method
+    )
+    sim_cols <- setdiff(names(sim_dt), c("searched", "found"))
+    for (sc in sim_cols) data.table::set(out, j = sc, value = sim_dt[[sc]])
+  }
+
   # --- canonical column order ---------------------------------------
   stage_cols <- grep("^stage_", names(out), value = TRUE)
   ordered_cols <- c(
@@ -443,9 +547,11 @@
     "cnt", "icnt", "ipos",
     stage_cols,
     "scnt", "rcnt", r_cols,
-    grep("^m_", names(out), value = TRUE),
-    grep("^f_", names(out), value = TRUE),
-    grep("^s_", names(out), value = TRUE)
+    grep("^m_",      names(out), value = TRUE),
+    grep("^f_",      names(out), value = TRUE),
+    grep("^s_",      names(out), value = TRUE),
+    grep("^sim_sf_", names(out), value = TRUE),
+    grep("^sim_fs_", names(out), value = TRUE)
   )
   ordered_cols <- intersect(ordered_cols, names(out))
   data.table::setcolorder(out, ordered_cols)
@@ -475,10 +581,32 @@
                                          base = NULL, id = NULL,
                                          target = NULL, target_id = NULL,
                                          include_block_stats = TRUE,
+                                         include_string_sim  = TRUE,
+                                         method = "jw",
                                          ...) {
   pair_info  <- .pairs_from_matches(matches)
   pairs      <- pair_info$pairs
+  match_type <- pair_info$match_type
   has_stage  <- !all(is.na(pairs$stage))
+
+  # Resolve effective string-similarity columns from strategy / data.
+  base_dt <- if (!is.null(base)) {
+    bd <- data.table::as.data.table(base)
+    if (!is.null(id)) bd[[id]] <- as.character(bd[[id]])
+    bd
+  } else NULL
+  target_dt <- if (!is.null(target)) {
+    td <- data.table::as.data.table(target)
+    tid <- if (!is.null(target_id)) target_id else id
+    if (!is.null(tid)) td[[tid]] <- as.character(td[[tid]])
+    td
+  } else NULL
+
+  resolved_cols <- if (length(strategy@columns) > 0L) {
+    strategy@columns
+  } else if (!is.null(base_dt) && !is.null(id)) {
+    setdiff(names(base_dt), id)
+  } else character()
 
   if (nrow(pairs) == 0L) {
     return(Match_Features(
@@ -486,18 +614,18 @@
       schema         = "embedding",
       strategy_class = "Embedding_Strategy",
       top_n          = integer(),
-      columns        = character(),
+      columns        = resolved_cols,
       aip_summary    = NULL
     ))
   }
 
-  core <- pairs[, .(
+  core <- data.table::copy(pairs[, .(
     searched = as.character(searched),
     found    = as.character(found),
     match_id = match_id,
     stage    = if (has_stage) stage else NA_character_,
     score    = score
-  )]
+  )])
 
   if (include_block_stats) {
     core[, cnt  := .N, by = searched]
@@ -516,12 +644,94 @@
     }
   }
 
+  # --- string similarity (§6.3) -------------------------------------
+  if (isTRUE(include_string_sim) && length(resolved_cols) > 0L &&
+      !is.null(base_dt) && !is.null(id)) {
+    sim_dt <- .string_sim_block(
+      pairs      = core[, .(searched, found)],
+      base_dt    = base_dt,
+      target_dt  = target_dt,
+      base_id    = id,
+      target_id  = target_id,
+      columns    = resolved_cols,
+      method     = method
+    )
+    sim_cols <- setdiff(names(sim_dt), c("searched", "found"))
+    for (sc in sim_cols) data.table::set(core, j = sc, value = sim_dt[[sc]])
+  }
+
+  # --- cosine_sim (pass-through of score) ---------------------------
+  core[, cosine_sim := score]
+
+  # --- embedding norms (§6.4) ---------------------------------------
+  if (!is.null(base_dt) && !is.null(id)) {
+    s_ids <- unique(core$searched)
+    base_norms <- tryCatch(
+      .embedding_norms(base_dt, id, strategy, s_ids),
+      error = function(e) NULL
+    )
+    if (!is.null(base_norms) && nrow(base_norms) > 0L) {
+      core[, embedding_norm_s := base_norms$norm[
+        match(searched, base_norms$id)
+      ]]
+    } else {
+      core[, embedding_norm_s := NA_real_]
+    }
+  } else {
+    core[, embedding_norm_s := NA_real_]
+  }
+
+  tid <- if (!is.null(target_id)) target_id else id
+  if (match_type == "candidates" && !is.null(target_dt) && !is.null(tid)) {
+    f_ids <- unique(core$found)
+    target_norms <- tryCatch(
+      .embedding_norms(target_dt, tid, strategy, f_ids),
+      error = function(e) NULL
+    )
+    if (!is.null(target_norms) && nrow(target_norms) > 0L) {
+      core[, embedding_norm_f := target_norms$norm[
+        match(found, target_norms$id)
+      ]]
+    } else {
+      core[, embedding_norm_f := NA_real_]
+    }
+  } else if (match_type == "duplicates" && !is.null(base_dt) && !is.null(id)) {
+    # dedup: found also comes from base
+    f_ids <- unique(core$found)
+    base_norms_f <- tryCatch(
+      .embedding_norms(base_dt, id, strategy, f_ids),
+      error = function(e) NULL
+    )
+    if (!is.null(base_norms_f) && nrow(base_norms_f) > 0L) {
+      core[, embedding_norm_f := base_norms_f$norm[
+        match(found, base_norms_f$id)
+      ]]
+    } else {
+      core[, embedding_norm_f := NA_real_]
+    }
+  } else {
+    core[, embedding_norm_f := NA_real_]
+  }
+
+  # --- canonical column order ---------------------------------------
+  stage_cols   <- grep("^stage_", names(core), value = TRUE)
+  ordered_cols <- c(
+    "searched", "found", "match_id", "stage", "score",
+    "cnt", "icnt", "ipos",
+    stage_cols,
+    grep("^sim_sf_", names(core), value = TRUE),
+    grep("^sim_fs_", names(core), value = TRUE),
+    "cosine_sim", "embedding_norm_s", "embedding_norm_f"
+  )
+  ordered_cols <- intersect(ordered_cols, names(core))
+  data.table::setcolorder(core, ordered_cols)
+
   Match_Features(
     features       = core,
     schema         = "embedding",
     strategy_class = "Embedding_Strategy",
     top_n          = integer(),
-    columns        = character(),
+    columns        = resolved_cols,
     aip_summary    = NULL
   )
 }
@@ -536,7 +746,8 @@ method(
               target = NULL, target_id = NULL,
               top_n = NULL,
               include_string_sim  = TRUE,
-              include_block_stats = TRUE, ...) {
+              include_block_stats = TRUE,
+              method = "jw", ...) {
 
   if (missing(base) || is.null(base)) {
     stop("`base` is required for match_features() on a Search_Strategy.",
@@ -555,7 +766,8 @@ method(
     target_id           = target_id,
     top_n               = top_n,
     include_string_sim  = include_string_sim,
-    include_block_stats = include_block_stats
+    include_block_stats = include_block_stats,
+    method              = method
   )
 }
 
@@ -564,7 +776,9 @@ method(
   list(DT_tbl, Embedding_Strategy)
 ) <- function(matches, strategy, base = NULL, id = NULL,
               target = NULL, target_id = NULL,
-              include_block_stats = TRUE, ...) {
+              include_block_stats = TRUE,
+              include_string_sim  = TRUE,
+              method = "jw", ...) {
 
   .match_features_dt_embedding(
     matches             = matches,
@@ -573,7 +787,9 @@ method(
     id                  = id,
     target              = target,
     target_id           = target_id,
-    include_block_stats = include_block_stats
+    include_block_stats = include_block_stats,
+    include_string_sim  = include_string_sim,
+    method              = method
   )
 }
 
@@ -587,7 +803,8 @@ method(
               target = NULL, target_id = NULL,
               top_n = NULL,
               include_string_sim  = TRUE,
-              include_block_stats = TRUE, ...) {
+              include_block_stats = TRUE,
+              method = "jw", ...) {
 
   matches_dt <- data.table::as.data.table(dplyr::collect(matches))
 
@@ -613,7 +830,8 @@ method(
     target_id           = target_id,
     top_n               = top_n,
     include_string_sim  = include_string_sim,
-    include_block_stats = include_block_stats
+    include_block_stats = include_block_stats,
+    method              = method
   )
 }
 
@@ -622,7 +840,9 @@ method(
   list(Duck_tbl, Embedding_Strategy)
 ) <- function(matches, strategy, base = NULL, id = NULL,
               target = NULL, target_id = NULL,
-              include_block_stats = TRUE, ...) {
+              include_block_stats = TRUE,
+              include_string_sim  = TRUE,
+              method = "jw", ...) {
 
   matches_dt <- data.table::as.data.table(dplyr::collect(matches))
 
@@ -644,7 +864,9 @@ method(
     id                  = id,
     target              = target_dt,
     target_id           = target_id,
-    include_block_stats = include_block_stats
+    include_block_stats = include_block_stats,
+    include_string_sim  = include_string_sim,
+    method              = method
   )
 }
 

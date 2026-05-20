@@ -33,6 +33,7 @@ utils::globalVariables(c(
   "row_id_placeholder", "aip_s", "aip_f",
   "n_cols", "max_aip", "cnt", "icnt", "ipos", "scnt", "rcnt",
   "searched", "found",
+  "cosine_sim", "embedding_norm_s", "embedding_norm_f",
   # purrr-shim dot
   "."
 ))

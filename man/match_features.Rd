@@ -14,16 +14,23 @@ match_features(matches, strategy, ...)
 \item{strategy}{The [`Search_Strategy`] or [`Embedding_Strategy`]
 used to produce `matches`.}
 
-\item{...}{Method-specific arguments. The [`Search_Strategy`]
-methods accept: `base` (the base table used as input to matching),
-`id` (character scalar naming the ID column in `base`), `target`
-(optional target table for cross-table candidate matches),
-`target_id` (ID column in `target`, defaults to `id`), `top_n`
-(named integer / list controlling per-column top-N counts for the
-`m_/f_/s_` columns; use a `default` entry as fallback; set a
-column to 0 to suppress its set), `include_string_sim` (reserved
-for M3; currently ignored), and `include_block_stats` (logical;
-whether to compute `cnt` / `icnt` / `ipos`).}
+\item{...}{Method-specific arguments. Both strategy methods accept:
+`base` (the base table used as input to matching), `id` (character
+scalar naming the ID column in `base`), `target` (optional target
+table for cross-table candidate matches), `target_id` (ID column
+in `target`, defaults to `id`), `include_string_sim` (logical;
+when `TRUE` (default) emits `sim_sf_<col>` / `sim_fs_<col>`
+per column via `stringdist::stringsim()` — requires the
+`stringdist` suggested package), `method` (stringdist method,
+default `"jw"`), and `include_block_stats` (logical; whether to
+compute `cnt` / `icnt` / `ipos`). The [`Search_Strategy`] method
+additionally accepts `top_n` (named integer / list controlling
+per-column top-N counts for the `m_/f_/s_` columns; use a
+`default` entry as fallback; set a column to 0 to suppress its
+set). The [`Embedding_Strategy`] method emits `cosine_sim`
+(pass-through of `score`) and `embedding_norm_s` /
+`embedding_norm_f` (L2 norms of the **pre-normalization**
+embeddings, recomputed only over the matched record subset).}
 }
 \value{
 A [`Match_Features`] object wrapping a wide feature
@@ -37,7 +44,7 @@ filtering. The schema is documented in
 v0.7. Additions are allowed; reorders or renames are not.
 
 Dispatches on `(matches, strategy)`. A [`Search_Strategy`] returns
-the full token schema (core + token-side columns). An
-[`Embedding_Strategy`] returns the reduced "embedding" schema (core
-columns only at M2; cosine / norm columns land in M3).
+the full token schema (core + token-side columns + string similarity).
+An [`Embedding_Strategy`] returns the reduced "embedding" schema
+(core columns + string similarity + `cosine_sim` + embedding norms).
 }

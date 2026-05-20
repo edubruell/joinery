@@ -289,6 +289,287 @@ test_that("Embedding_Strategy dispatch returns the reduced schema", {
 })
 
 
+# ---------- M3: string similarity (token strategy) -------------------
+
+test_that("string-sim columns are emitted for each preparer column (token)", {
+  skip_if_not_installed("stringdist")
+  bs <- make_candidate_base()
+  tg <- make_candidate_target()
+  s  <- multi_col_strategy()
+  cand <- search_candidates(bs, tg, "id", "id", s)
+  mf <- match_features(cand, s, base = bs, id = "id",
+                       target = tg, target_id = "id")
+
+  expect_true(all(c("sim_sf_name", "sim_fs_name",
+                    "sim_sf_city", "sim_fs_city") %in% names(mf@features)))
+})
+
+test_that("identical strings score 1, different strings score < 1", {
+  skip_if_not_installed("stringdist")
+  bs <- make_candidate_base()
+  tg <- make_candidate_target()
+  s  <- multi_col_strategy()
+  cand <- search_candidates(bs, tg, "id", "id", s)
+  mf <- match_features(cand, s, base = bs, id = "id",
+                       target = tg, target_id = "id")
+  ft <- mf@features
+
+  # b1↔t1: name = "john smith" both sides, city = "berlin"
+  row_b1t1 <- ft[searched == "b1" & found == "t1"]
+  expect_equal(row_b1t1$sim_sf_name, 1)
+  expect_equal(row_b1t1$sim_fs_name, 1)
+  expect_equal(row_b1t1$sim_sf_city, 1)
+
+  # b2↔t2: name differs slightly ("alice jones" vs "alice jonas")
+  row_b2t2 <- ft[searched == "b2" & found == "t2"]
+  expect_true(row_b2t2$sim_sf_name < 1)
+  expect_true(row_b2t2$sim_sf_name > 0)
+})
+
+test_that("method = 'lv' gives different numbers than method = 'jw'", {
+  skip_if_not_installed("stringdist")
+  bs <- make_candidate_base()
+  tg <- make_candidate_target()
+  s  <- multi_col_strategy()
+  cand <- search_candidates(bs, tg, "id", "id", s)
+  mf_jw <- match_features(cand, s, base = bs, id = "id",
+                          target = tg, target_id = "id", method = "jw")
+  mf_lv <- match_features(cand, s, base = bs, id = "id",
+                          target = tg, target_id = "id", method = "lv")
+  expect_false(isTRUE(all.equal(mf_jw@features$sim_sf_name,
+                                mf_lv@features$sim_sf_name)))
+})
+
+test_that("include_string_sim = FALSE suppresses sim_* columns", {
+  skip_if_not_installed("stringdist")
+  bs <- make_candidate_base()
+  tg <- make_candidate_target()
+  s  <- multi_col_strategy()
+  cand <- search_candidates(bs, tg, "id", "id", s)
+  mf <- match_features(cand, s, base = bs, id = "id",
+                       target = tg, target_id = "id",
+                       include_string_sim = FALSE)
+  expect_false(any(grepl("^sim_(sf|fs)_", names(mf@features))))
+})
+
+test_that("string-sim columns follow s_* block in canonical order (token)", {
+  skip_if_not_installed("stringdist")
+  bs <- make_candidate_base()
+  tg <- make_candidate_target()
+  s  <- multi_col_strategy()
+  cand <- search_candidates(bs, tg, "id", "id", s)
+  mf <- match_features(cand, s, base = bs, id = "id",
+                       target = tg, target_id = "id")
+  cols <- names(mf@features)
+  last_s   <- max(grep("^s_",      cols))
+  first_sf <- min(grep("^sim_sf_", cols))
+  last_sf  <- max(grep("^sim_sf_", cols))
+  first_fs <- min(grep("^sim_fs_", cols))
+  expect_true(last_s < first_sf)
+  expect_true(last_sf < first_fs)
+})
+
+test_that("Jaro-Winkler is symmetric: sim_sf == sim_fs per row", {
+  skip_if_not_installed("stringdist")
+  bs <- make_candidate_base()
+  tg <- make_candidate_target()
+  s  <- multi_col_strategy()
+  cand <- search_candidates(bs, tg, "id", "id", s)
+  mf <- match_features(cand, s, base = bs, id = "id",
+                       target = tg, target_id = "id", method = "jw")
+  expect_equal(mf@features$sim_sf_name, mf@features$sim_fs_name)
+  expect_equal(mf@features$sim_sf_city, mf@features$sim_fs_city)
+})
+
+
+# ---------- M3: embedding feature path -------------------------------
+
+# Deterministic embedder: each unique text gets a stable, unique
+# unnormalized vector. Used for testing the embedding feature path.
+fake_embed_dt <- function(text, model) {
+  vecs <- lapply(text, function(t) {
+    set.seed(sum(utf8ToInt(t)) %% .Machine$integer.max)
+    stats::runif(8, 0.1, 1.0)
+  })
+  tibble::tibble(input = text, embeddings = vecs)
+}
+
+test_that("Embedding_Strategy match_features emits cosine_sim, norms, sim_*", {
+  skip_if_not_installed("tidyllm")
+  skip_if_not_installed("stringdist")
+  local_mocked_bindings(embed = fake_embed_dt, .package = "tidyllm")
+
+  bs <- data.table(id = c("b1", "b2"), name = c("alpha beta", "gamma delta"))
+  tg <- data.table(id = c("t1", "t2"), name = c("alpha beta", "epsilon zeta"))
+  es <- embedding_strategy(
+    columns         = "name",
+    embedding_model = list(.model = "fake"),
+    threshold       = 0.0,
+    batch_size      = 100L
+  )
+  matches <- data.table(
+    match_id = c(1L, 1L, 2L, 2L),
+    score    = c(0.9, 0.9, 0.7, 0.7),
+    source   = c("base", "target", "base", "target"),
+    id       = c("b1", "t1", "b2", "t2"),
+    rank     = c(1L, 2L, 1L, 2L)
+  )
+
+  mf <- match_features(matches, es,
+                       base = bs, id = "id",
+                       target = tg, target_id = "id")
+  ft <- mf@features
+
+  # New columns present
+  expect_true(all(c("cosine_sim", "embedding_norm_s", "embedding_norm_f",
+                    "sim_sf_name", "sim_fs_name") %in% names(ft)))
+
+  # cosine_sim == score
+  expect_equal(ft$cosine_sim, ft$score)
+
+  # Norms positive, finite, NOT all 1.0 — confirms un-normalized recompute
+  expect_true(all(is.finite(ft$embedding_norm_s)))
+  expect_true(all(is.finite(ft$embedding_norm_f)))
+  expect_true(all(ft$embedding_norm_s > 0))
+  expect_true(all(ft$embedding_norm_f > 0))
+  expect_false(isTRUE(all.equal(ft$embedding_norm_s,
+                                rep(1.0, nrow(ft)))))
+})
+
+test_that("Embedding_Strategy match_features canonical column order", {
+  skip_if_not_installed("tidyllm")
+  skip_if_not_installed("stringdist")
+  local_mocked_bindings(embed = fake_embed_dt, .package = "tidyllm")
+
+  bs <- data.table(id = c("b1", "b2"), name = c("alpha beta", "gamma delta"))
+  tg <- data.table(id = c("t1", "t2"), name = c("alpha beta", "epsilon zeta"))
+  es <- embedding_strategy(
+    columns         = "name",
+    embedding_model = list(.model = "fake"),
+    threshold       = 0.0,
+    batch_size      = 100L
+  )
+  matches <- data.table(
+    match_id = c(1L, 1L, 2L, 2L),
+    score    = c(0.9, 0.9, 0.7, 0.7),
+    source   = c("base", "target", "base", "target"),
+    id       = c("b1", "t1", "b2", "t2"),
+    rank     = c(1L, 2L, 1L, 2L)
+  )
+  mf <- match_features(matches, es,
+                       base = bs, id = "id",
+                       target = tg, target_id = "id")
+  cols <- names(mf@features)
+  expect_true(match("sim_sf_name", cols)  < match("sim_fs_name", cols))
+  expect_true(match("sim_fs_name", cols)  < match("cosine_sim", cols))
+  expect_true(match("cosine_sim", cols)   < match("embedding_norm_s", cols))
+  expect_true(match("embedding_norm_s", cols) <
+              match("embedding_norm_f", cols))
+})
+
+test_that("Embedding_Strategy match_features include_string_sim=FALSE keeps cosine+norms", {
+  skip_if_not_installed("tidyllm")
+  local_mocked_bindings(embed = fake_embed_dt, .package = "tidyllm")
+
+  bs <- data.table(id = c("b1", "b2"), name = c("alpha beta", "gamma delta"))
+  tg <- data.table(id = c("t1", "t2"), name = c("alpha beta", "epsilon zeta"))
+  es <- embedding_strategy(
+    columns         = "name",
+    embedding_model = list(.model = "fake"),
+    threshold       = 0.0,
+    batch_size      = 100L
+  )
+  matches <- data.table(
+    match_id = c(1L, 1L, 2L, 2L),
+    score    = c(0.9, 0.9, 0.7, 0.7),
+    source   = c("base", "target", "base", "target"),
+    id       = c("b1", "t1", "b2", "t2"),
+    rank     = c(1L, 2L, 1L, 2L)
+  )
+  mf <- match_features(matches, es,
+                       base = bs, id = "id",
+                       target = tg, target_id = "id",
+                       include_string_sim = FALSE)
+  cn <- names(mf@features)
+  expect_false(any(grepl("^sim_", cn)))
+  expect_true("cosine_sim" %in% cn)
+  expect_true("embedding_norm_s" %in% cn)
+  expect_true("embedding_norm_f" %in% cn)
+})
+
+test_that("string-sim columns appear on dedup match results (token)", {
+  skip_if_not_installed("stringdist")
+  base <- make_dedup_fixture()
+  s    <- simple_dedup_strategy()
+  dups <- detect_duplicates(base, "id", s)
+  mf   <- match_features(dups, s, base = base, id = "id")
+  expect_true("sim_sf_name" %in% names(mf@features))
+  expect_true("sim_fs_name" %in% names(mf@features))
+  # (d, a) pair: "john doe" vs "john smith" → finite, in (0,1)
+  row_da <- mf@features[searched == "d" & found == "a"]
+  expect_true(row_da$sim_sf_name > 0 & row_da$sim_sf_name < 1)
+})
+
+test_that("Embedding_Strategy dedup path emits cosine_sim and norms from base", {
+  skip_if_not_installed("tidyllm")
+  local_mocked_bindings(embed = fake_embed_dt, .package = "tidyllm")
+
+  base <- data.table(
+    id   = c("a", "b", "c"),
+    name = c("alpha beta", "alpha beta", "gamma delta")
+  )
+  es <- embedding_strategy(
+    columns         = "name",
+    embedding_model = list(.model = "fake"),
+    threshold       = 0.0,
+    batch_size      = 100L
+  )
+  # Hand-baked dedup matches table (no source column; dedup shape)
+  matches <- data.table(
+    duplicate_group = c(1L, 1L, 1L),
+    id              = c("a", "b", "c"),
+    score           = c(1.0, 0.9, 0.6),
+    rank            = c(1L, 2L, 3L)
+  )
+  mf <- match_features(matches, es, base = base, id = "id")
+  ft <- mf@features
+
+  expect_true(all(c("cosine_sim", "embedding_norm_s", "embedding_norm_f")
+                  %in% names(ft)))
+  expect_equal(ft$cosine_sim, ft$score)
+  # Both norms drawn from base; finite and positive
+  expect_true(all(is.finite(ft$embedding_norm_s)))
+  expect_true(all(is.finite(ft$embedding_norm_f)))
+  expect_true(all(ft$embedding_norm_s > 0))
+  expect_true(all(ft$embedding_norm_f > 0))
+})
+
+test_that("Embedding_Strategy without base/target still returns core+cosine", {
+  # Backward compat with M2 reduced-schema test: works without base/target,
+  # but norms collapse to NA and string-sim is silently skipped.
+  es <- embedding_strategy(
+    columns         = "name",
+    embedding_model = "openai_embedding_model",
+    threshold       = 0.5
+  )
+  matches <- data.table(
+    match_id = c(1L, 1L, 2L, 2L),
+    score    = c(0.9, 0.9, 0.7, 0.7),
+    source   = c("base", "target", "base", "target"),
+    id       = c("b1", "t1", "b2", "t2"),
+    rank     = c(1L, 2L, 1L, 2L)
+  )
+  mf <- match_features(matches, es)
+  cn <- names(mf@features)
+  expect_true("cosine_sim" %in% cn)
+  expect_equal(mf@features$cosine_sim, mf@features$score)
+  expect_true(all(is.na(mf@features$embedding_norm_s)))
+  expect_true(all(is.na(mf@features$embedding_norm_f)))
+  # string-sim skipped because base/target are absent
+  expect_false(any(grepl("^sim_", cn)))
+})
+
+
 # ---------- multi-stage stage one-hots -------------------------------
 
 test_that("stage one-hot dummies are emitted with >1 stage level", {
