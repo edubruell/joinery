@@ -1,10 +1,8 @@
 # ============================================================
-# Tests: Phase 0.7 M2 — match_features() + Match_Features class
+# Tests: match_features() + Match_Features class
 # ============================================================
 #
-# References:
-#   notes/calibration_design.md §6  (column schema, locked in M2)
-#   notes/calibration_design.md §14 (M2 milestone)
+# Reference: notes/calibration_design.md (column schema; locked API).
 # ============================================================
 
 library(data.table)

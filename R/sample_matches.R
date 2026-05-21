@@ -10,7 +10,7 @@
 #   "top_gap"     — n records where top-1 vs top-2 gap is smallest
 #   "random"      — random n rows (with optional seed)
 #
-# Phase 0.7 M4 extensions (additive, non-breaking):
+# Stratification / block-expansion extensions (additive):
 #   stratify_by      — character vector. Apply mode within each stratum,
 #                      returning `n` rows per stratum.
 #   expand_to_block  — logical. After sampling, attach all other rows
@@ -137,7 +137,7 @@
 
 
 # ---------------------------------------------------------------------------
-# Phase 0.7 M4: stratification + whole-block expansion helpers
+# Stratification + whole-block expansion helpers
 # ---------------------------------------------------------------------------
 
 #' @noRd

@@ -1,8 +1,8 @@
 # ============================================================
-# Tests: Phase 0.7 M5 — fit_filter() / apply_filter()
+# Tests: fit_filter() / apply_filter()
 # ============================================================
 #
-# Reference: notes/calibration_design.md §4, §14 (M5).
+# Reference: notes/calibration_design.md.
 # ============================================================
 
 library(data.table)

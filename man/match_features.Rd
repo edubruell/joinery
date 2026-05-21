@@ -40,8 +40,8 @@ A [`Match_Features`] object wrapping a wide feature
 Computes a wide, one-row-per-pair feature `data.table` from a joinery
 match result, suitable for downstream calibration / false-positive
 filtering. The schema is documented in
-`notes/calibration_design.md` §6 and treated as the public API of
-v0.7. Additions are allowed; reorders or renames are not.
+`notes/calibration_design.md` and treated as the public API.
+Additions are allowed; reorders or renames are not.
 
 Dispatches on `(matches, strategy)`. A [`Search_Strategy`] returns
 the full token schema (core + token-side columns + string similarity).

@@ -1,10 +1,10 @@
 # ============================================================
-# aIP — absolute identification potential (Phase 0.7 M1)
+# aIP — absolute identification potential
 # ============================================================
 #
-# Two-piece primitive that feeds the `match_features()` Meta-Vector
-# (forthcoming M2). Implements Doherr (2023) eq. (9) — see
-# notes/calibration_design.md §5.
+# Two-piece primitive that feeds the `match_features()` Meta-Vector.
+# Implements Doherr (2023) eq. (9); design in
+# notes/calibration_design.md.
 #
 #   aIP(w, st) = 1 − min(
 #       ln(occ_R(w, st)) / ln(maxocc_R(st))   if w ∈ R,

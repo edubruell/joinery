@@ -13,7 +13,7 @@
 #   signal      - name of the computed signal in the dispatch input
 #   threshold   - numeric trigger threshold
 #   op          - comparison operator: ">", ">=", "<", "<=", "=="
-#   lever       - one of the strategy levers in §6 of the design doc
+#   lever       - one of the strategy levers documented in the design doc
 #   message_fn  - function(signal_value) -> formatted character string
 #
 # The dispatch helper .dispatch_recommendations() takes a named list of

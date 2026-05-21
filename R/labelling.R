@@ -1,5 +1,5 @@
 # ============================================================
-# Labelling round-trip — Phase 0.7 M4
+# Labelling round-trip
 # ============================================================
 #
 # export_for_labelling(): write a sample to a CSV with an `equal`

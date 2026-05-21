@@ -3,7 +3,7 @@
 # ============================================================
 #
 # Five verbs organised around the four user questions defined in
-# notes/diagnostics_design.md §3:
+# notes/diagnostics_design.md:
 #   Q1 (pre-match)        : audit_strategy()        -> Strategy_Audit
 #   Q2 (post-match)       : summarise_matches()     -> Match_Overview
 #   Q3 (attribution)      : explain_match()         -> Match_Explanation
@@ -126,7 +126,7 @@ sample_matches <- new_generic(
 #' per-stage score distributions. Note that [summarise_matches()] does
 #' **not** auto-detect a `stage` column — users explicitly call this
 #' verb when they want per-stage analysis (see
-#' `notes/diagnostics_design.md` §10).
+#' `notes/diagnostics_design.md`).
 #'
 #' @param matches Multi-stage match table with a `stage` column.
 #' @param ... Method-specific arguments. The data.table method will
@@ -147,8 +147,8 @@ compare_stages <- new_generic(
 #' Computes a wide, one-row-per-pair feature `data.table` from a joinery
 #' match result, suitable for downstream calibration / false-positive
 #' filtering. The schema is documented in
-#' `notes/calibration_design.md` §6 and treated as the public API of
-#' v0.7. Additions are allowed; reorders or renames are not.
+#' `notes/calibration_design.md` and treated as the public API.
+#' Additions are allowed; reorders or renames are not.
 #'
 #' Dispatches on `(matches, strategy)`. A [`Search_Strategy`] returns
 #' the full token schema (core + token-side columns + string similarity).

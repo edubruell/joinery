@@ -141,7 +141,7 @@ compute_rarity <- new_generic(
 #' Prepare Auxiliary Search-Side Registry
 #'
 #' @description
-#' Internal Phase 0.7 primitive. Builds a per-column token-occurrence
+#' Internal primitive. Builds a per-column token-occurrence
 #' registry over the *auxiliary* (search / target) side of a linkage
 #' task. Together with the base-side registry produced by
 #' [compute_rarity()], it feeds the absolute identification potential
@@ -153,7 +153,7 @@ compute_rarity <- new_generic(
 #' `(src_column, token)` regardless of any `block_by` setting on the
 #' strategy. This matches the SearchEngine whitepaper's definition
 #' (Doherr 2023, eq. 9) and the design note
-#' `notes/calibration_design.md` §5.
+#' `notes/calibration_design.md`.
 #'
 #' @param data A data.frame / tibble / data.table (or backend-specific
 #'   table) representing the auxiliary (search / target) side.

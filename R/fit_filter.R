@@ -1,5 +1,5 @@
 # ============================================================
-# fit_filter() / apply_filter() -- Phase 0.7 M5
+# fit_filter() / apply_filter()
 # ============================================================
 #
 # Baseline post-retrieval false-positive filter.

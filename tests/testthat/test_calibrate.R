@@ -1,5 +1,5 @@
 # ============================================================
-# Tests: Phase 0.7 M6 — calibrate() + Filter_Calibration
+# Tests: calibrate() + Filter_Calibration
 # ============================================================
 
 library(data.table)

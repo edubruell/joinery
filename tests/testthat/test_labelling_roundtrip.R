@@ -1,5 +1,5 @@
 # tests/testthat/test_labelling_roundtrip.R
-# Phase 0.7 M4: export_for_labelling() <-> import_labels() round-trip
+# export_for_labelling() <-> import_labels() round-trip
 
 library(data.table)
 

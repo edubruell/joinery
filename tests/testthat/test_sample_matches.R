@@ -450,7 +450,7 @@ test_that("data.frame input produces identical Match_Sample to data.table", {
 
 
 # ---------------------------------------------------------------------------
-# 8. Phase 0.7 M4: stratify_by
+# 8. stratify_by
 # ---------------------------------------------------------------------------
 
 make_staged_cand_matches <- function() {
@@ -515,7 +515,7 @@ test_that("stratify_by 'high' picks the per-stratum top scores", {
 
 
 # ---------------------------------------------------------------------------
-# 9. Phase 0.7 M4: expand_to_block
+# 9. expand_to_block
 # ---------------------------------------------------------------------------
 
 test_that("expand_to_block on candidates returns all candidates per sampled base", {
@@ -584,7 +584,7 @@ test_that("expand_to_block on duplicates handles multiple sampled groups", {
 
 
 # ---------------------------------------------------------------------------
-# 10. Phase 0.7 M4: multi-column stratify, edge cases, backend parity
+# 10. multi-column stratify, edge cases, backend parity
 # ---------------------------------------------------------------------------
 
 test_that("multi-column stratify_by partitions across the combined key", {

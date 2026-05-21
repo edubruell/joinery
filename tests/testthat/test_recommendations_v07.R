@@ -1,5 +1,5 @@
 # ============================================================
-# Tests: Phase 0.7 M6 — new recommendations catalog entries
+# Tests: calibration-related recommendations catalog entries
 # ============================================================
 
 library(data.table)

@@ -1,10 +1,10 @@
 # ============================================================
-# Tests: Phase 0.7 M1 — aIP primitive + auxiliary search-side registry
+# Tests: aIP primitive + auxiliary search-side registry
 # ============================================================
 #
 # References:
-#   notes/calibration_design.md §5  (formula, design intent)
-#   Doherr (2023), eq. (9)          (formula source)
+#   notes/calibration_design.md  (formula, design intent)
+#   Doherr (2023), eq. (9)       (formula source)
 # ============================================================
 
 library(data.table)

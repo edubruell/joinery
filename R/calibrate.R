@@ -1,5 +1,5 @@
 # ============================================================
-# calibrate() + Filter_Calibration --- Phase 0.7 M6
+# calibrate() + Filter_Calibration
 # ============================================================
 #
 # Evaluates a fitted Filter_Model (carried on Calibrated_Matches)

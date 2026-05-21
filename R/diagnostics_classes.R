@@ -207,13 +207,13 @@ Stage_Comparison <- new_class(
 )
 
 
-#' Match Features Result (Phase 0.7 M2)
+#' Match Features Result
 #'
 #' @description
 #' Result of [match_features()]. A wide, one-row-per-pair feature table
-#' suitable for downstream calibration / filtering (Phase 0.7 M5+).
-#' Schema is documented in `notes/calibration_design.md` §6 and is treated
-#' as the public API of v0.7 — additions only, never reorder or rename.
+#' suitable for downstream calibration / filtering. Schema is documented
+#' in `notes/calibration_design.md` and treated as the public API —
+#' additions only, never reorder or rename.
 #'
 #' @slot features `data.table`. The wide feature matrix.
 #' @slot schema Character. One of `"token"` (full schema) or
@@ -251,7 +251,7 @@ as.data.frame.Match_Features <- new_external_generic(
 )
 
 
-#' Filter Model (Phase 0.7 M5)
+#' Filter Model
 #'
 #' @description
 #' Wraps a fitted false-positive filter. Returned by [fit_filter()] and
@@ -299,7 +299,7 @@ print.Filter_Model  <- new_external_generic("base", "print",  "x")
 format.Filter_Model <- new_external_generic("base", "format", "x")
 
 
-#' Calibrated Matches (Phase 0.7 M5)
+#' Calibrated Matches
 #'
 #' @description
 #' Returned by [apply_filter()] and [calibrate_matches()]. Wraps the
@@ -1394,10 +1394,10 @@ method(
 
 
 # ---------------------------------------------------------------------------
-# Filter_Calibration (Phase 0.7 M6)
+# Filter_Calibration
 # ---------------------------------------------------------------------------
 
-#' Filter Calibration Result (Phase 0.7 M6)
+#' Filter Calibration Result
 #'
 #' @description
 #' Returned by [calibrate()]. Quality / calibration diagnostics for a

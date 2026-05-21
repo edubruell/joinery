@@ -1,5 +1,5 @@
 # ============================================================
-# Tests: Phase 0.7 M6 — tidymodels shim
+# Tests: tidymodels shim
 # ============================================================
 #
 # Tests skip (not fail) when tidymodels packages are absent.

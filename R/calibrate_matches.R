@@ -1,12 +1,12 @@
 # ============================================================
-# calibrate_matches() — Phase 0.7 M5 high-level verb
+# calibrate_matches() — high-level calibration verb
 # ============================================================
 #
 # One call. Wraps `match_features()` → `fit_filter()` →
 # `apply_filter()`. Dispatches on strategy class so the same verb
 # serves both token and embedding workflows.
 #
-# Method dispatch follows the M2 / M3 pattern: backend × strategy.
+# Method dispatch is backend × strategy.
 # The token / embedding feature paths are already pluggable on
 # `match_features()`, so most of the work here is plumbing.
 # ============================================================

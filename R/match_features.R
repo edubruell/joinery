@@ -1,10 +1,10 @@
 # ============================================================
-# match_features() — Phase 0.7 M2 (token schema) + M3 (string sim + embedding)
+# match_features()
 # ============================================================
 #
 # Builds a wide, one-row-per-pair feature `data.table` from a joinery
-# match result. Schema follows notes/calibration_design.md §6 (locked
-# at the end of M2 and treated as the public API of v0.7).
+# match result. Schema documented in notes/calibration_design.md and
+# treated as the public API — additions only, no reorders or renames.
 #
 # Core columns (always present):
 #   searched, found, match_id, stage, score, cnt, icnt, ipos,
@@ -14,10 +14,10 @@
 #   scnt, rcnt, r1..rn, m_<col>_1..topN, f_<col>_1..topN,
 #   s_<col>_1..topN
 #
-# String similarity columns (§6.3, M3, both strategy classes):
+# String similarity columns (both strategy classes):
 #   sim_sf_<col>, sim_fs_<col>      (search→found, found→search)
 #
-# Embedding-strategy columns (§6.4, M3, Embedding_Strategy only):
+# Embedding-strategy columns (Embedding_Strategy only):
 #   cosine_sim, embedding_norm_s, embedding_norm_f
 # ============================================================
 
@@ -198,7 +198,7 @@
 }
 
 
-# ---------- string similarity (§6.3) --------------------------------
+# ---------- string similarity ---------------------------------------
 
 #' Per-pair, per-column string similarity using `stringdist`.
 #'
@@ -398,7 +398,7 @@
   fonly_long <- pf[!m_set_long, on = c(".pair", "src_column", "token")][
     , .(.pair, src_column, token, aip)
   ]
-  # Search-only ("s" in §6.2 — search-missing): in ps, not in pf
+  # Search-only ("s" — search-missing): in ps, not in pf
   sonly_long <- ps[!m_set_long, on = c(".pair", "src_column", "token")][
     , .(.pair, src_column, token, aip)
   ]
@@ -525,7 +525,7 @@
   data.table::setorder(out, .pair)
   out[, .pair := NULL]
 
-  # --- string similarity (§6.3) -------------------------------------
+  # --- string similarity --------------------------------------------
   if (isTRUE(include_string_sim) && length(columns) > 0L) {
     sim_dt <- .string_sim_block(
       pairs      = out[, .(searched, found)],
@@ -644,7 +644,7 @@
     }
   }
 
-  # --- string similarity (§6.3) -------------------------------------
+  # --- string similarity --------------------------------------------
   if (isTRUE(include_string_sim) && length(resolved_cols) > 0L &&
       !is.null(base_dt) && !is.null(id)) {
     sim_dt <- .string_sim_block(
@@ -663,7 +663,7 @@
   # --- cosine_sim (pass-through of score) ---------------------------
   core[, cosine_sim := score]
 
-  # --- embedding norms (§6.4) ---------------------------------------
+  # --- embedding norms ----------------------------------------------
   if (!is.null(base_dt) && !is.null(id)) {
     s_ids <- unique(core$searched)
     base_norms <- tryCatch(

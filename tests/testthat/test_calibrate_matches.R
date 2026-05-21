@@ -1,8 +1,8 @@
 # ============================================================
-# Tests: Phase 0.7 M5 — calibrate_matches() high-level verb
+# Tests: calibrate_matches() high-level verb
 # ============================================================
 #
-# Reference: notes/calibration_design.md §4.1, §14 (M5).
+# Reference: notes/calibration_design.md.
 # ============================================================
 
 library(data.table)
