@@ -205,5 +205,115 @@ match_features <- new_generic(
 #' @export
 recommendations <- new_generic("recommendations", "x", function(x, ...) S7_dispatch())
 
-method(recommendations, Match_Overview) <- function(x) x@recommendations
-method(recommendations, Strategy_Audit) <- function(x) x@recommendations
+method(recommendations, Match_Overview)     <- function(x) x@recommendations
+method(recommendations, Strategy_Audit)     <- function(x) x@recommendations
+method(recommendations, Calibrated_Matches) <- function(x) x@recommendations
+
+
+#' Fit a False-Positive Filter (Phase 0.7 M5)
+#'
+#' @description
+#' Fit a baseline classifier to predict whether each scored pair is a
+#' true match (`equal == 1L`) or a false positive (`equal == 0L`).
+#' The baseline path uses `stats::glm` with the logit link and no
+#' external dependencies. The features object is the input from
+#' [match_features()]; labels carry the `equal` column produced by
+#' [import_labels()].
+#'
+#' @param features A [`Match_Features`] object.
+#' @param labels A `data.table` / `data.frame` with the matches schema
+#'   plus an integer `equal` column (`0L` / `1L`). Typically produced by
+#'   [import_labels()].
+#' @param model Character scalar (default `"logistic"`) selecting the
+#'   baseline `glm()` path. Future M6 work will accept a fitted parsnip
+#'   / workflow object here.
+#' @param class_weighted Logical scalar. When `TRUE`, fit `glm` with
+#'   inverse-class-frequency `weights =`, useful for imbalanced
+#'   training sets. Default `FALSE`.
+#' @param na_fill Numeric scalar used to impute predictor NAs. Default
+#'   `0` (sensible for aIP slot columns where NA means "no token").
+#' @param ... Reserved for future expansion.
+#'
+#' @return A [`Filter_Model`] object.
+#'
+#' @export
+fit_filter <- function(features, labels,
+                       model = "logistic",
+                       class_weighted = FALSE,
+                       na_fill = 0,
+                       ...) {
+  .fit_filter_impl(
+    features       = features,
+    labels         = labels,
+    model          = model,
+    class_weighted = class_weighted,
+    na_fill        = na_fill,
+    ...
+  )
+}
+
+
+#' Apply a Fitted Filter to a Feature Table (Phase 0.7 M5)
+#'
+#' @description
+#' Score a [`Match_Features`] table with a fitted [`Filter_Model`] and
+#' return a [`Calibrated_Matches`] object. When `matches` is supplied,
+#' the original match table is enriched with `tp_prob` and
+#' `predicted_tp` columns and stored in the result's `@matches` slot;
+#' when `matches` is `NULL`, the features table itself is enriched and
+#' stored.
+#'
+#' @param features A [`Match_Features`] object.
+#' @param filter_model A [`Filter_Model`] produced by [fit_filter()].
+#' @param threshold Numeric scalar in [0, 1] or `NULL`. When `NULL`,
+#'   the threshold is chosen by Youden's J on the training labels
+#'   stored on the [`Filter_Model`]. Decision 13.7 default.
+#' @param matches Optional raw matches table to enrich. When supplied,
+#'   `tp_prob` / `predicted_tp` are broadcast onto every row of the
+#'   pair (candidates: both `source == "base"` and `source == "target"`
+#'   rows of a `match_id`; duplicates: every row of a `duplicate_group`).
+#' @param ... Reserved for future expansion.
+#'
+#' @return A [`Calibrated_Matches`] object.
+#'
+#' @export
+apply_filter <- function(features, filter_model,
+                         threshold = NULL,
+                         matches   = NULL,
+                         ...) {
+  .apply_filter_impl(
+    features      = features,
+    filter_model  = filter_model,
+    threshold     = threshold,
+    matches       = matches,
+    ...
+  )
+}
+
+
+#' Fit and Apply a False-Positive Filter (Phase 0.7 M5)
+#'
+#' @description
+#' High-level Q5 verb. Builds features via [match_features()], fits a
+#' [`Filter_Model`] via [fit_filter()], and applies it via
+#' [apply_filter()] to return a [`Calibrated_Matches`] object enriched
+#' with `tp_prob` / `predicted_tp`. Dispatches on the strategy class.
+#'
+#' @param matches Match output table (data.table / tibble / data.frame
+#'   / DuckDB lazy `tbl`).
+#' @param strategy The [`Search_Strategy`] or [`Embedding_Strategy`]
+#'   used to produce `matches`.
+#' @param ... Method-specific arguments. Required: `labels` (manually
+#'   labelled rows produced by [import_labels()]), `base`, and `id`.
+#'   Optional: `target`, `target_id` (forwarded to [match_features()]),
+#'   `model`, `class_weighted`, `na_fill`, `threshold`, plus all
+#'   [match_features()] tuning knobs (`top_n`, `include_string_sim`,
+#'   `include_block_stats`, `method`).
+#'
+#' @return A [`Calibrated_Matches`] object.
+#'
+#' @export
+calibrate_matches <- new_generic(
+  "calibrate_matches",
+  c("matches", "strategy")
+)

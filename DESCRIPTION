@@ -46,6 +46,8 @@ Collate:
     'sample_matches.R'
     'labelling.R'
     'match_features.R'
+    'fit_filter.R'
+    'calibrate_matches.R'
     'diagnostics_plots.R'
     'data.R'
 RoxygenNote: 7.3.3

@@ -36,6 +36,8 @@ utils::globalVariables(c(
   "cosine_sim", "embedding_norm_s", "embedding_norm_f",
   # labelling.R
   "equal", ".block_default",
+  # fit_filter.R / calibrate_matches.R
+  "tp_prob", "predicted_tp", ".block_default",
   # purrr-shim dot
   "."
 ))
