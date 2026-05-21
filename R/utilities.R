@@ -34,6 +34,8 @@ utils::globalVariables(c(
   "n_cols", "max_aip", "cnt", "icnt", "ipos", "scnt", "rcnt",
   "searched", "found",
   "cosine_sim", "embedding_norm_s", "embedding_norm_f",
+  # labelling.R
+  "equal", ".block_default",
   # purrr-shim dot
   "."
 ))

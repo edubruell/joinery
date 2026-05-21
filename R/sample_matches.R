@@ -10,6 +10,13 @@
 #   "top_gap"     — n records where top-1 vs top-2 gap is smallest
 #   "random"      — random n rows (with optional seed)
 #
+# Phase 0.7 M4 extensions (additive, non-breaking):
+#   stratify_by      — character vector. Apply mode within each stratum,
+#                      returning `n` rows per stratum.
+#   expand_to_block  — logical. After sampling, attach all other rows
+#                      from the same block (match_id sharing a base id
+#                      for candidates; duplicate_group for dedup).
+#
 # Backends: data.table (reference), DuckDB (collect→DT),
 #           tibble/data.frame thin wrappers.
 # ============================================================
@@ -130,6 +137,53 @@
 
 
 # ---------------------------------------------------------------------------
+# Phase 0.7 M4: stratification + whole-block expansion helpers
+# ---------------------------------------------------------------------------
+
+#' @noRd
+.validate_stratify_by <- function(stratify_by, cols) {
+  if (is.null(stratify_by)) return(NULL)
+  if (!is.character(stratify_by) || length(stratify_by) < 1L ||
+      any(is.na(stratify_by)) || any(stratify_by == "")) {
+    stop(
+      "`stratify_by` must be a non-empty character vector of column names.",
+      call. = FALSE
+    )
+  }
+  missing_cols <- setdiff(stratify_by, cols)
+  if (length(missing_cols)) {
+    stop(
+      sprintf(
+        "`stratify_by` references columns not in the matches table: %s",
+        paste0("\"", missing_cols, "\"", collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  stratify_by
+}
+
+#' @noRd
+.expand_to_block <- function(dt, rows, match_type) {
+  if (nrow(rows) == 0L) return(rows)
+  if (match_type == "candidates") {
+    # Block = all match_ids that share the same base id with any sampled match_id.
+    sampled_mids <- unique(rows[["match_id"]])
+    base_id_col  <- dt[dt[["source"]] == "base" & dt[["match_id"]] %in% sampled_mids,
+                      unique(get("id"))]
+    if (length(base_id_col) == 0L) return(rows)
+    block_mids <- unique(dt[dt[["source"]] == "base" & dt[["id"]] %in% base_id_col,
+                             get("match_id")])
+    dt[dt[["match_id"]] %in% block_mids]
+  } else {
+    groups <- unique(rows[["duplicate_group"]])
+    if (length(groups) == 0L) return(rows)
+    dt[dt[["duplicate_group"]] %in% groups]
+  }
+}
+
+
+# ---------------------------------------------------------------------------
 # Methods: sample_matches on data.table (primary)
 # ---------------------------------------------------------------------------
 
@@ -137,11 +191,17 @@ method(
   sample_matches,
   DT_tbl
 ) <- function(matches, mode = "borderline", n = 10L, threshold = NULL,
-               seed = NULL, ...) {
+               seed = NULL, stratify_by = NULL, expand_to_block = FALSE, ...) {
 
   n          <- .validate_sample_args(mode, n)
   dt         <- data.table::as.data.table(matches)
   match_type <- .detect_match_type(dt)
+  stratify_by <- .validate_stratify_by(stratify_by, names(dt))
+
+  if (!is.logical(expand_to_block) || length(expand_to_block) != 1L ||
+      is.na(expand_to_block)) {
+    stop("`expand_to_block` must be a single TRUE or FALSE.", call. = FALSE)
+  }
 
   if (mode == "borderline" && is.null(threshold)) {
     stop(
@@ -152,18 +212,46 @@ method(
     )
   }
 
-  rows <- switch(mode,
-    high       = .sample_high(dt, n),
-    low        = .sample_low(dt, n, threshold),
-    borderline = .sample_borderline(dt, n, threshold),
-    ambiguous  = .sample_ambiguous(dt, n, match_type),
-    top_gap    = .sample_top_gap(dt, n, match_type),
-    random     = .sample_random(dt, n, seed)
-  )
+  # If we stratify with random mode, set seed once at the outer level so
+  # per-stratum draws share the RNG state instead of redrawing the same
+  # indices for each stratum.
+  inner_seed <- seed
+  if (!is.null(stratify_by) && mode == "random" && !is.null(seed)) {
+    set.seed(seed)
+    inner_seed <- NULL
+  }
+
+  sample_one <- function(d) {
+    switch(mode,
+      high       = .sample_high(d, n),
+      low        = .sample_low(d, n, threshold),
+      borderline = .sample_borderline(d, n, threshold),
+      ambiguous  = .sample_ambiguous(d, n, match_type),
+      top_gap    = .sample_top_gap(d, n, match_type),
+      random     = .sample_random(d, n, inner_seed)
+    )
+  }
+
+  if (!is.null(stratify_by)) {
+    # Stratify on (column-)combination. Apply mode within each stratum.
+    rows <- dt[, sample_one(data.table::copy(.SD)), by = stratify_by,
+               .SDcols = setdiff(names(dt), stratify_by)]
+    # Restore canonical column order
+    keep_cols <- intersect(names(dt), names(rows))
+    rows <- rows[, ..keep_cols]
+  } else {
+    rows <- sample_one(dt)
+  }
+
+  if (isTRUE(expand_to_block)) {
+    rows <- .expand_to_block(dt, rows, match_type)
+  }
 
   criteria <- list(mode = mode, n = n)
   if (mode %in% c("borderline", "low") && !is.null(threshold)) criteria$threshold <- threshold
   if (mode == "random" && !is.null(seed)) criteria$seed <- seed
+  if (!is.null(stratify_by)) criteria$stratify_by <- stratify_by
+  if (isTRUE(expand_to_block)) criteria$expand_to_block <- TRUE
 
   Match_Sample(mode = mode, criteria = criteria, rows = rows)
 }
@@ -177,10 +265,12 @@ method(
   sample_matches,
   Duck_tbl
 ) <- function(matches, mode = "borderline", n = 10L, threshold = NULL,
-               seed = NULL, ...) {
+               seed = NULL, stratify_by = NULL, expand_to_block = FALSE, ...) {
   matches_dt <- data.table::as.data.table(dplyr::collect(matches))
   sample_matches(matches_dt, mode = mode, n = n,
-                 threshold = threshold, seed = seed, ...)
+                 threshold = threshold, seed = seed,
+                 stratify_by = stratify_by,
+                 expand_to_block = expand_to_block, ...)
 }
 
 
@@ -192,25 +282,31 @@ method(
   sample_matches,
   .jyDF
 ) <- function(matches, mode = "borderline", n = 10L, threshold = NULL,
-               seed = NULL, ...) {
+               seed = NULL, stratify_by = NULL, expand_to_block = FALSE, ...) {
   sample_matches(as_DT(matches), mode = mode, n = n,
-                 threshold = threshold, seed = seed, ...)
+                 threshold = threshold, seed = seed,
+                 stratify_by = stratify_by,
+                 expand_to_block = expand_to_block, ...)
 }
 
 method(
   sample_matches,
   .jyTBL_DF
 ) <- function(matches, mode = "borderline", n = 10L, threshold = NULL,
-               seed = NULL, ...) {
+               seed = NULL, stratify_by = NULL, expand_to_block = FALSE, ...) {
   sample_matches(as_DT(matches), mode = mode, n = n,
-                 threshold = threshold, seed = seed, ...)
+                 threshold = threshold, seed = seed,
+                 stratify_by = stratify_by,
+                 expand_to_block = expand_to_block, ...)
 }
 
 method(
   sample_matches,
   .jyTBL
 ) <- function(matches, mode = "borderline", n = 10L, threshold = NULL,
-               seed = NULL, ...) {
+               seed = NULL, stratify_by = NULL, expand_to_block = FALSE, ...) {
   sample_matches(as_DT(matches), mode = mode, n = n,
-                 threshold = threshold, seed = seed, ...)
+                 threshold = threshold, seed = seed,
+                 stratify_by = stratify_by,
+                 expand_to_block = expand_to_block, ...)
 }

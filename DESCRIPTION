@@ -44,6 +44,7 @@ Collate:
     'compare_stages.R'
     'explain_match.R'
     'sample_matches.R'
+    'labelling.R'
     'match_features.R'
     'diagnostics_plots.R'
     'data.R'

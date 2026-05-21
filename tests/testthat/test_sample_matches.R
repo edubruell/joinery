@@ -447,3 +447,202 @@ test_that("data.frame input produces identical Match_Sample to data.table", {
   expect_true(S7::S7_inherits(res_df, Match_Sample))
   expect_equal(res_df@rows$score, res_dt@rows$score, tolerance = 1e-10)
 })
+
+
+# ---------------------------------------------------------------------------
+# 8. Phase 0.7 M4: stratify_by
+# ---------------------------------------------------------------------------
+
+make_staged_cand_matches <- function() {
+  # Two stages, each with 3 base records and 2-3 candidates.
+  data.table(
+    match_id = rep(1L:10L, each = 2L),
+    id       = c("a", "t1", "a", "t2", "b", "t3", "c", "t4", "c", "t5",
+                 "d", "t6", "d", "t7", "e", "t8", "f", "t9", "f", "t10"),
+    source   = rep(c("base", "target"), times = 10L),
+    score    = rep(c(0.95, 0.90, 0.85, 0.80, 0.75,
+                     0.70, 0.65, 0.60, 0.55, 0.50), each = 2L),
+    rank     = rep(c(1L, 2L, 1L, 1L, 2L,
+                     1L, 2L, 1L, 1L, 2L), each = 2L),
+    stage    = rep(c(rep("stage_a", 5L), rep("stage_b", 5L)), each = 2L)
+  )
+}
+
+test_that("stratify_by = 'stage' returns n rows per stratum", {
+  dt  <- make_staged_cand_matches()
+  res <- sample_matches(dt, mode = "high", n = 2L, stratify_by = "stage")
+  counts <- res@rows[, .N, by = "stage"]
+  expect_setequal(counts$stage, c("stage_a", "stage_b"))
+  expect_true(all(counts$N == 2L))
+  expect_equal(res@criteria$stratify_by, "stage")
+})
+
+test_that("stratify_by errors on unknown column", {
+  dt <- make_staged_cand_matches()
+  expect_error(
+    sample_matches(dt, mode = "high", n = 2L, stratify_by = "nonexistent"),
+    "stratify_by"
+  )
+})
+
+test_that("stratify_by errors on non-character input", {
+  dt <- make_staged_cand_matches()
+  expect_error(
+    sample_matches(dt, mode = "high", n = 2L, stratify_by = 1L),
+    "non-empty character vector"
+  )
+})
+
+test_that("stratify_by random with seed is reproducible across runs", {
+  dt <- make_staged_cand_matches()
+  r1 <- sample_matches(dt, mode = "random", n = 2L,
+                       stratify_by = "stage", seed = 42L)
+  r2 <- sample_matches(dt, mode = "random", n = 2L,
+                       stratify_by = "stage", seed = 42L)
+  expect_equal(r1@rows, r2@rows)
+  # n=2 per stratum -> 4 total
+  expect_equal(nrow(r1@rows), 4L)
+})
+
+test_that("stratify_by 'high' picks the per-stratum top scores", {
+  dt  <- make_staged_cand_matches()
+  res <- sample_matches(dt, mode = "high", n = 1L, stratify_by = "stage")
+  # Per stage_a: top score = 0.95; per stage_b: top score = 0.70
+  per_stage <- res@rows[, .(max_score = max(score)), by = "stage"]
+  expect_equal(per_stage[stage == "stage_a", max_score], 0.95)
+  expect_equal(per_stage[stage == "stage_b", max_score], 0.70)
+})
+
+
+# ---------------------------------------------------------------------------
+# 9. Phase 0.7 M4: expand_to_block
+# ---------------------------------------------------------------------------
+
+test_that("expand_to_block on candidates returns all candidates per sampled base", {
+  dt  <- make_sample_cand_matches()
+  # Without expansion, "high" mode n=1 returns only the top pair (match_id 1)
+  base   <- sample_matches(dt, mode = "high", n = 1L)
+  expect_equal(unique(base@rows$match_id), 1L)
+  # With expansion, base "a" has match_ids 1,2,3 -> all rows for those
+  exp    <- sample_matches(dt, mode = "high", n = 1L, expand_to_block = TRUE)
+  expect_setequal(unique(exp@rows$match_id), c(1L, 2L, 3L))
+  expect_true(isTRUE(exp@criteria$expand_to_block))
+})
+
+test_that("expand_to_block on duplicates returns full duplicate group(s)", {
+  dt   <- make_sample_dup_matches()
+  base <- sample_matches(dt, mode = "high", n = 1L)
+  expect_equal(unique(base@rows$duplicate_group), 1L)
+  exp  <- sample_matches(dt, mode = "high", n = 1L, expand_to_block = TRUE)
+  # group 1 has 3 records
+  expect_equal(unique(exp@rows$duplicate_group), 1L)
+  expect_equal(nrow(exp@rows), 3L)
+})
+
+test_that("expand_to_block + stratify_by composes correctly", {
+  dt  <- make_staged_cand_matches()
+  res <- sample_matches(dt, mode = "high", n = 1L,
+                        stratify_by = "stage", expand_to_block = TRUE)
+  # Each stratum's top-score base is selected, then all its candidates returned
+  expect_true(all(c("stage_a", "stage_b") %in% res@rows$stage))
+  # The whole block returned, no partial bases (each match_id has 2 rows)
+  per_mid <- res@rows[, .N, by = "match_id"]
+  expect_true(all(per_mid$N == 2L))
+})
+
+test_that("expand_to_block validates argument type", {
+  dt <- make_sample_dup_matches()
+  expect_error(
+    sample_matches(dt, mode = "high", n = 2L, expand_to_block = "yes"),
+    "TRUE or FALSE"
+  )
+  expect_error(
+    sample_matches(dt, mode = "high", n = 2L, expand_to_block = NA),
+    "TRUE or FALSE"
+  )
+})
+
+test_that("expand_to_block default FALSE is non-breaking", {
+  dt   <- make_sample_dup_matches()
+  res1 <- sample_matches(dt, mode = "high", n = 1L)
+  res2 <- sample_matches(dt, mode = "high", n = 1L, expand_to_block = FALSE)
+  expect_equal(res1@rows, res2@rows)
+  expect_null(res1@criteria$expand_to_block)
+})
+
+test_that("expand_to_block on duplicates handles multiple sampled groups", {
+  dt <- make_sample_dup_matches()
+  # n = 4 over a 9-row fixture catches all of group 1 (3 rows) plus
+  # group 2's rank-1 row (0.80). expand_to_block then pulls the rest of
+  # group 2 in.
+  res <- sample_matches(dt, mode = "high", n = 4L, expand_to_block = TRUE)
+  expect_setequal(unique(res@rows$duplicate_group), c(1L, 2L))
+  per_group <- res@rows[, .N, by = "duplicate_group"]
+  expect_equal(per_group[duplicate_group == 1L, N], 3L)
+  expect_equal(per_group[duplicate_group == 2L, N], 2L)
+})
+
+
+# ---------------------------------------------------------------------------
+# 10. Phase 0.7 M4: multi-column stratify, edge cases, backend parity
+# ---------------------------------------------------------------------------
+
+test_that("multi-column stratify_by partitions across the combined key", {
+  dt <- copy(make_staged_cand_matches())
+  dt[, source_kind := source]  # 2 levels stage * 2 levels source
+  res <- sample_matches(dt, mode = "high", n = 1L,
+                        stratify_by = c("stage", "source_kind"))
+  combos <- unique(res@rows[, .(stage, source_kind)])
+  # 4 combos x 1 row each
+  expect_equal(nrow(combos), 4L)
+  expect_equal(nrow(res@rows), 4L)
+})
+
+test_that("stratify_by tolerates strata smaller than n (returns all rows in stratum)", {
+  dt  <- make_staged_cand_matches()
+  # n = 100 per stratum, stratum has 10 rows -> just returns all of them
+  res <- sample_matches(dt, mode = "high", n = 100L, stratify_by = "stage")
+  expect_equal(nrow(res@rows), nrow(dt))
+})
+
+test_that("stratify_by random without seed produces results (non-trivial)", {
+  dt  <- make_staged_cand_matches()
+  res <- sample_matches(dt, mode = "random", n = 2L, stratify_by = "stage")
+  per_stage <- res@rows[, .N, by = "stage"]
+  expect_setequal(per_stage$stage, c("stage_a", "stage_b"))
+  expect_true(all(per_stage$N == 2L))
+})
+
+test_that("expand_to_block short-circuits on empty sample", {
+  dt  <- make_sample_dup_matches()
+  res <- sample_matches(dt, mode = "low", n = 5L,
+                        threshold = 0.99, expand_to_block = TRUE)
+  expect_equal(nrow(res@rows), 0L)
+})
+
+test_that("Match_Sample criteria captures both stratify_by and expand_to_block together", {
+  dt  <- make_staged_cand_matches()
+  res <- sample_matches(dt, mode = "high", n = 1L,
+                        stratify_by = "stage", expand_to_block = TRUE)
+  expect_equal(res@criteria$stratify_by, "stage")
+  expect_true(isTRUE(res@criteria$expand_to_block))
+})
+
+test_that("tibble and data.frame backends accept stratify_by + expand_to_block", {
+  dt  <- make_staged_cand_matches()
+  df  <- as.data.frame(dt)
+  tb  <- tibble::as_tibble(dt)
+  ref <- sample_matches(dt, mode = "high", n = 1L,
+                        stratify_by = "stage", expand_to_block = TRUE,
+                        seed = 1L)
+  out_df <- sample_matches(df, mode = "high", n = 1L,
+                           stratify_by = "stage", expand_to_block = TRUE,
+                           seed = 1L)
+  out_tb <- sample_matches(tb, mode = "high", n = 1L,
+                           stratify_by = "stage", expand_to_block = TRUE,
+                           seed = 1L)
+  expect_true(S7::S7_inherits(out_df, Match_Sample))
+  expect_true(S7::S7_inherits(out_tb, Match_Sample))
+  expect_equal(out_df@rows, ref@rows)
+  expect_equal(out_tb@rows, ref@rows)
+})
