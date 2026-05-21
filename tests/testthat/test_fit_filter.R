@@ -245,7 +245,7 @@ test_that("apply_filter rejects invalid threshold", {
 test_that("fit_filter rejects unsupported model strings", {
   bits <- make_dedup_features_and_labels()
   expect_error(fit_filter(bits$mf, bits$labels, model = "xgboost"),
-               "M5")
+               "parsnip")
 })
 
 

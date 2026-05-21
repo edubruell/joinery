@@ -1392,5 +1392,142 @@ method(
   as.data.frame(data.table::copy(x@matches))
 }
 
+
+# ---------------------------------------------------------------------------
+# Filter_Calibration (Phase 0.7 M6)
+# ---------------------------------------------------------------------------
+
+#' Filter Calibration Result (Phase 0.7 M6)
+#'
+#' @description
+#' Returned by [calibrate()]. Quality / calibration diagnostics for a
+#' fitted [`Filter_Model`] evaluated either on its training fold or on
+#' an independently labelled evaluation set.
+#'
+#' @slot reliability `data.table`. Bin-wise mean predicted probability vs.
+#'   observed positive rate (Hosmer-Lemeshow style reliability table).
+#' @slot brier Numeric scalar. Mean squared error between `tp_prob` and
+#'   `equal`.
+#' @slot log_loss Numeric scalar. Binary cross-entropy.
+#' @slot confusion_per_class `data.table`. Confusion matrix at the applied
+#'   threshold (rows: true `equal`, columns: `predicted_tp`).
+#' @slot threshold_curve `data.table`. Threshold sweep: tpr / fpr /
+#'   precision / recall / f1 / youden_j across a grid.
+#' @slot threshold Numeric scalar. The decision threshold used for the
+#'   confusion matrix and headline metrics.
+#' @slot n_eval Integer. Number of labelled rows scored.
+#' @slot class_balance Numeric. Share of `equal == 1L` in the evaluation set.
+#' @slot recommendations Character. Strings from the recommendations catalog.
+#'
+#' @noRd
+Filter_Calibration <- new_class(
+  "Filter_Calibration",
+  properties = list(
+    reliability         = class_any,
+    brier               = class_numeric,
+    log_loss            = class_numeric,
+    confusion_per_class = class_any,
+    threshold_curve     = class_any,
+    threshold           = class_numeric,
+    n_eval              = class_integer,
+    class_balance       = class_numeric,
+    recommendations     = class_character
+  )
+)
+
+#' @noRd
+print.Filter_Calibration <- new_external_generic("base", "print", "x")
+#' @noRd
+format.Filter_Calibration <- new_external_generic("base", "format", "x")
+#' @noRd
+as.data.table.Filter_Calibration <- new_external_generic(
+  "data.table", "as.data.table", "x"
+)
+#' @noRd
+as.data.frame.Filter_Calibration <- new_external_generic(
+  "base", "as.data.frame", "x"
+)
+
+#' @noRd
+.format_filter_calibration <- function(x) {
+  lines <- character()
+  push  <- function(...) lines <<- c(lines, paste0(...))
+
+  push("<joinery::Filter_Calibration>")
+  push(sprintf("  n_eval         : %d", x@n_eval))
+  push(sprintf("  class_balance  : %.3f (share of equal == 1L)", x@class_balance))
+  push(sprintf("  threshold      : %.4f", x@threshold))
+  push(sprintf("  brier          : %.4f", x@brier))
+  push(sprintf("  log_loss       : %.4f", x@log_loss))
+
+  cm <- x@confusion_per_class
+  if (!is.null(cm) && nrow(cm) > 0L) {
+    push("")
+    push("  confusion (rows=true equal, cols=predicted_tp):")
+    for (i in seq_len(nrow(cm))) {
+      push(sprintf(
+        "    equal=%d  pred=0: %d   pred=1: %d",
+        cm$equal[i], cm$n_pred0[i], cm$n_pred1[i]
+      ))
+    }
+  }
+
+  rel <- x@reliability
+  if (!is.null(rel) && nrow(rel) > 0L) {
+    push("")
+    push(sprintf("  reliability (showing %d of %d bins):",
+                 min(nrow(rel), 5L), nrow(rel)))
+    for (i in seq_len(min(nrow(rel), 5L))) {
+      push(sprintf(
+        "    bin %d  n=%d   mean_pred=%.3f   obs_pos=%.3f",
+        rel$bin[i], rel$n[i], rel$mean_pred[i], rel$obs_pos[i]
+      ))
+    }
+  }
+
+  lines
+}
+
+method(format.Filter_Calibration, Filter_Calibration) <- function(x, ...) {
+  .format_filter_calibration(x)
+}
+method(print.Filter_Calibration, Filter_Calibration) <- function(x, ...) {
+  cli::cli_h1("Filter_Calibration")
+  cli::cli_text(sprintf("n_eval: {.val %d}   class_balance: {.val %s}",
+                        x@n_eval,
+                        sprintf("%.3f", x@class_balance)))
+  cli::cli_text(sprintf("threshold: {.val %s}   brier: {.val %s}   log_loss: {.val %s}",
+                        sprintf("%.4f", x@threshold),
+                        sprintf("%.4f", x@brier),
+                        sprintf("%.4f", x@log_loss)))
+  cm <- x@confusion_per_class
+  if (!is.null(cm) && nrow(cm) > 0L) {
+    cli::cli_text("{.strong confusion}")
+    for (i in seq_len(nrow(cm))) {
+      cli::cli_bullets(sprintf(
+        "equal=%d  pred=0: %d   pred=1: %d",
+        cm$equal[i], cm$n_pred0[i], cm$n_pred1[i]
+      ))
+    }
+  }
+  for (r in x@recommendations) cli::cli_alert_warning(r)
+  invisible(x)
+}
+
+method(as.data.table.Filter_Calibration, Filter_Calibration) <- function(x, ...) {
+  data.table::data.table(
+    n_eval            = x@n_eval,
+    class_balance     = x@class_balance,
+    threshold         = x@threshold,
+    brier             = x@brier,
+    log_loss          = x@log_loss,
+    n_recommendations = length(x@recommendations)
+  )
+}
+method(as.data.frame.Filter_Calibration, Filter_Calibration) <- function(x, ...) {
+  as.data.frame(as.data.table.Filter_Calibration(x))
+}
+
+
 # `%||%` is imported from rlang via the package-level `@import` directive
 # in R/joinery-package.R.

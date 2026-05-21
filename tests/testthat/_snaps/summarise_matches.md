@@ -34,4 +34,5 @@
       recommendations:
         ! 50.0% of base records have >= 3 candidate matches; consider `max_candidates` or raising threshold.
         ! median top-1 vs top-2 score gap is 0.030; matches are weakly decisive, consider raising threshold or `feedback_strength`.
+        ! 50.0% of base records have >= 3 candidate matches; once you have a few hundred labelled pairs, `calibrate_matches()` can re-rank them.
 

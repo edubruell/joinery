@@ -120,6 +120,50 @@
     )
   ),
   list(
+    id         = "consider_calibration_borderline",
+    signal     = "pct_pairs_borderline",
+    threshold  = 0.10,
+    op         = ">",
+    lever      = "calibrate_matches",
+    message_fn = function(v) sprintf(
+      "%.1f%% of pairs score within an epsilon of the decision threshold; consider `calibrate_matches()` to fit a post-retrieval false-positive filter.",
+      100 * v
+    )
+  ),
+  list(
+    id         = "consider_calibration_ambiguity",
+    signal     = "pct_records_with_ge3_matches",
+    threshold  = 0.20,
+    op         = ">",
+    lever      = "calibrate_matches",
+    message_fn = function(v) sprintf(
+      "%.1f%% of base records have >= 3 candidate matches; once you have a few hundred labelled pairs, `calibrate_matches()` can re-rank them.",
+      100 * v
+    )
+  ),
+  list(
+    id         = "calibration_low_n_warning",
+    signal     = "training_n",
+    threshold  = 500,
+    op         = "<",
+    lever      = "labelling",
+    message_fn = function(v) sprintf(
+      "filter was fit on only %d labelled pairs; consider expanding the labelled sample to >= 500 for stable calibration.",
+      as.integer(v)
+    )
+  ),
+  list(
+    id         = "calibration_drift_warning",
+    signal     = "stage_dist_tv_distance",
+    threshold  = 0.15,
+    op         = ">",
+    lever      = "labelling / refit",
+    message_fn = function(v) sprintf(
+      "stage distribution drifted by TV=%.2f vs training; consider refitting the filter on labelled data from the new run.",
+      v
+    )
+  ),
+  list(
     id         = "low_yield_stage",
     signal     = "min_stage_base_pct",
     threshold  = 0.01,

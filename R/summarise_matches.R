@@ -131,13 +131,17 @@
 method(
   summarise_matches,
   DT_tbl
-) <- function(matches, base = NULL, target = NULL, bins = 50L, ...) {
+) <- function(matches, base = NULL, target = NULL, bins = 50L,
+               threshold = NULL, borderline_epsilon = 0.05, ...) {
 
   match_type <- .detect_match_type(matches)
   dt <- data.table::as.data.table(matches)
 
   # --- score distribution ------------------------------------------------
   score_dist <- .score_distribution(dt$score, bins = bins)
+  if (!is.null(threshold) && is.finite(threshold)) {
+    score_dist$threshold <- as.numeric(threshold)
+  }
 
   # --- per-branch ---------------------------------------------------------
   cluster_dist    <- NULL
@@ -259,6 +263,14 @@ method(
     target_coverage = target_coverage
   )
 
+  # --- borderline share (M6) ----------------------------------------------
+  if (!is.null(threshold) && is.finite(threshold) && nrow(dt) > 0L) {
+    eps <- as.numeric(borderline_epsilon)
+    signals[["pct_pairs_borderline"]] <- mean(
+      abs(dt$score - threshold) < eps, na.rm = TRUE
+    )
+  }
+
   # --- recommendations ----------------------------------------------------
   recs <- .dispatch_recommendations(signals)
 
@@ -285,7 +297,8 @@ method(
 method(
   summarise_matches,
   Duck_tbl
-) <- function(matches, base = NULL, target = NULL, bins = 50L, ...) {
+) <- function(matches, base = NULL, target = NULL, bins = 50L,
+               threshold = NULL, borderline_epsilon = 0.05, ...) {
 
   con      <- matches$src$con
   tbl_name <- matches$lazy_query$x
@@ -300,6 +313,9 @@ method(
 
   # --- score distribution --------------------------------------------------
   score_dist <- .duckdb_score_distribution(con, tbl_name, bins = bins)
+  if (!is.null(threshold) && is.finite(threshold)) {
+    score_dist$threshold <- as.numeric(threshold)
+  }
 
   # --- per-branch ----------------------------------------------------------
   cluster_dist    <- NULL
@@ -442,6 +458,21 @@ method(
     base_coverage   = base_coverage,
     target_coverage = target_coverage
   )
+
+  # --- borderline share (M6) ----------------------------------------------
+  if (!is.null(threshold) && is.finite(threshold)) {
+    eps <- as.numeric(borderline_epsilon)
+    pct_border <- DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT AVG(CAST(ABS(score - ", threshold, ") < ", eps,
+        " AS DOUBLE)) AS p FROM \"", tbl_name, "\""
+      )
+    )$p
+    if (length(pct_border) == 1L && !is.na(pct_border)) {
+      signals[["pct_pairs_borderline"]] <- pct_border
+    }
+  }
 
   # --- recommendations -----------------------------------------------------
   recs <- .dispatch_recommendations(signals)
@@ -606,6 +637,7 @@ method(
                     bins = bins, ...)
 }
 
+
 method(
   summarise_matches,
   .jyTBL_DF
@@ -616,6 +648,7 @@ method(
                     bins = bins, ...)
 }
 
+
 method(
   summarise_matches,
   .jyTBL
@@ -625,3 +658,4 @@ method(
   summarise_matches(as_DT(matches), base = base_dt, target = target_dt,
                     bins = bins, ...)
 }
+

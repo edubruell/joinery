@@ -144,11 +144,16 @@
          call. = FALSE)
   }
   if (!identical(model, "logistic")) {
-    stop(
-      "Only the baseline `model = \"logistic\"` path is implemented in M5. ",
-      "Tidymodels support arrives in M6.",
-      call. = FALSE
-    )
+    # tidymodels path: accept a parsnip model spec, a fitted parsnip object,
+    # or a fitted workflow.
+    return(.fit_filter_tidymodels(
+      features        = features,
+      labels          = labels,
+      model           = model,
+      class_weighted  = class_weighted,
+      na_fill         = na_fill,
+      ...
+    ))
   }
 
   ft <- data.table::as.data.table(features@features)
@@ -290,9 +295,149 @@
                      na_fill = filter_model@na_fill)
   newdf <- as.data.frame(X)
 
+  if (filter_model@backend %in% c("parsnip", "workflow")) {
+    if (!requireNamespace("parsnip", quietly = TRUE)) {
+      stop("Filter_Model uses tidymodels but `parsnip` is not installed.",
+           call. = FALSE)
+    }
+    pr <- stats::predict(filter_model@fit, new_data = newdf,
+                         type = "prob")
+    # parsnip returns a tibble with .pred_<level> columns; the positive
+    # class is `.pred_1` (training fixes `equal` to `factor(..., levels =
+    # c(0L, 1L))`, so `1` is always the second level).
+    if (!".pred_1" %in% names(pr)) {
+      stop("parsnip predict() did not return a `.pred_1` column; ",
+           "Filter_Model was not trained with the joinery convention.",
+           call. = FALSE)
+    }
+    return(as.numeric(pr[[".pred_1"]]))
+  }
+
   as.numeric(stats::predict(
     filter_model@fit, newdata = newdf, type = "response"
   ))
+}
+
+
+# ---------- tidymodels fit path -------------------------------------
+
+#' @noRd
+.fit_filter_tidymodels <- function(features, labels,
+                                   model, class_weighted, na_fill, ...) {
+  is_parsnip_spec <- inherits(model, c("model_spec"))
+  is_parsnip_fit  <- inherits(model, c("model_fit"))
+  is_workflow_obj <- inherits(model, "workflow")
+  is_workflow_fit <- is_workflow_obj && isTRUE(tryCatch(
+    workflows::is_trained_workflow(model),
+    error = function(e) FALSE
+  ))
+
+  if (!(is_parsnip_spec || is_parsnip_fit || is_workflow_obj)) {
+    stop(
+      "`model` must be \"logistic\", a parsnip model spec, ",
+      "a fitted parsnip model, or a (fitted or unfitted) workflow.",
+      call. = FALSE
+    )
+  }
+  if (!requireNamespace("parsnip", quietly = TRUE)) {
+    stop("Tidymodels path requires the `parsnip` package.", call. = FALSE)
+  }
+
+  ft  <- data.table::as.data.table(features@features)
+  lab <- .collapse_pair_labels(labels)
+  ft[, searched := as.character(searched)]
+  ft[, found    := as.character(found)]
+  if ("match_id" %in% names(ft)) {
+    target_class <- class(ft$match_id)[1L]
+    coercer <- switch(
+      target_class,
+      integer   = as.integer,
+      numeric   = as.numeric,
+      double    = as.numeric,
+      character = as.character,
+      identity
+    )
+    lab[, match_id := suppressWarnings(coercer(match_id))]
+  }
+  joined <- merge(ft, lab, by = c("match_id", "found"),
+                  all.x = FALSE, all.y = FALSE, sort = FALSE)
+  if (nrow(joined) == 0L) {
+    stop("No features rows matched any label row on (match_id, found).",
+         call. = FALSE)
+  }
+
+  predictors <- .feature_predictors(joined)
+  X <- .build_design(joined, predictors, na_fill = na_fill)
+  y <- factor(as.integer(joined$equal), levels = c(0L, 1L))
+  df <- as.data.frame(X)
+  df$.y <- y
+
+  fml <- stats::as.formula(
+    paste(".y ~", paste(predictors, collapse = " + "))
+  )
+
+  fit <- if (is_parsnip_fit) {
+    model
+  } else if (is_workflow_fit) {
+    model
+  } else if (is_workflow_obj) {
+    if (!requireNamespace("workflows", quietly = TRUE)) {
+      stop("Workflow fitting requires the `workflows` package.",
+           call. = FALSE)
+    }
+    generics::fit(model, data = df)
+  } else {
+    parsnip::fit(model, formula = fml, data = df)
+  }
+
+  backend <- if (inherits(fit, "workflow")) "workflow" else "parsnip"
+
+  training_prob <- {
+    pr <- stats::predict(fit, new_data = df, type = "prob")
+    if (!".pred_1" %in% names(pr)) {
+      stop("parsnip predict() did not return a `.pred_1` column.",
+           call. = FALSE)
+    }
+    as.numeric(pr[[".pred_1"]])
+  }
+
+  stage_dist <- if ("stage" %in% names(joined) &&
+                    !all(is.na(joined$stage))) {
+    tbl <- table(joined$stage, useNA = "no")
+    sd  <- as.numeric(tbl) / sum(tbl)
+    names(sd) <- names(tbl)
+    sd
+  } else NULL
+
+  Filter_Model(
+    backend                = backend,
+    fit                    = fit,
+    predictors             = predictors,
+    model_class            = class(fit)[1L],
+    training_n             = nrow(joined),
+    training_class_balance = mean(as.integer(as.character(y)) == 1L),
+    training_stage_dist    = stage_dist,
+    na_fill                = as.numeric(na_fill),
+    class_weighted         = isTRUE(class_weighted),
+    training_prob          = training_prob,
+    training_equal         = as.integer(as.character(y))
+  )
+}
+
+
+# ---------- drift detection ----------------------------------------
+
+#' Compute total-variation distance between two named distributions.
+#' Missing categories on either side are treated as zero mass.
+#' @noRd
+.tv_distance <- function(p, q) {
+  if (is.null(p) || is.null(q) || length(p) == 0L || length(q) == 0L) {
+    return(NA_real_)
+  }
+  keys <- union(names(p), names(q))
+  pv <- as.numeric(p[keys]); pv[is.na(pv)] <- 0
+  qv <- as.numeric(q[keys]); qv[is.na(qv)] <- 0
+  0.5 * sum(abs(pv - qv))
 }
 
 
@@ -347,12 +492,26 @@
     enriched <- ft
   }
 
+  # ---- covariate drift between training and inference stage dist ----
+  signals <- list()
+  if (!is.null(filter_model@training_stage_dist) &&
+      "stage" %in% names(ft) && !all(is.na(ft$stage))) {
+    tbl <- table(ft$stage, useNA = "no")
+    if (sum(tbl) > 0L) {
+      inf_dist <- as.numeric(tbl) / sum(tbl)
+      names(inf_dist) <- names(tbl)
+      tv <- .tv_distance(filter_model@training_stage_dist, inf_dist)
+      if (!is.na(tv)) signals[["stage_dist_tv_distance"]] <- tv
+    }
+  }
+  recs <- .dispatch_recommendations(signals)
+
   Calibrated_Matches(
     matches          = enriched,
     filter_model     = filter_model,
     threshold        = thr,
     threshold_method = thr_method,
-    recommendations  = character()
+    recommendations  = recs$messages
   )
 }
 

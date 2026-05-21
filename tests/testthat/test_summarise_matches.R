@@ -464,7 +464,8 @@ test_that("multiple recommendations fire together through the verb", {
     attr(res, "recommendation_ids"),
     c("candidates_high_ambiguity",
       "candidates_weak_decisiveness",
-      "low_coverage_candidates")
+      "low_coverage_candidates",
+      "consider_calibration_ambiguity")
   )
 })
 

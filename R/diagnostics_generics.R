@@ -208,6 +208,7 @@ recommendations <- new_generic("recommendations", "x", function(x, ...) S7_dispa
 method(recommendations, Match_Overview)     <- function(x) x@recommendations
 method(recommendations, Strategy_Audit)     <- function(x) x@recommendations
 method(recommendations, Calibrated_Matches) <- function(x) x@recommendations
+method(recommendations, Filter_Calibration) <- function(x) x@recommendations
 
 
 #' Fit a False-Positive Filter (Phase 0.7 M5)
@@ -317,3 +318,54 @@ calibrate_matches <- new_generic(
   "calibrate_matches",
   c("matches", "strategy")
 )
+
+
+#' Evaluate a Calibrated Match Result (Phase 0.7 M6)
+#'
+#' @description
+#' Compute calibration diagnostics for a fitted false-positive filter on
+#' a labelled evaluation set. Returns a [`Filter_Calibration`] carrying
+#' the reliability table, Brier score, log-loss, per-class confusion
+#' matrix, and a threshold sweep curve.
+#'
+#' Two call shapes:
+#'   * `calibrate(calibrated_matches, labels)` — evaluate on labels held
+#'      out from the training fit.
+#'   * `calibrate(calibrated_matches)` — evaluate on the training labels
+#'      stored on the [`Filter_Model`] (sanity-check view; do not use
+#'      for model selection).
+#'
+#' @param x A [`Calibrated_Matches`] object from [apply_filter()] /
+#'   [calibrate_matches()].
+#' @param labels Optional labels `data.table` (typically from
+#'   [import_labels()]) for held-out evaluation.
+#' @param bins Integer. Number of equal-width probability bins for the
+#'   reliability table. Default `10`.
+#' @param ... Reserved for future expansion.
+#'
+#' @return A [`Filter_Calibration`] object.
+#'
+#' @export
+calibrate <- new_generic("calibrate", "x")
+
+
+#' Build a tidymodels Recipe for joinery Features (Phase 0.7 M6)
+#'
+#' @description
+#' Construct a pre-configured [recipes::recipe()] suitable for fitting a
+#' false-positive filter on the output of [match_features()]. Tags ID
+#' columns (`searched`, `found`, `match_id`) with role `"id"`, sets
+#' `equal` as the outcome, and keeps every other numeric column as a
+#' predictor. Requires the suggested `recipes` package.
+#'
+#' @param features A [`Match_Features`] object.
+#' @param labels A labels `data.table` with `equal` (as for
+#'   [fit_filter()]).
+#' @param ... Reserved for future expansion.
+#'
+#' @return A [recipes::recipe()] object.
+#'
+#' @export
+joinery_recipe <- function(features, labels, ...) {
+  .joinery_recipe_impl(features, labels, ...)
+}
