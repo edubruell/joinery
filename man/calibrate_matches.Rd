@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics_generics.R
 \name{calibrate_matches}
 \alias{calibrate_matches}
-\title{Fit and Apply a False-Positive Filter (Phase 0.7 M5)}
+\title{Calibrate matches end-to-end (features -> filter -> apply)}
 \usage{
 calibrate_matches(matches, strategy, ...)
 }

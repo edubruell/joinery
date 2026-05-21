@@ -72,7 +72,7 @@
 # Exported verbs
 # ---------------------------------------------------------------------------
 
-#' Export Match Sample for Manual Labelling (Phase 0.7 M4)
+#' Export a match sample to CSV for manual labelling
 #'
 #' @description
 #' Write a sampled set of matches to a CSV pre-filled with an `equal`
@@ -132,7 +132,7 @@ export_for_labelling <- function(sample, file, default_label = 1L) {
 }
 
 
-#' Import Manually Labelled Matches (Phase 0.7 M4)
+#' Import a labelled CSV back into a feature/label table
 #'
 #' @description
 #' Read a CSV written by [export_for_labelling()] (optionally edited by a

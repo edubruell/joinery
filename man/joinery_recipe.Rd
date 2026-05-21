@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics_generics.R
 \name{joinery_recipe}
 \alias{joinery_recipe}
-\title{Build a tidymodels Recipe for joinery Features (Phase 0.7 M6)}
+\title{Build a tidymodels recipe for calibration features}
 \usage{
 joinery_recipe(features, labels, ...)
 }

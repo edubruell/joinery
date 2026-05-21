@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics_generics.R
 \name{apply_filter}
 \alias{apply_filter}
-\title{Apply a Fitted Filter to a Feature Table (Phase 0.7 M5)}
+\title{Apply a fitted filter to match features}
 \usage{
 apply_filter(features, filter_model, threshold = NULL, matches = NULL, ...)
 }

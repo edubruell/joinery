@@ -2,7 +2,7 @@
 % Please edit documentation in R/labelling.R
 \name{import_labels}
 \alias{import_labels}
-\title{Import Manually Labelled Matches (Phase 0.7 M4)}
+\title{Import a labelled CSV back into a feature/label table}
 \usage{
 import_labels(file)
 }

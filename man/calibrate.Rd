@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics_generics.R
 \name{calibrate}
 \alias{calibrate}
-\title{Evaluate a Calibrated Match Result (Phase 0.7 M6)}
+\title{Evaluate a fitted filter on labelled pairs}
 \usage{
 calibrate(x, ...)
 }

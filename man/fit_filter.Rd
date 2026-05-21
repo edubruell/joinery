@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics_generics.R
 \name{fit_filter}
 \alias{fit_filter}
-\title{Fit a False-Positive Filter (Phase 0.7 M5)}
+\title{Fit a false-positive filter on labelled match pairs}
 \usage{
 fit_filter(
   features,

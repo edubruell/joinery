@@ -2,7 +2,7 @@
 % Please edit documentation in R/labelling.R
 \name{export_for_labelling}
 \alias{export_for_labelling}
-\title{Export Match Sample for Manual Labelling (Phase 0.7 M4)}
+\title{Export a match sample to CSV for manual labelling}
 \usage{
 export_for_labelling(sample, file, default_label = 1L)
 }

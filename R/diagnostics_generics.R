@@ -141,7 +141,7 @@ compare_stages <- new_generic(
 )
 
 
-#' Build a Match Feature Table (Phase 0.7 M2)
+#' Build a per-pair feature table for calibration
 #'
 #' @description
 #' Computes a wide, one-row-per-pair feature `data.table` from a joinery
@@ -211,7 +211,7 @@ method(recommendations, Calibrated_Matches) <- function(x) x@recommendations
 method(recommendations, Filter_Calibration) <- function(x) x@recommendations
 
 
-#' Fit a False-Positive Filter (Phase 0.7 M5)
+#' Fit a false-positive filter on labelled match pairs
 #'
 #' @description
 #' Fit a baseline classifier to predict whether each scored pair is a
@@ -254,7 +254,7 @@ fit_filter <- function(features, labels,
 }
 
 
-#' Apply a Fitted Filter to a Feature Table (Phase 0.7 M5)
+#' Apply a fitted filter to match features
 #'
 #' @description
 #' Score a [`Match_Features`] table with a fitted [`Filter_Model`] and
@@ -292,7 +292,7 @@ apply_filter <- function(features, filter_model,
 }
 
 
-#' Fit and Apply a False-Positive Filter (Phase 0.7 M5)
+#' Calibrate matches end-to-end (features -> filter -> apply)
 #'
 #' @description
 #' High-level Q5 verb. Builds features via [match_features()], fits a
@@ -320,7 +320,7 @@ calibrate_matches <- new_generic(
 )
 
 
-#' Evaluate a Calibrated Match Result (Phase 0.7 M6)
+#' Evaluate a fitted filter on labelled pairs
 #'
 #' @description
 #' Compute calibration diagnostics for a fitted false-positive filter on
@@ -349,7 +349,7 @@ calibrate_matches <- new_generic(
 calibrate <- new_generic("calibrate", "x")
 
 
-#' Build a tidymodels Recipe for joinery Features (Phase 0.7 M6)
+#' Build a tidymodels recipe for calibration features
 #'
 #' @description
 #' Construct a pre-configured [recipes::recipe()] suitable for fitting a

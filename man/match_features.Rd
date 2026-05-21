@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnostics_generics.R
 \name{match_features}
 \alias{match_features}
-\title{Build a Match Feature Table (Phase 0.7 M2)}
+\title{Build a per-pair feature table for calibration}
 \usage{
 match_features(matches, strategy, ...)
 }
