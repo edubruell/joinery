@@ -1,3 +1,94 @@
+# joinery 0.7.0
+
+## Phase 0.7: Ex Post ML & Error Calibration
+
+Optional, post-match false-positive filter learned from a small labelled sample. The same verb dispatches on `Search_Strategy` and `Embedding_Strategy` (reduced feature set for the latter).
+
+### New Features
+
+* **`match_features()`**: builds a wide one-row-per-pair feature `data.table` from a joinery match result. Token strategies expose the full schema (`scnt`, `rcnt`, `r1..rn`, `m_/f_/s_` top-N aIP blocks, string similarities); embedding strategies expose a reduced schema with `cosine_sim` and pre-normalization L2 norms.
+* **`aIP` primitive**: Doherr (2023) eq. (9) auxiliary-side token informativeness, computed via the internal `prepare_auxiliary_registry()` generic (data.table + DuckDB + tibble parity) and the `compute_aip()` helper.
+* **String similarity columns** `sim_sf_<col>` / `sim_fs_<col>` via `stringdist::stringsim()`; single global `method =` argument (default `"jw"`). Opt out with `include_string_sim = FALSE`.
+* **`sample_matches()` stratification**: new `stratify_by` and `expand_to_block` modes for constructing balanced labelling sets.
+* **`export_for_labelling()` / `import_labels()`**: CSV round-trip for manual labelling. Block-header rows pre-filled via `default_label`; format-agnostic, no UI shipped.
+* **`fit_filter()` / `apply_filter()`**: logistic-regression baseline filter. `apply_filter()` picks the threshold via Youden's J on training data by default; results either enrich features or broadcast `tp_prob` / `predicted_tp` onto the raw matches table.
+* **`calibrate_matches()`**: high-level verb composing `match_features()` then `fit_filter()` then `apply_filter()`. Dispatches on `(matches, strategy)` for data.table, DuckDB (collect-and-delegate), and tibble / data.frame inputs.
+* **`calibrate()` + `Filter_Calibration`**: evaluates a fitted filter on a labelled set; returns reliability table, Brier score, log-loss, per-class confusion matrix, and threshold sweep curve.
+* **Tidymodels shim**: `joinery_recipe()` + `fit_filter(model = <parsnip spec | fitted parsnip | (un)fitted workflow>)`. Fitted workflows detected via `workflows::is_trained_workflow()` so pre-fit workflows are not silently re-trained. All tidymodels packages live in `Suggests`; the baseline glm path is dependency-free.
+* **Four new recommendations**: `consider_calibration_borderline`, `consider_calibration_ambiguity`, `calibration_low_n_warning`, `calibration_drift_warning`. `summarise_matches()` gains `threshold` / `borderline_epsilon` arguments on both backends.
+
+### Tests
+
+* 1706 PASS / 0 FAIL / 1 SKIP. `R CMD check` clean.
+
+---
+
+# joinery 0.6.0
+
+## Phase 0.6: Diagnostics & Match Quality
+
+Diagnostics organised around four user questions: *will it work?* (`audit_strategy`), *did it work?* (`summarise_matches`), *why this pair?* (`explain_match`), *where to look?* (`sample_matches`); plus multi-stage diagnostics (`compare_stages`).
+
+### New Features
+
+* **`summarise_matches()`**: `Match_Overview` unified across dedup / candidates via the `match_type` slot; data.table, DuckDB, and tibble / data.frame backends.
+* **`audit_strategy()`**: pre-match strategy audit. Dispatches on strategy class: `Strategy_Audit` (token) or `Embedding_Audit` (embedding).
+* **`explain_match()`**: per-token contribution attribution for `Search_Strategy`; pair + score only for `Embedding_Strategy`. The round-trip contract is enforced as a property test on both backends.
+* **`sample_matches()`**: six modes (`high`, `low`, `borderline`, `ambiguous`, `top_gap`, `random`).
+* **`compare_stages()`**: per-stage overviews, marginal coverage, `low_yield_stage` recommendation for multi-stage workflows.
+* **Diagnostic plots**: 14 first-class `tinyplot` functions. Each plot is a separately named pipe-composable function; default `plot()` methods per diagnostic class call the most-useful single view. `tinyplot` is a hard `Imports` dependency.
+* **Recommendations catalog** in `R/diagnostics_recommendations.R` links signals to thresholds to messages; surfaced via inline `cli` warnings in `print()` and the `recommendations(x)` accessor.
+
+### Backend Improvements
+
+* Embedding strategy diagnostics (M8) reach parity with token diagnostics where conceptually meaningful.
+* Two DuckDB bugs fixed during `summarise_matches` hardening.
+
+---
+
+# joinery 0.5.0
+
+## Phase 0.5: Embedding-Based Matching
+
+Optional semantic matching that complements rather than replaces the token core. Use embeddings for fields where word-overlap fails (paraphrases, multilingual variants, fuzzy free-text descriptions) and combine them with token strategies via `multi_stage_match()`.
+
+### New Features
+
+* **`embedding_strategy()`**: declarative strategy for embedding-based linkage, mirroring the ergonomics of `search_strategy()`. Specify one or more embedding columns, an optional `block_by`, an optional `threshold`, and an optional `weights` vector across embedding columns.
+* **Cosine-similarity scoring** between record-level embedding vectors, with optional pre-normalization so cosine reduces to a fast inner product at scoring time. Strategies expose a `normalize` flag for users who want to keep raw magnitudes.
+* **Drop-in compatibility with the existing verbs**: `detect_duplicates()`, `search_candidates()`, and `extract_unmatched()` all accept an `Embedding_Strategy` and return the standard joinery output schemas (`duplicate_group` / `match_id`, `score`, `rank`, original columns).
+* **Multi-stage token + embedding workflows**: `multi_stage_match()` accepts a sequence of mixed `Search_Strategy` and `Embedding_Strategy` objects, threading residuals between stages and stopping early when either side is exhausted. Useful pattern: cheap token stage first, then embedding stage on the residual.
+* **`block_by` support for embeddings** so cosine search runs within blocks (e.g. country, year bucket) instead of across the whole table.
+* **Backend parity**: full implementation on data.table, DuckDB, and tibble / data.frame, with the same call signatures across backends. DuckDB scales embedding search to large tables via the existing batch infrastructure.
+* **Embedding generation via `tidyllm`** (optional `Suggests` dependency): provider-agnostic helpers for Ollama, OpenAI, and other tidyllm-supported backends, so users can move from raw text to a matchable embedding column without leaving R.
+* **Embedding-aware diagnostics groundwork**: strategy-class dispatch in place so Phase 0.6 diagnostics can specialise to embedding strategies without API churn.
+
+### Bug fixes
+
+* DuckDB `block_by` SQL bug fixed.
+* DuckDB lazy-query bug in multi-stage match fixed.
+
+---
+
+# joinery 0.4.0
+
+## Phase 0.4: Stability & Test-Quality Hardening
+
+A maintenance release with no new user-facing features. The goal was to harden the test suite and close coverage gaps before resuming feature work on embeddings and diagnostics.
+
+* `methods_duckdb.R` coverage raised from 34% to 90%; full behavioural parity with the data.table backend now exercised by tests.
+* `embedding_methods_*` coverage raised to 95%+ on both data.table and DuckDB backends.
+* Small-table `batch_duckdb` brittleness diagnosed and fixed (see `notes/batch_duckdb_brittleness.md`). User-facing impact: small inputs no longer hit pathological batching behaviour.
+* Total package coverage: 87.25%. Remaining low-coverage files are intentional: S7 dispatch boilerplate, interactive-only progress paths, and live-embedding paths reserved for `local_tests/`.
+
+---
+
+# joinery 0.3.1
+
+* Fix `batch_duckdb` small-table brittleness.
+
+---
+
 # joinery 0.3.0
 
 ## Phase 3: SearchEngine Heuristics
