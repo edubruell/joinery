@@ -51,7 +51,7 @@ Collate:
     'embedding_methods_duckdb.R'
     'aip.R'
     'diagnostics_classes.R'
-    'diagnostics_generics.R'
+    'generics_diagnostic.R'
     'diagnostics_recommendations.R'
     'summarise_matches.R'
     'audit_strategy.R'
