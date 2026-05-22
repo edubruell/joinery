@@ -15,6 +15,39 @@ The package is built on the **S7 class system**, separating linkage into:
 1. **A declarative search strategy** — defines *how* text fields should be normalized, tokenized, encoded, weighted, scored, and blocked.
 2. **Backend-specific execution** — defines *how* data is matched using the IR.
 
+## File layout
+
+Every file under `R/` carries one of eight prefixes that maps to a role.
+Use the directory listing as a navigation tool — the prefix tells you what
+kind of code is inside before you open the file.
+
+| Prefix | Role |
+|---|---|
+| `strategy_*.R` | S7 strategy classes & their constructors (`Step`, `Search_Preparer`, smoothing family, `Search_Strategy`, `Embedding_Strategy`). |
+| `preparer_*.R` | Step preparer functions (text → tokens), grouped by signature shape (`preparer_word.R` is text-in/text-out; `preparer_tokens.R` produces or operates on tokens). |
+| `generics_*.R` | S7 generic declarations, grouped by lifecycle era (`generics_core.R`, `generics_calibration.R`, `generics_embedding.R`, `generics_diagnostic.R`). |
+| `methods_<backend>_<stage>.R` | Token-backend dispatch, one file per (backend, workflow stage) — e.g. `methods_datatable_prepare.R`, `methods_duckdb_search.R`. Stages: `prepare`, `dedup`, `search`, `multistage`, `inspect`; DuckDB also has `methods_duckdb_batch.R` for the batching machinery. |
+| `embedding_methods_<backend>.R` | Embedding-backend dispatch (`embedding_methods_datatable.R`, `_duckdb.R`, `_tibble.R`). |
+| `diagnostic_*.R` | Diagnostic verbs (`diagnostic_audit.R`, `_summarise.R`, `_explain.R`, `_sample.R`, `_compare.R`), their result S7 classes (`diagnostic_classes.R`), recommendations catalog (`diagnostic_recommendations.R`), and plot family (`diagnostic_plots.R`). |
+| `calibration_*.R` | Calibration verbs, helpers, and result S7 classes — `calibration_features.R` + `_features_embedding.R` (`match_features()`), `calibration_filter.R` + `_tidymodels.R` (`fit_filter()` / `apply_filter()`), `calibration_calibrate.R` + `_recipe.R` (`calibrate()` / `joinery_recipe()`), `calibration_dispatch.R` (`calibrate_matches()`), `calibration_labelling.R` (CSV round-trip), `calibration_aip.R` (`aIP` primitive), `calibration_classes.R` (`Match_Features`, `Filter_Model`, `Calibrated_Matches`, `Filter_Calibration`). |
+| `internal_*.R` | Cross-cutting utilities — `internal_validation.R` (validation helpers + cli_abort exemplar), `internal_progress.R` (progress bars). |
+
+Conventional names that stay outside the schema: `joinery-package.R`,
+`data.R`, and the vendored rlang shims (`import-standalone-*.R`).
+
+`DESCRIPTION`'s `Collate:` field is hand-maintained. Any file rename,
+split, or new file requires a manual `Collate:` update; S7 class
+definitions and external generics must precede the files that declare
+methods on them.
+
+### Where to look for X
+
+- **Add a new preparer function** → `preparer_word.R` if the function maps strings to strings, `preparer_tokens.R` if it produces or operates on tokens. Document via roxygen; the generic catalog lives in `notes/preparers_reference.md`.
+- **Add a new diagnostic verb** → new generic in `generics_diagnostic.R`, new result class in `diagnostic_classes.R`, new verb file `diagnostic_<verb>.R`, plot helpers in `diagnostic_plots.R`, threshold rules in `diagnostic_recommendations.R`.
+- **Add a new backend** → five `methods_<backend>_<stage>.R` files (`prepare`, `dedup`, `search`, `multistage`, `inspect`) plus optionally `embedding_methods_<backend>.R`. Add `Collate:` entries after the existing methods blocks.
+- **Extend calibration** → verb code in `calibration_<verb>.R`; result classes in `calibration_classes.R`; generic declarations in `generics_calibration.R`. Tidymodels-specific code is isolated in `calibration_tidymodels.R` / `calibration_recipe.R` so the `Suggests` dependency boundary is visible.
+- **Change error message style** → `internal_validation.R` carries the `cli::cli_abort()` exemplar; new code should follow that style (see `notes/code_quality_pass.md` Pass 1).
+
 ## Core S7 Classes
 
 ### `Step`
