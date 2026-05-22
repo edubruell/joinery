@@ -1,9 +1,9 @@
 # ============================================================
-# S7 generics
+# S7 generics — core token-matching workflow
 # ============================================================
 #
-# Defines joinery's core functions as S7 generics that 
-# get backend method via multiple dispatch
+# Defines joinery's core token-matching functions as S7 generics
+# that get backend methods via multiple dispatch.
 #
 # ============================================================
 
@@ -72,7 +72,7 @@ detect_duplicates <- new_generic(
 #' @return A deduplicated version of `base_table`.
 #'
 #' @export
-deduplicate_table <- new_generic("deduplicate_table", 
+deduplicate_table <- new_generic("deduplicate_table",
                                  c("base_table", "duplicates", "id"))
 
 #' Search for Candidate Matches Between Tables
@@ -91,7 +91,7 @@ deduplicate_table <- new_generic("deduplicate_table",
 #' @return Data with candidate matches
 #'
 #' @export
-search_candidates <- new_generic("search_candidates", 
+search_candidates <- new_generic("search_candidates",
                                  c("base_table", "target_table",
                                    "base_id", "target_id", "strategy"))
 
@@ -134,43 +134,6 @@ search_candidates <- new_generic("search_candidates",
 compute_rarity <- new_generic(
   "compute_rarity",
   c("tokens", "strategy")
-)
-
-
-
-#' Prepare Auxiliary Search-Side Registry
-#'
-#' @description
-#' Internal primitive. Builds a per-column token-occurrence
-#' registry over the *auxiliary* (search / target) side of a linkage
-#' task. Together with the base-side registry produced by
-#' [compute_rarity()], it feeds the absolute identification potential
-#' (`aIP`) used by [compute_aip()] and the forthcoming
-#' `match_features()` verb.
-#'
-#' Unlike [compute_rarity()], the auxiliary registry is **block-agnostic
-#' and cross-table**: occurrences are aggregated globally per
-#' `(src_column, token)` regardless of any `block_by` setting on the
-#' strategy. This matches the SearchEngine whitepaper's definition
-#' (Doherr 2023, eq. 9) and the design note
-#' `notes/calibration_design.md`.
-#'
-#' @param data A data.frame / tibble / data.table (or backend-specific
-#'   table) representing the auxiliary (search / target) side.
-#' @param id  Character scalar naming the ID column in `data`.
-#' @param strategy A `Search_Strategy` object. Only the preparers are
-#'   used; `block_by` and `weights` are deliberately ignored.
-#' @param ... Additional backend-specific arguments.
-#'
-#' @return A backend-specific table with columns
-#'   `src_column`, `token`, `occ` (number of distinct records in
-#'   which the token appears), and `maxocc` (per `src_column` maximum
-#'   of `occ`).
-#'
-#' @noRd
-prepare_auxiliary_registry <- new_generic(
-  "prepare_auxiliary_registry",
-  c("data", "id", "strategy")
 )
 
 
@@ -247,50 +210,3 @@ inspect_tokens <- function(data, id, strategy, column) {
   column_chr <- rlang::as_name(rlang::ensym(column))
   .inspect_tokens(data, id, strategy, column_chr)
 }
-
-
-# ============================================================
-# Embedding-Specific Generics (tidyllm-dependent)
-# ============================================================
-
-#' Compute Embeddings for Records
-#'
-#' @description
-#' Compute embedding vectors for records using an `Embedding_Strategy`.
-#' This is a backend-specific generic that handles data retrieval,
-#' text assembly, and embedding computation via tidyllm.
-#'
-#' @param data A data.frame / tibble / data.table (or db table in other backends).
-#' @param id Character scalar naming the ID column in `data`.
-#' @param strategy An `Embedding_Strategy` object specifying columns,
-#'   embedding model, and normalization settings.
-#' @param ... Additional arguments passed to backend-specific methods.
-#'
-#' @return A backend-specific table with columns: `id` and `embedding`
-#'   (where `embedding` contains numeric vectors).
-#'
-#' @export
-compute_embeddings <- new_generic(
-  "compute_embeddings",
-  c("data", "id", "strategy")
-)
-
-#' Score Embedding Pairs Using Cosine Similarity
-#'
-#' @description
-#' Compute cosine similarity scores between base and target embeddings.
-#' This is a pure scoring function that operates on pre-computed embeddings.
-#'
-#' @param base_embeddings A table with columns: `id` and `embedding`.
-#' @param target_embeddings A table with columns: `id` and `embedding`.
-#' @param strategy An `Embedding_Strategy` object (used for normalization settings).
-#' @param ... Additional arguments passed to backend-specific methods.
-#'
-#' @return A backend-specific table with columns: `base_id`, `target_id`, `score`.
-#'
-#' @export
-score_embeddings <- new_generic(
-  "score_embeddings",
-  c("base_embeddings", "target_embeddings", "strategy")
-)
-

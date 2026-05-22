@@ -167,6 +167,8 @@ For detailed guidance on specific topics, consult:
 - **`notes/duckdb_performance.md`** — Performance tuning guide, batch size recommendations, optimization strategies.
 
 **Project Planning:**
+- **`notes/code_quality_pass.md`** — In-flight code-quality refactor (started May 2026): unified naming schema, six numbered passes (cli_abort, check_*() shims, purrr shim, file reshuffle, CLAUDE.md legend, readability). Read before adding new files or new validation patterns; new code should follow the schema and styles described there even before the refactor is fully landed.
+- **`notes/code_quality_pass1_progress.md`** — Per-file status of the cli_abort migration; the resume point for any session continuing Pass 1.
 - **`notes/roadmap.md`** — Strategic roadmap, feature priorities, current phase.
 - **`notes/embedding_design.md`** — Implementation design for embedding-based matching.
 - **`notes/diagnostics_design.md`** — Design notes for the diagnostics verbs.

@@ -328,8 +328,7 @@
 
   if (match_type == "candidates") {
     if (is.null(target_dt)) {
-      stop("`target` is required for candidate matches in match_features().",
-           call. = FALSE)
+      cli::cli_abort("{.arg target} is required for candidate matches in {.fn match_features}")
     }
     target_tokens <- prepare_search_data(target_dt, target_id, s_nb)
     target_tokens_u <- .unique_record_tokens(target_tokens, target_id)
@@ -750,11 +749,10 @@ method(
               method = "jw", ...) {
 
   if (missing(base) || is.null(base)) {
-    stop("`base` is required for match_features() on a Search_Strategy.",
-         call. = FALSE)
+    cli::cli_abort("{.arg base} is required for {.fn match_features} on a {.cls Search_Strategy}")
   }
   if (missing(id) || is.null(id)) {
-    stop("`id` is required for match_features().", call. = FALSE)
+    cli::cli_abort("{.arg id} is required for {.fn match_features}")
   }
 
   .match_features_dt_token(

@@ -769,7 +769,7 @@ batch_map <- function(plan,
       )
       
     } else {
-      stop("Batch plan row contains neither windows nor blocks.")
+      cli::cli_abort("Batch plan row contains neither windows nor blocks")
     }
     
     # ------------------------------------------------------------------

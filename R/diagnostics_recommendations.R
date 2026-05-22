@@ -190,7 +190,7 @@
     "<"  = value <  threshold,
     "<=" = value <= threshold,
     "==" = value == threshold,
-    stop("Unknown comparison op: ", op, call. = FALSE)
+    cli::cli_abort("Unknown comparison op: {.val {op}}")
   )
 }
 

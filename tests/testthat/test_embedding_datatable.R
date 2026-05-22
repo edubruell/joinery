@@ -342,7 +342,7 @@ test_that("search_candidates() errors when weights passed", {
   str <- make_strategy()
   expect_error(
     search_candidates(make_base(), make_target(), "id", "id", str, weights = c(name = 1)),
-    "do not support weights"
+    "do not support"
   )
 })
 

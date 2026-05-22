@@ -12,14 +12,11 @@ if (!requireNamespace("duckdb",   quietly = TRUE) ||
   tryCatch(
     DBI::dbExecute(con, "LOAD vss;"),
     error = function(e) {
-      stop(
-        "The DuckDB 'vss' extension is required for embedding-based matching.\n",
-        "Install it by running:\n",
-        "  DBI::dbExecute(con, \"INSTALL vss;\")\n",
-        "Then reconnect or reload with:\n",
-        "  DBI::dbExecute(con, \"LOAD vss;\")",
-        call. = FALSE
-      )
+      cli::cli_abort(c(
+        "The DuckDB {.field vss} extension is required for embedding-based matching",
+        "i" = "Install it with {.code DBI::dbExecute(con, \"INSTALL vss;\")}",
+        "i" = "Then reconnect or reload with {.code DBI::dbExecute(con, \"LOAD vss;\")}"
+      ))
     }
   )
 }
@@ -55,8 +52,10 @@ method(
 ) <- function(data, id, strategy) {
 
   if (!requireNamespace("tidyllm", quietly = TRUE)) {
-    stop("Package 'tidyllm' is required for embedding-based matching. ",
-         "Install it with install.packages('tidyllm').", call. = FALSE)
+    cli::cli_abort(c(
+      "The {.pkg tidyllm} package is required for embedding-based matching",
+      "i" = "Install it with {.run install.packages(\"tidyllm\")}"
+    ))
   }
 
   con        <- data$src$con
@@ -71,11 +70,7 @@ method(
     all_cols     <- DBI::dbGetQuery(con, paste0("PRAGMA table_info(", table_name, ");"))$name
     missing_cols <- setdiff(block_by, all_cols)
     if (length(missing_cols) > 0) {
-      stop(
-        "Blocking columns not found in table: ",
-        paste(missing_cols, collapse = ", "),
-        call. = FALSE
-      )
+      cli::cli_abort("Blocking columns not found in table: {.field {missing_cols}}")
     }
   }
 
@@ -196,7 +191,7 @@ method(
               weights   = NULL) {
 
   if (!is.null(weights)) {
-    stop("Embedding strategies do not support weights", call. = FALSE)
+    cli::cli_abort("Embedding strategies do not support {.arg weights}")
   }
 
   con <- base_table$src$con

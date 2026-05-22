@@ -1,241 +1,11 @@
 # ============================================================
-# Preparer Functions for joinery
+# Token-level preparers
 # ============================================================
 #
-# This file defines native R implementations of joinery preprocessing
-# steps. Each function operates on in-memory R vectors/lists and corresponds 
-# to a Step object in the IR.
-#
-# All functions preserve list-column structure where appropriate
-# (e.g., tokenization steps return lists of character vectors).
-#
+# Functions that either produce tokens from text, or transform existing
+# token lists. Token lists are list-columns of character vectors keyed by
+# row.
 # ============================================================
-
-#' Normalize text string
-#'
-#' This function converts a text string to upper case, transliterates it based on the specified
-#' transliteration scheme, retains only alphanumeric characters and spaces, and removes extra spaces.
-#'
-#' @param text A character string or vector to be normalized.
-#' @param transliteration A character string specifying the transliteration scheme to be used,
-#'        defaulting to "De-ASCII".
-#'
-#' @return Returns a normalized, upper-case version of the input text, with non-alphanumeric characters
-#'         and extra spaces removed.
-#'
-#' @examples
-#' normalize_text("Cafe Conac")
-#' normalize_text("Strasse", transliteration = "Latin-ASCII")
-#' @export
-#' @import stringi
-normalize_text <- function(text, transliteration = "De-ASCII") {
-  #Validate inputes to the generate_ngrams function
-  c("Input text must be a string" = is.character(text),
-    "Input transliteration must be a string" = is.character(transliteration)
-  ) |>
-    validate_inputs()
-  
-  # String to upper case characters
-  text <- stri_trans_toupper(text)
-  # Transliterate other language specific characters
-  text <- stri_trans_general(text, transliteration)
-  # Keep only alphanumeric characters and spaces
-  text <- stri_replace_all_regex(text, "[^A-Za-z0-9 ]", "")
-  # Remove additional spaces if they exist
-  text <- stri_trim_both(text)
-  text <- stri_replace_all_regex(text, "\\s+", " ")
-  return(text)
-}
-
-#' Normalize Street Names Across Languages
-#'
-#' `normalize_street()` standardizes street-type tokens in free-text addresses
-#' using a multilingual dictionary of canonical forms. The function performs
-#' Unicode normalization, ASCII folding, uppercasing, and whitespace cleanup
-#' before replacing known street-type variants.
-#'
-#' Exact matches (e.g., `"st"`, `"rd."`, `"via"`) are always replaced.  
-#' Suffix matches (e.g., German `"strasse"` endings or Dutch `"straat"`)
-#' are applied **only when `lang` is explicitly specified**, preventing unsafe
-#' substitutions such as `"LINCOLANE"` -> `"LINCOLANE"`.
-#'
-#' @param x A character vector containing street names or address fragments.
-#' @param lang Optional language code (e.g., `"de"`, `"en"`, `"fr"`).  
-#'   When provided, the dictionary is filtered to that language and safe
-#'   language-specific suffix matching is enabled.
-#' @param dict A dictionary of street-type definitions, typically
-#'   [joinery::street_types], containing the columns:
-#'   * `canonical` -- canonical uppercase form  
-#'   * `variant`   -- lowercased normalized variant form  
-#'   * `type`      -- `"exact"` or `"suffix"`  
-#'   * `lang`      -- ISO language code
-#'
-#' @return A character vector of normalized street names. `NA` inputs are
-#'   preserved as `NA`.
-#'
-#' @details
-#' Normalization steps include:
-#' * Unicode -> Latin transliteration and ASCII folding (`stri_trans_general`)
-#' * Conversion to uppercase
-#' * Removal of non-alphanumeric characters
-#' * Tokenization on spaces and per-token replacement
-#'
-#' Exact variants are replaced verbatim with their canonical form.  
-#' Suffix variants are replaced only when:
-#' * `lang` is specified, and  
-#' * the token ends with a known variant suffix for that language.
-#'
-#' @examples
-#' normalize_street("Muellerstrasse", lang = "de")
-#' # "MUELLERSTRASSE"
-#'
-#' normalize_street("123 Main St.")
-#' # "123 MAIN STREET"
-#'
-#' normalize_street("Calle Mayor 3", lang = "es")
-#' # "CALLE MAYOR 3"
-#'
-#' @export
-normalize_street <- function(x, lang = NULL, dict = joinery::street_types) {
-  
-  # Validate
-  c(
-    "x must be character" = is.character(x),
-    "dict must contain canonical, variant, type, lang" =
-      all(c("canonical", "variant", "type", "lang") %in% names(dict))
-  ) |> validate_inputs()
-  
-  # Separate NA early
-  is_na <- is.na(x)
-  
-  # Preprocess
-  x_norm <- x |>
-    stri_trans_general("Any-Latin") |>
-    stri_trans_general("Latin-ASCII") |>
-    stri_trans_toupper() |>
-    stri_replace_all_regex("[^A-Z0-9 ]", " ") |>
-    stri_replace_all_regex("\\s+", " ") |>
-    stri_trim_both()
-  
-  # Filter dictionary by language
-  if (!is.null(lang)) {
-    dict <- dict[dict$lang == lang, ]
-  }
-  
-  # Build exact and suffix lookups
-  exact <- dict[dict$type == "exact", ]
-  suffix <- dict[dict$type == "suffix", ]
-  
-  exact_lookup <- setNames(exact$canonical, exact$variant)
-  suffix_lookup <- setNames(suffix$canonical, suffix$variant)
-  suffix_variants <- names(suffix_lookup)
-  suffix_variants <- suffix_variants[order(stri_length(suffix_variants), decreasing = TRUE)]
-  
-  replace_tok <- function(tok) {
-    if (is.na(tok)) return(NA_character_)
-    tok_l <- tolower(tok)
-    
-    # Exact match
-    if (tok_l %in% names(exact_lookup))
-      return(exact_lookup[[tok_l]])
-    
-    # Suffix match (only if lang specified)
-    if (!is.null(lang)) {
-      ends <- stri_endswith_fixed(tok_l, suffix_variants)
-      if (any(ends)) {
-        suf <- suffix_variants[which(ends)[1]]
-        base <- stri_sub(tok, 1, nchar(tok) - nchar(suf))
-        return(paste0(base, suffix_lookup[[suf]]))
-      }
-    }
-    
-    tok
-  }
-  
-  out <- map_chr(
-    stri_split_regex(x_norm, " +"),
-    ~ map_chr(.x, replace_tok) |>
-      paste(collapse = " ")
-  )
-  
-  out[is_na] <- NA_character_
-  out
-}
-
-#' Normalize dates to ISO 8601 format (YYYY-MM-DD)
-#'
-#' `normalize_date()` parses dates from various formats and standardizes them to
-#' ISO 8601 format (YYYY-MM-DD) as a character string. Handles common date
-#' formats across locales including European (DD.MM.YYYY), American (MM/DD/YYYY),
-#' and ISO-style formats.
-#'
-#' @param x A character or Date vector containing dates to normalize.
-#' @param format Optional format string for parsing (passed to `as.Date()`).
-#'   If `NULL` (default), attempts automatic parsing via multiple common formats.
-#' @param orders Optional character vector of lubridate order specifications
-#'   (e.g., `c("dmy", "mdy", "ymd")`). Used when `format = NULL`.
-#'   Defaults to `c("ymd", "dmy", "mdy")`.
-#'
-#' @return A character vector of dates in ISO 8601 format (YYYY-MM-DD).
-#'   Unparseable dates return `NA_character_` with a warning.
-#'
-#' @details
-#' When `format` is provided, uses `as.Date(x, format)` directly.
-#' When `format = NULL`, tries `lubridate::parse_date_time()` with the
-#' specified `orders` to handle mixed formats flexibly.
-#'
-#' @examples
-#' normalize_date("31.12.2023")
-#' # "2023-12-31"
-#'
-#' normalize_date("12/31/2023")
-#' # "2023-12-31"
-#'
-#' normalize_date(c("2023-01-15", "15.01.2023", "01/15/2023"))
-#' # c("2023-01-15", "2023-01-15", "2023-01-15")
-#'
-#' normalize_date("31-12-2023", format = "%d-%m-%Y")
-#' # "2023-12-31"
-#'
-#' @export
-normalize_date <- function(x, format = NULL, orders = c("ymd", "dmy", "mdy")) {
-  
-  c(
-    "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
-    "format must be NULL or character" = (is.null(format) || is.character(format)),
-    "orders must be character" = is.character(orders)
-  ) |> validate_inputs()
-  
-  is_na <- is.na(x)
-  
-  if (inherits(x, "Date")) {
-    out <- format(x, "%Y-%m-%d")
-    out[is_na] <- NA_character_
-    return(out)
-  }
-  
-  if (!is.null(format)) {
-    parsed <- as.Date(x, format = format)
-    out <- format(parsed, "%Y-%m-%d")
-    out[is_na] <- NA_character_
-    
-    if (any(is.na(out) & !is_na)) {
-      warning("Some dates could not be parsed with the specified format")
-    }
-    
-    return(out)
-  }
-  
-  parsed <- lubridate::parse_date_time(x, orders = orders, quiet = TRUE)
-  out <- format(parsed, "%Y-%m-%d")
-  out[is_na] <- NA_character_
-  
-  if (any(is.na(out) & !is_na)) {
-    warning("Some dates could not be parsed with orders: ", paste(orders, collapse = ", "))
-  }
-  
-  out
-}
 
 
 #' Extract date components as tokens
@@ -283,7 +53,7 @@ date_tokens <- function(x,
                         components = c("year", "month", "day"),
                         format = NULL,
                         orders = c("ymd", "dmy", "mdy")) {
-  
+
   c(
     "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
     "components must be character" = is.character(components),
@@ -291,9 +61,9 @@ date_tokens <- function(x,
     "format must be NULL or character" = (is.null(format) || is.character(format)),
     "orders must be character" = is.character(orders)
   ) |> validate_inputs()
-  
+
   is_na <- is.na(x)
-  
+
   if (inherits(x, "Date")) {
     parsed <- x
   } else if (!is.null(format)) {
@@ -308,12 +78,12 @@ date_tokens <- function(x,
       warning("Some dates could not be parsed with orders: ", paste(orders, collapse = ", "))
     }
   }
-  
+
   extract_components <- function(date) {
     if (is.na(date)) return(character(0))
-    
+
     tokens <- character()
-    
+
     for (comp in components) {
       token <- switch(comp,
         year = format(date, "%Y"),
@@ -322,10 +92,10 @@ date_tokens <- function(x,
       )
       tokens <- c(tokens, token)
     }
-    
+
     tokens
   }
-  
+
   map(parsed, extract_components)
 }
 
@@ -384,17 +154,17 @@ approximate_date <- function(x,
                              unit = c("month", "quarter", "half", "year", "decade"),
                              format = NULL,
                              orders = c("ymd", "dmy", "mdy")) {
-  
+
   unit <- match.arg(unit)
-  
+
   c(
     "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
     "format must be NULL or character" = (is.null(format) || is.character(format)),
     "orders must be character" = is.character(orders)
   ) |> validate_inputs()
-  
+
   is_na <- is.na(x)
-  
+
   if (inherits(x, "Date")) {
     parsed <- x
   } else if (!is.null(format)) {
@@ -409,158 +179,38 @@ approximate_date <- function(x,
       warning("Some dates could not be parsed with orders: ", paste(orders, collapse = ", "))
     }
   }
-  
+
   round_date <- function(date) {
     if (is.na(date)) return(NA_character_)
-    
+
     year <- as.integer(format(date, "%Y"))
     month <- as.integer(format(date, "%m"))
-    
+
     result <- switch(unit,
       month = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")),
-      
+
       quarter = {
         q_month <- ((month - 1) %/% 3) * 3 + 1
         as.Date(paste0(year, "-", sprintf("%02d", q_month), "-01"))
       },
-      
+
       half = {
         h_month <- if (month <= 6) 1 else 7
         as.Date(paste0(year, "-", sprintf("%02d", h_month), "-01"))
       },
-      
+
       year = as.Date(paste0(year, "-01-01")),
-      
+
       decade = {
         decade_year <- (year %/% 10) * 10
         as.Date(paste0(decade_year, "-01-01"))
       }
     )
-    
+
     format(result, "%Y-%m-%d")
   }
-  
+
   map_chr(parsed, round_date)
-}
-
-
-#' Strip vowels from text
-#'
-#' Removes vowels (A, E, I, O, U) including accented and umlaut variants.
-#' Useful for fuzzy matching (e.g. "MUELLER" -> "MLLR", "JOSE" -> "JS").
-#'
-#' @param text Character vector.
-#'
-#' @return Character vector with vowels removed.
-#'
-#' @examples
-#' strip_vowels("Mueller")   # "MLLR"
-#' strip_vowels("Cafe Noir") # "CF NR"
-#' strip_vowels(c("Anna", "Peter"))
-#'
-#' @export
-strip_vowels <- function(text) {
-  c("text must be character" = is.character(text)) |>
-    validate_inputs()
-  
-  if (length(text) == 0L) return(text)
-  
-  # Normalize accents -> Latin -> ASCII
-  x <- text |>
-    stringi::stri_trans_general("Any-Latin") |>
-    stringi::stri_trans_general("Latin-ASCII") |>
-    toupper()
-  
-  # Remove vowels A/E/I/O/U
-  # Includes letter Y only if you want it - typical Germanic/Romance matching leaves Y in.
-  x <- stringi::stri_replace_all_regex(
-    x,
-    pattern = "[AEIOU]",
-    replacement = ""
-  )
-  
-  # Trim redundant spaces after deletion
-  x <- stringi::stri_trim_both(stringi::stri_replace_all_regex(x, "\\s+", " "))
-  
-  x
-}
-
-
-#' Convert Text to Metaphone Encoding
-#'
-#' This function converts a text string to its Metaphone encoding. The Metaphone algorithm is used to
-#' encode words phonetically by reducing them to a simplified representation based on their pronunciation.
-#'
-#' @param text A character string or vector to be converted to Metaphone encoding.
-#'
-#' @return Returns the Metaphone encoded version of the input text.
-#' @examples
-#' as_metaphone("Cafe")
-#' as_metaphone("Strasse")
-#' @export
-#' @import phonics
-as_metaphone <- function(text) {
-  # Normalize accents: Caf\u00e9 -> Cafe
-  x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
-  
-  # Handle \u00df separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
-  x_norm <- gsub("\u00df", "ss", x_norm, ignore.case = TRUE)
-  
-  phonics::metaphone(x_norm,clean = FALSE)
-}
-
-
-#' Convert Text to Soundex Encoding
-#'
-#' This function converts a text string to its Soundex encoding. The Soundex algorithm is used to
-#' encode words phonetically by reducing them to a simplified representation based on their pronunciation.
-#'
-#' @param text A character string or vector to be converted to Soundex encoding.
-#'
-#' @return Returns the Soundex encoded version of the input text.
-#' @examples
-#' as_soundex("Cafe")
-#' as_soundex("Strasse")
-#' @export
-#' @import phonics
-as_soundex <- function(text){
-  # Validate inputs to the function
-  c("Input text must be a string" = is.character(text)
-  ) |>
-    validate_inputs()
-  
-  # Normalize accents: Caf\u00e9 -> Cafe
-  x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
-  
-  # Handle \u00df separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
-  x_norm <- gsub("\u00df", "ss", x_norm, ignore.case = TRUE)
-  
-  phonics::soundex(x_norm,clean = FALSE)
-}
-
-
-#' Convert Text to Cologne Phonetic Encoding
-#'
-#' This function converts a text string to its Cologne Phonetic encoding. The Cologne Phonetic algorithm
-#' is used to encode words phonetically by reducing them to a simplified representation based on their
-#' pronunciation, particularly suited for German language.
-#'
-#' @param text A character string or vector to be converted to Cologne Phonetic encoding.
-#'
-#' @return Returns the Cologne Phonetic encoded version of the input text.
-#' @examples
-#' as_cologne("Cafe")
-#' as_cologne("Strasse")
-#' @export
-#' @import phonics
-as_cologne <- function(text){
-  c("Input text must be a string" = is.character(text)) |>
-    validate_inputs()
-  
-  x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
-  x_norm <- gsub("\u00df", "ss", x_norm, ignore.case = TRUE)
-  
-  phonics::cologne(x_norm, clean = FALSE)
 }
 
 
@@ -585,12 +235,12 @@ word_tokens <- function(text,min_nchar=0){
     "Input min_nchar must be a integer valued numeric" = min_nchar == as.integer(min_nchar)
   ) |>
     validate_inputs()
-  
+
   # Split the text into words based on spaces
   words <- strsplit(text, "\\s+")
   # Remove empty elements if any (this can happen with multiple spaces)
   words <- map(words, function(x) x[nzchar(x)])
-  
+
   # Filter out words shorter than .min_length
   if (min_nchar > 0) {
     words <- map(words,function(x){
@@ -626,54 +276,25 @@ generate_ngrams <- function(text, n) {
     "Input n must be an integer valued numeric" = n == as.integer(n)
   ) |>
     validate_inputs()
-  
+
   int_df <- data.table::data.table(text = text)
   int_df[, len_text := stri_length(text)]
-  
+
   # Generate n-grams for one string using purrr-shim syntax
   generate_ngrams_single <- function(s) {
     len_s <- stri_length(s)
     if (len_s < n) return(character(0))
-    
+
     map_chr(
       seq_len(len_s - n + 1),
       ~ stri_sub(s, .x, .x + n - 1)
     )
   }
-  
+
   # Apply with purrr-shim map()
   int_df[, ngrams := map(text, generate_ngrams_single)]
-  
-  int_df$ngrams
-}
 
-#' Use similarity dictionary to group similar tokens together
-#'
-#' This function looks up a token in the similarity dictionary and returns the corresponding token group for a token.
-#'
-#' @param text A character string or vector representing the token to be looked up.
-#' @param dict A data table containing the similarity dictionary with tokens and their respective groups.
-#'
-#' @return Returns the token group corresponding to the input token.
-#'
-#' @examples
-#' dict <- data.table::data.table(
-#'   tokens = c("example", "sample"),
-#'   token_group = c("example/sample", "example/sample")
-#' )
-#' use_dictionary("example", dict)
-#' use_dictionary("nonexistent", dict)
-#' @export
-use_dictionary <- function(text, dict) {
-  # Validate inputs to the function
-  c("Input dict must be a data.table" = data.table::is.data.table(dict)) |>
-    validate_inputs()
-  
-  lookup_row <- function(r){
-    dict[tokens %in% r]$token_group
-  }
-  
-  map(text,lookup_row)
+  int_df$ngrams
 }
 
 
@@ -788,9 +409,9 @@ filter_stopwords <- function(tokens, stopwords) {
   c("tokens must be a list" = is.list(tokens),
     "stopwords must be character" = is.character(stopwords)) |>
     validate_inputs()
-  
+
   sw <- toupper(stopwords)
-  
+
   map(tokens, function(x) {
     x_up <- toupper(x)
     x[!(x_up %in% sw)]
@@ -808,7 +429,7 @@ filter_stopwords <- function(tokens, stopwords) {
 #' @export
 token_shapes <- function(tokens) {
   c("tokens must be a list" = is.list(tokens)) |> validate_inputs()
-  
+
   map(tokens, function(x) {
     map_chr(x, function(tok) {
       chars <- strsplit(tok, "")[[1]]
@@ -829,7 +450,7 @@ token_shapes <- function(tokens) {
 #' @export
 extract_initials <- function(tokens) {
   c("tokens must be a list" = is.list(tokens)) |> validate_inputs()
-  
+
   map(tokens, function(x) {
     map_chr(x, function(tok) substr(tok, 1, 1))
   })
@@ -849,14 +470,14 @@ fuzzy_tokens <- function(x,
                          max_dist = 2,
                          method = "osa",
                          min_nchar = 1) {
-  
+
   # ---------------------------------------------------------------------------
   # Early exit for NA rows
   # ---------------------------------------------------------------------------
   is_na <- is.na(x)
   x_clean <- x
   x_clean[is_na] <- ""
-  
+
   # ---------------------------------------------------------------------------
   # Tokenize
   # ---------------------------------------------------------------------------
@@ -866,29 +487,29 @@ fuzzy_tokens <- function(x,
     out <- toupper(out)
     out[nchar(out) >= min_nchar]
   })
-  
+
   # If all empty, return early
   if (all(lengths(toks) == 0) && all(is_na)) {
     return(map(x, function(val) if (is.na(val)) NA_character_ else character(0)))
   }
-  
+
   # ---------------------------------------------------------------------------
   # Collect ALL unique tokens globally
   # ---------------------------------------------------------------------------
   all_tokens <- unique(unlist(toks, use.names = FALSE))
-  
+
   # trivial case
   if (length(all_tokens) <= 1L) {
     return(map(toks, function(.x) {
       if (length(.x) == 0) character(0) else all_tokens
     }))
   }
-  
+
   # ---------------------------------------------------------------------------
   # Compute full stringdist matrix globally
   # ---------------------------------------------------------------------------
   D <- stringdist::stringdistmatrix(all_tokens, all_tokens, method = method)
-  
+
   # For JW: max_dist is similarity threshold -> convert accordingly
   if (method == "jw" && max_dist < 1) {
     # jw distance = 1 - similarity
@@ -896,51 +517,51 @@ fuzzy_tokens <- function(x,
   } else {
     dist_threshold <- max_dist
   }
-  
+
   # ---------------------------------------------------------------------------
   # Build fuzzy adjacency (global graph)
   # ---------------------------------------------------------------------------
   # Remove diagonal
   diag(D) <- Inf
-  
+
   # Strict distance cutoff
   edges <- which(D <= dist_threshold, arr.ind = TRUE)
-  
+
   # Keep only upper triangle (avoid double edges)
   edges <- edges[edges[,1] < edges[,2], , drop = FALSE]
-  
+
   # Build graph
   g <- igraph::make_empty_graph(n = length(all_tokens), directed = FALSE)
   if (nrow(edges) > 0) {
-    g <- igraph::add_edges(g, t(edges)) 
+    g <- igraph::add_edges(g, t(edges))
   }
-  
+
   comp <- igraph::components(g)$membership
   groups <- split(all_tokens, comp)
   groups <- unname(groups)
-  
+
   # ---------------------------------------------------------------------------
   # Canonical selection function:
   # longest -> min mean distance -> lexicographically smallest
   # ---------------------------------------------------------------------------
   choose_canon <- function(g) {
     if (length(g) == 1L) return(g)
-    
+
     n <- nchar(g)
     Dg <- stringdist::stringdistmatrix(g, g, method = method)
     center <- rowMeans(Dg)
-    
+
     g[order(-n, center, g)][1]
   }
-  
+
   canon <- map_chr(groups, choose_canon)
-  
+
   # map canonical back to tokens
   canon_map <- unlist(
     map2(groups, canon, function(g, c) setNames(rep(c, length(g)), g)),
     use.names = TRUE
   )
-  
+
   # ---------------------------------------------------------------------------
   # Rewrite each row's tokens
   # ---------------------------------------------------------------------------
@@ -948,11 +569,9 @@ fuzzy_tokens <- function(x,
     if (!length(v)) return(character(0))
     unname(canon_map[v])
   })
-  
+
   # Restore NA rows
   out[is_na] <- list(NA_character_)
-  
+
   out
 }
-
-

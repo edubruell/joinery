@@ -469,7 +469,7 @@ method(
   n_records <- nrow(dt)
 
   if (!id %in% names(dt)) {
-    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+    cli::cli_abort("ID column {.field {id}} not found in data")
   }
 
   # --- 2. Embeddable-text coverage ---------------------------------------
@@ -517,8 +517,7 @@ method(
   if (!is.null(block_by)) {
     missing_cols <- setdiff(block_by, names(dt))
     if (length(missing_cols) > 0L) {
-      stop("Blocking columns not found in data: ",
-           paste(missing_cols, collapse = ", "), call. = FALSE)
+      cli::cli_abort("Blocking columns not found in data: {.field {missing_cols}}")
     }
     # Use a tokens-shaped frame so we can reuse .compute_block_summary().
     block_dt <- dt[, c(id, block_by), with = FALSE]

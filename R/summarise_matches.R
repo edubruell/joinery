@@ -29,13 +29,12 @@
   if (all(c("match_id", "source", "id", "score") %in% cols)) {
     return("candidates")
   }
-  stop(
-    "`matches` does not look like a joinery match table.\n",
-    "Expected either:\n",
-    "  - duplicate columns: duplicate_group, id, score (from `detect_duplicates`)\n",
-    "  - candidate columns: match_id, source, id, score (from `search_candidates`)",
-    call. = FALSE
-  )
+  cli::cli_abort(c(
+    "{.arg matches} does not look like a joinery match table.",
+    "i" = "Expected either:",
+    "*" = "duplicate columns: {.field duplicate_group}, {.field id}, {.field score} (from {.fn detect_duplicates})",
+    "*" = "candidate columns: {.field match_id}, {.field source}, {.field id}, {.field score} (from {.fn search_candidates})"
+  ))
 }
 
 #' @noRd
@@ -51,7 +50,7 @@
 #' @noRd
 .score_distribution <- function(scores, bins = 50) {
   if (!is.numeric(scores)) {
-    stop("`score` column must be numeric.", call. = FALSE)
+    cli::cli_abort("{.field score} column must be numeric")
   }
   scores <- scores[!is.na(scores)]
 

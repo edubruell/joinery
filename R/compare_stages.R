@@ -22,11 +22,10 @@
 #' @noRd
 .validate_stage_col <- function(matches) {
   if (!"stage" %in% names(matches))
-    stop(
-      "`matches` must have a `stage` column. ",
-      "Use `multi_stage_match()` to produce multi-stage output.",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "{.arg matches} must have a {.field stage} column",
+      "i" = "Use {.fn multi_stage_match} to produce multi-stage output"
+    ))
 }
 
 

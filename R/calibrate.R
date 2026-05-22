@@ -164,8 +164,7 @@ method(calibrate, Calibrated_Matches) <- function(x, labels = NULL,
   # matches table (no tp_prob means apply_filter() was never called), we
   # can't proceed -- but Calibrated_Matches always has tp_prob.
   if (!"tp_prob" %in% names(ft)) {
-    stop("`x@matches` does not carry tp_prob; cannot evaluate.",
-         call. = FALSE)
+    cli::cli_abort("{.code x@matches} does not carry {.field tp_prob}; cannot evaluate")
   }
 
   # Determine match type to know how to join.
@@ -205,8 +204,7 @@ method(calibrate, Calibrated_Matches) <- function(x, labels = NULL,
                   by = c("match_id", "found"),
                   all.x = FALSE, all.y = FALSE, sort = FALSE)
   if (nrow(joined) == 0L) {
-    stop("No labelled rows joined onto the calibrated matches.",
-         call. = FALSE)
+    cli::cli_abort("No labelled rows joined onto the calibrated matches")
   }
 
   .calibrate_impl(joined$tp_prob, joined$equal,
@@ -225,14 +223,13 @@ method(calibrate, Calibrated_Matches) <- function(x, labels = NULL,
 #' @noRd
 .joinery_recipe_impl <- function(features, labels, ...) {
   if (!requireNamespace("recipes", quietly = TRUE)) {
-    stop(
-      "`joinery_recipe()` requires the `recipes` package. ",
-      "Install it via `install.packages(\"recipes\")`.",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "{.fn joinery_recipe} requires the {.pkg recipes} package",
+      "i" = "Install it via {.run install.packages(\"recipes\")}"
+    ))
   }
   if (!S7::S7_inherits(features, Match_Features)) {
-    stop("`features` must be a Match_Features object.", call. = FALSE)
+    cli::cli_abort("{.arg features} must be a {.cls Match_Features} object")
   }
 
   ft  <- data.table::as.data.table(features@features)
@@ -254,8 +251,7 @@ method(calibrate, Calibrated_Matches) <- function(x, labels = NULL,
                   by = c("match_id", "found"),
                   all.x = FALSE, all.y = FALSE, sort = FALSE)
   if (nrow(joined) == 0L) {
-    stop("No features rows matched any label row on (match_id, found).",
-         call. = FALSE)
+    cli::cli_abort("No features rows matched any label row on {.code (match_id, found)}")
   }
 
   joined[, equal := factor(equal, levels = c(0L, 1L))]

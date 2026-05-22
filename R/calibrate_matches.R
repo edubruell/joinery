@@ -49,7 +49,7 @@
                                     ...) {
 
   if (missing(labels) || is.null(labels)) {
-    stop("`labels` is required for calibrate_matches().", call. = FALSE)
+    cli::cli_abort("{.arg labels} is required for {.fn calibrate_matches}")
   }
 
   features <- .calibrate_build_features(
