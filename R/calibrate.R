@@ -268,3 +268,25 @@ method(calibrate, Calibrated_Matches) <- function(x, labels = NULL,
   }
   rec
 }
+
+
+#' Build a tidymodels recipe for calibration features
+#'
+#' @description
+#' Construct a pre-configured [recipes::recipe()] suitable for fitting a
+#' false-positive filter on the output of [match_features()]. Tags ID
+#' columns (`searched`, `found`, `match_id`) with role `"id"`, sets
+#' `equal` as the outcome, and keeps every other numeric column as a
+#' predictor. Requires the suggested `recipes` package.
+#'
+#' @param features A [`Match_Features`] object.
+#' @param labels A labels `data.table` with `equal` (as for
+#'   [fit_filter()]).
+#' @param ... Reserved for future expansion.
+#'
+#' @return A [recipes::recipe()] object.
+#'
+#' @export
+joinery_recipe <- function(features, labels, ...) {
+  .joinery_recipe_impl(features, labels, ...)
+}
