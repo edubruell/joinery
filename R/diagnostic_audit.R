@@ -16,6 +16,12 @@
 # (so frequent they carry almost no discriminating power).
 .LOW_RARITY_THRESHOLD <- 0.01
 
+# Default cap for the random pair sample used to estimate string-similarity
+# statistics in `.similarity_quantiles()`. 1000 pairs is large enough for
+# stable quantile estimates while keeping the per-audit cost negligible
+# even on the slower string-similarity methods.
+.SIMILARITY_N_PAIRS_DEFAULT <- 1000L
+
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -390,7 +396,7 @@ method(
 #' Returns NULL when there are fewer than two embedded records.
 #' @noRd
 .compute_similarity_sample <- function(embeddings, id_col,
-                                       n_pairs = 1000L) {
+                                       n_pairs = .SIMILARITY_N_PAIRS_DEFAULT) {
   n <- nrow(embeddings)
   if (n < 2L) return(NULL)
   max_pairs <- as.numeric(n) * (n - 1L) / 2
@@ -453,7 +459,7 @@ method(
   list(DT_tbl, class_character, Embedding_Strategy)
 ) <- function(data, id, strategy,
               sample_n          = NULL,
-              similarity_n_pairs = 1000L,
+              similarity_n_pairs = .SIMILARITY_N_PAIRS_DEFAULT,
               ...) {
 
   dt <- data.table::copy(data.table::as.data.table(data))
@@ -560,7 +566,7 @@ method(
   list(Duck_tbl, class_character, Embedding_Strategy)
 ) <- function(data, id, strategy,
               sample_n          = NULL,
-              similarity_n_pairs = 1000L,
+              similarity_n_pairs = .SIMILARITY_N_PAIRS_DEFAULT,
               ...) {
 
   con      <- data$src$con
@@ -601,7 +607,7 @@ method(
   list(.jyDF, class_character, Embedding_Strategy)
 ) <- function(data, id, strategy,
               sample_n          = NULL,
-              similarity_n_pairs = 1000L,
+              similarity_n_pairs = .SIMILARITY_N_PAIRS_DEFAULT,
               ...) {
   audit_strategy(as_DT(data), id, strategy,
                  sample_n = sample_n,
@@ -614,7 +620,7 @@ method(
   list(.jyTBL_DF, class_character, Embedding_Strategy)
 ) <- function(data, id, strategy,
               sample_n          = NULL,
-              similarity_n_pairs = 1000L,
+              similarity_n_pairs = .SIMILARITY_N_PAIRS_DEFAULT,
               ...) {
   audit_strategy(as_DT(data), id, strategy,
                  sample_n = sample_n,
@@ -627,7 +633,7 @@ method(
   list(.jyTBL, class_character, Embedding_Strategy)
 ) <- function(data, id, strategy,
               sample_n          = NULL,
-              similarity_n_pairs = 1000L,
+              similarity_n_pairs = .SIMILARITY_N_PAIRS_DEFAULT,
               ...) {
   audit_strategy(as_DT(data), id, strategy,
                  sample_n = sample_n,
