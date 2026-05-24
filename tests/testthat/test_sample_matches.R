@@ -240,9 +240,9 @@ test_that("invalid mode gives clear error listing valid modes", {
 
 test_that("non-positive or non-numeric n gives clear error", {
   dt <- make_sample_dup_matches()
-  expect_error(sample_matches(dt, mode = "high", n = 0L),    regexp = "n")
-  expect_error(sample_matches(dt, mode = "high", n = -1L),   regexp = "n")
-  expect_error(sample_matches(dt, mode = "high", n = "10"),  regexp = "n")
+  expect_error(sample_matches(dt, mode = "high", n = 0L),    regexp = "`n`")
+  expect_error(sample_matches(dt, mode = "high", n = -1L),   regexp = "`n`")
+  expect_error(sample_matches(dt, mode = "high", n = "10"),  regexp = "`n`")
 })
 
 test_that("borderline without threshold errors with helpful message", {
@@ -489,7 +489,7 @@ test_that("stratify_by errors on non-character input", {
   dt <- make_staged_cand_matches()
   expect_error(
     sample_matches(dt, mode = "high", n = 2L, stratify_by = 1L),
-    "non-empty character vector"
+    "stratify_by.*character"
   )
 })
 
@@ -554,11 +554,11 @@ test_that("expand_to_block validates argument type", {
   dt <- make_sample_dup_matches()
   expect_error(
     sample_matches(dt, mode = "high", n = 2L, expand_to_block = "yes"),
-    "TRUE or FALSE"
+    "`TRUE` or `FALSE`"
   )
   expect_error(
     sample_matches(dt, mode = "high", n = 2L, expand_to_block = NA),
-    "TRUE or FALSE"
+    "`TRUE` or `FALSE`"
   )
 })
 

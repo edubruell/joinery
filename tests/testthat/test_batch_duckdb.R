@@ -299,37 +299,37 @@ test_that("duckdb_batch_plan validates input arguments", {
   # Invalid db_tbl (not a dplyr table)
   expect_error(
     duckdb_batch_plan(base_example, id = "id_base"),
-    "db_tbl must be a dplyr lazy table"
+    "db_tbl.*dplyr lazy table"
   )
   
   # Invalid id (not character)
   expect_error(
     duckdb_batch_plan(tbl_ref, id = 123),
-    "id must be a character vector"
+    "id.*character vector"
   )
   
   # Invalid target_batch_size (not positive)
   expect_error(
     duckdb_batch_plan(tbl_ref, id = "id_base", target_batch_size = -1000),
-    "target_batch_size must be NULL or positive"
+    "target_batch_size"
   )
   
   # Invalid min_batch_size (not positive)
   expect_error(
     duckdb_batch_plan(tbl_ref, id = "id_base", min_batch_size = 0),
-    "min_batch_size must be NULL or positive"
+    "min_batch_size"
   )
   
   # Invalid chunk_strategy (not in allowed values)
   expect_error(
     duckdb_batch_plan(tbl_ref, id = "id_base", chunk_strategy = "invalid"),
-    "chunk_strategy must be one of 'even', 'block_first', or 'block_consolidated'"
+    "chunk_strategy.*even.*block_first.*block_consolidated"
   )
   
   # Invalid block_by (not character or NULL)
   expect_error(
     duckdb_batch_plan(tbl_ref, id = "id_base", block_by = 123),
-    "block_by must be NULL or a character vector"
+    "block_by.*character vector"
   )
 })
 

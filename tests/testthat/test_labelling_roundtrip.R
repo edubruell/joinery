@@ -38,7 +38,7 @@ test_that("export_for_labelling validates inputs", {
   tmp <- tempfile(fileext = ".csv")
 
   expect_error(export_for_labelling(dt), "file")
-  expect_error(export_for_labelling(dt, tmp, default_label = 5L), "0L or 1L")
+  expect_error(export_for_labelling(dt, tmp, default_label = 5L), "default_label.*between 0 and 1")
   expect_error(export_for_labelling(dt[0L], tmp), "empty sample")
 })
 

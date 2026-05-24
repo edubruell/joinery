@@ -30,19 +30,15 @@
 
 #' @noRd
 .validate_sample_args <- function(mode, n) {
-  if (!is.character(mode) || length(mode) != 1L || !mode %in% .valid_modes) {
-    stop(
-      sprintf(
-        "`mode` must be one of: %s. Got: %s",
-        paste0('"', .valid_modes, '"', collapse = ", "),
-        deparse(mode)
-      ),
-      call. = FALSE
-    )
+  check_string(mode)
+  if (!mode %in% .valid_modes) {
+    valid_modes <- .valid_modes
+    cli::cli_abort(c(
+      "{.arg mode} must be one of {.val {valid_modes}}",
+      "i" = "Got {.val {mode}}"
+    ))
   }
-  if (!is.numeric(n) || length(n) != 1L || !is.finite(n) || n < 1L) {
-    stop("`n` must be a positive integer scalar.", call. = FALSE)
-  }
+  check_number_whole(n, min = 1)
   as.integer(n)
 }
 
@@ -142,12 +138,9 @@
 #' @noRd
 .validate_stratify_by <- function(stratify_by, cols) {
   if (is.null(stratify_by)) return(NULL)
-  if (!is.character(stratify_by) || length(stratify_by) < 1L ||
-      any(is.na(stratify_by)) || any(stratify_by == "")) {
-    stop(
-      "`stratify_by` must be a non-empty character vector of column names.",
-      call. = FALSE
-    )
+  check_character(stratify_by)
+  if (length(stratify_by) < 1L || any(stratify_by == "")) {
+    cli::cli_abort("{.arg stratify_by} must be a non-empty character vector of column names")
   }
   missing_cols <- setdiff(stratify_by, cols)
   if (length(missing_cols)) {
@@ -191,10 +184,7 @@ method(
   match_type <- .detect_match_type(dt)
   stratify_by <- .validate_stratify_by(stratify_by, names(dt))
 
-  if (!is.logical(expand_to_block) || length(expand_to_block) != 1L ||
-      is.na(expand_to_block)) {
-    stop("`expand_to_block` must be a single TRUE or FALSE.", call. = FALSE)
-  }
+  check_bool(expand_to_block)
 
   if (mode == "borderline" && is.null(threshold)) {
     cli::cli_abort(c(

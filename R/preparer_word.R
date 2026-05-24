@@ -24,11 +24,8 @@
 #' @export
 #' @import stringi
 normalize_text <- function(text, transliteration = "De-ASCII") {
-  #Validate inputes to the generate_ngrams function
-  c("Input text must be a string" = is.character(text),
-    "Input transliteration must be a string" = is.character(transliteration)
-  ) |>
-    validate_inputs()
+  check_character(text)
+  check_string(transliteration)
 
   # String to upper case characters
   text <- stri_trans_toupper(text)
@@ -93,12 +90,11 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
 #' @export
 normalize_street <- function(x, lang = NULL, dict = joinery::street_types) {
 
-  # Validate
-  c(
-    "x must be character" = is.character(x),
-    "dict must contain canonical, variant, type, lang" =
-      all(c("canonical", "variant", "type", "lang") %in% names(dict))
-  ) |> validate_inputs()
+  check_character(x)
+  missing_cols <- setdiff(c("canonical", "variant", "type", "lang"), names(dict))
+  if (length(missing_cols)) {
+    cli::cli_abort("{.arg dict} is missing required column{?s} {.field {missing_cols}}")
+  }
 
   # Separate NA early
   is_na <- is.na(x)
@@ -195,11 +191,11 @@ normalize_street <- function(x, lang = NULL, dict = joinery::street_types) {
 #' @export
 normalize_date <- function(x, format = NULL, orders = c("ymd", "dmy", "mdy")) {
 
-  c(
-    "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
-    "format must be NULL or character" = (is.null(format) || is.character(format)),
-    "orders must be character" = is.character(orders)
-  ) |> validate_inputs()
+  if (!is.character(x) && !inherits(x, "Date")) {
+    cli::cli_abort("{.arg x} must be character or {.cls Date}")
+  }
+  if (!is.null(format)) check_character(format)
+  check_character(orders)
 
   is_na <- is.na(x)
 
@@ -249,8 +245,7 @@ normalize_date <- function(x, format = NULL, orders = c("ymd", "dmy", "mdy")) {
 #'
 #' @export
 strip_vowels <- function(text) {
-  c("text must be character" = is.character(text)) |>
-    validate_inputs()
+  check_character(text)
 
   if (length(text) == 0L) return(text)
 
@@ -313,10 +308,7 @@ as_metaphone <- function(text) {
 #' @export
 #' @import phonics
 as_soundex <- function(text){
-  # Validate inputs to the function
-  c("Input text must be a string" = is.character(text)
-  ) |>
-    validate_inputs()
+  check_character(text)
 
   # Normalize accents: Café -> Cafe
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
@@ -343,8 +335,7 @@ as_soundex <- function(text){
 #' @export
 #' @import phonics
 as_cologne <- function(text){
-  c("Input text must be a string" = is.character(text)) |>
-    validate_inputs()
+  check_character(text)
 
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
   x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
@@ -371,9 +362,9 @@ as_cologne <- function(text){
 #' use_dictionary("nonexistent", dict)
 #' @export
 use_dictionary <- function(text, dict) {
-  # Validate inputs to the function
-  c("Input dict must be a data.table" = data.table::is.data.table(dict)) |>
-    validate_inputs()
+  if (!data.table::is.data.table(dict)) {
+    cli::cli_abort("{.arg dict} must be a {.cls data.table}")
+  }
 
   lookup_row <- function(r){
     dict[tokens %in% r]$token_group

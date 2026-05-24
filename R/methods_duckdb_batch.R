@@ -80,20 +80,23 @@ duckdb_batch_plan <- function(db_tbl,
   # -----------------------------------------------
   # Validate user input (NULL allowed for tuning)
   # -----------------------------------------------
-  c(
-    "db_tbl must be a dplyr lazy table" =
-      inherits(db_tbl, c("tbl_duckdb_connection", "tbl_dbi", "tbl_lazy")),
-    "id must be a character vector" =
-      is.character(id),
-    "target_batch_size must be NULL or positive" =
-      is.null(target_batch_size) || (is.numeric(target_batch_size) && target_batch_size > 0),
-    "min_batch_size must be NULL or positive" =
-      is.null(min_batch_size) || (is.numeric(min_batch_size) && min_batch_size > 0),
-    "chunk_strategy must be one of 'even', 'block_first', or 'block_consolidated'" = 
-      chunk_strategy %in% c("even", "block_first", "block_consolidated"),
-    "block_by must be NULL or a character vector" =
-      is.null(block_by) || is.character(block_by)
-  ) |> validate_inputs()
+  if (!inherits(db_tbl, c("tbl_duckdb_connection", "tbl_dbi", "tbl_lazy"))) {
+    cli::cli_abort("{.arg db_tbl} must be a {.pkg dplyr} lazy table")
+  }
+  check_character(id)
+  check_number_decimal(target_batch_size, min = 0, allow_null = TRUE)
+  check_number_decimal(min_batch_size, min = 0, allow_null = TRUE)
+  if (!is.null(target_batch_size) && target_batch_size <= 0) {
+    cli::cli_abort("{.arg target_batch_size} must be positive")
+  }
+  if (!is.null(min_batch_size) && min_batch_size <= 0) {
+    cli::cli_abort("{.arg min_batch_size} must be positive")
+  }
+  check_string(chunk_strategy)
+  if (!chunk_strategy %in% c("even", "block_first", "block_consolidated")) {
+    cli::cli_abort('{.arg chunk_strategy} must be one of {.val even}, {.val block_first}, or {.val block_consolidated}')
+  }
+  if (!is.null(block_by)) check_character(block_by)
   
   # -----------------------------------------------
   # Auto-tune if missing
@@ -697,9 +700,11 @@ batch_map <- function(plan,
                       persist = TRUE,
                       output_table = NULL) {
   
-  stopifnot(is.data.frame(plan))
-  stopifnot("batch_id"  %in% names(plan))
-  stopifnot("row_count" %in% names(plan))
+  check_data_frame(plan)
+  missing_cols <- setdiff(c("batch_id", "row_count"), names(plan))
+  if (length(missing_cols)) {
+    cli::cli_abort("{.arg plan} is missing required column{?s} {.field {missing_cols}}")
+  }
   
   # Choose output table if persisting
   if (persist) {

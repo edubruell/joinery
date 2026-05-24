@@ -50,9 +50,9 @@ method(
               ...) {
 
   # ---- VALIDATION ----------------------------------------------------------
-  c("strategies must be a list"    =  is.list(strategies),
-    "strategies must not be empty" =  length(strategies) > 0) |>
-    validate_inputs()
+  if (!is.list(strategies) || length(strategies) == 0L) {
+    cli::cli_abort("{.arg strategies} must be a non-empty list")
+  }
 
   # If names missing:  assign "strategy_1", "strategy_2", …
   if (is.null(names(strategies)) || any(names(strategies) == "")) {
@@ -61,9 +61,9 @@ method(
 
   # Ensure all elements are Search_Strategy or Embedding_Strategy
   valid_strategy <- function(s) S7_inherits(s, Search_Strategy) || S7_inherits(s, Embedding_Strategy)
-  c("strategies must be a list of Search_Strategy or Embedding_Strategy objects" =
-      is.list(strategies) && all(sapply(strategies, valid_strategy))
-  ) |> validate_inputs()
+  if (!all(map_lgl(strategies, valid_strategy))) {
+    cli::cli_abort("{.arg strategies} must be a list of {.cls Search_Strategy} or {.cls Embedding_Strategy} objects")
+  }
 
   # ---- PREP ----------------------------------------------------------------
   base_res   <- data.table::copy(base_table)

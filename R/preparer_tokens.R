@@ -54,13 +54,16 @@ date_tokens <- function(x,
                         format = NULL,
                         orders = c("ymd", "dmy", "mdy")) {
 
-  c(
-    "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
-    "components must be character" = is.character(components),
-    "components must be valid" = all(components %in% c("year", "month", "day")),
-    "format must be NULL or character" = (is.null(format) || is.character(format)),
-    "orders must be character" = is.character(orders)
-  ) |> validate_inputs()
+  if (!is.character(x) && !inherits(x, "Date")) {
+    cli::cli_abort("{.arg x} must be character or {.cls Date}")
+  }
+  check_character(components)
+  bad <- setdiff(components, c("year", "month", "day"))
+  if (length(bad)) {
+    cli::cli_abort("{.arg components} contains invalid value{?s} {.val {bad}}")
+  }
+  if (!is.null(format)) check_character(format)
+  check_character(orders)
 
   is_na <- is.na(x)
 
@@ -157,11 +160,11 @@ approximate_date <- function(x,
 
   unit <- match.arg(unit)
 
-  c(
-    "x must be character or Date" = (is.character(x) || inherits(x, "Date")),
-    "format must be NULL or character" = (is.null(format) || is.character(format)),
-    "orders must be character" = is.character(orders)
-  ) |> validate_inputs()
+  if (!is.character(x) && !inherits(x, "Date")) {
+    cli::cli_abort("{.arg x} must be character or {.cls Date}")
+  }
+  if (!is.null(format)) check_character(format)
+  check_character(orders)
 
   is_na <- is.na(x)
 
@@ -230,11 +233,8 @@ approximate_date <- function(x,
 #' word_tokens("Another, test; string.")
 #' @export
 word_tokens <- function(text,min_nchar=0){
-  # Validate inputs to the function
-  c("Input text must be a string" = is.character(text),
-    "Input min_nchar must be a integer valued numeric" = min_nchar == as.integer(min_nchar)
-  ) |>
-    validate_inputs()
+  check_character(text)
+  check_number_whole(min_nchar, min = 0)
 
   # Split the text into words based on spaces
   words <- strsplit(text, "\\s+")
@@ -270,12 +270,8 @@ word_tokens <- function(text,min_nchar=0){
 #' @import data.table
 #' @import stringi
 generate_ngrams <- function(text, n) {
-  # Validate inputs
-  c(
-    "Input text must be a string" = is.character(text),
-    "Input n must be an integer valued numeric" = n == as.integer(n)
-  ) |>
-    validate_inputs()
+  check_character(text)
+  check_number_whole(n, min = 1)
 
   int_df <- data.table::data.table(text = text)
   int_df[, len_text := stri_length(text)]
@@ -330,8 +326,7 @@ numeric_tokens <- function(text,
                            keep_letters = TRUE,
                            destructive = FALSE) {
 
-  c("text must be character" = is.character(text)) |>
-    validate_inputs()
+  check_character(text)
 
   # Original text (needed for range detection)
   raw <- text
@@ -406,9 +401,10 @@ numeric_tokens <- function(text,
 #' @return A list of character vectors with stopwords removed.
 #' @export
 filter_stopwords <- function(tokens, stopwords) {
-  c("tokens must be a list" = is.list(tokens),
-    "stopwords must be character" = is.character(stopwords)) |>
-    validate_inputs()
+  if (!is.list(tokens)) {
+    cli::cli_abort("{.arg tokens} must be a list")
+  }
+  check_character(stopwords)
 
   sw <- toupper(stopwords)
 
@@ -428,7 +424,9 @@ filter_stopwords <- function(tokens, stopwords) {
 #' @return A list of shape tokens.
 #' @export
 token_shapes <- function(tokens) {
-  c("tokens must be a list" = is.list(tokens)) |> validate_inputs()
+  if (!is.list(tokens)) {
+    cli::cli_abort("{.arg tokens} must be a list")
+  }
 
   map(tokens, function(x) {
     map_chr(x, function(tok) {
@@ -449,7 +447,9 @@ token_shapes <- function(tokens) {
 #' @return A list of character vectors of initials.
 #' @export
 extract_initials <- function(tokens) {
-  c("tokens must be a list" = is.list(tokens)) |> validate_inputs()
+  if (!is.list(tokens)) {
+    cli::cli_abort("{.arg tokens} must be a list")
+  }
 
   map(tokens, function(x) {
     map_chr(x, function(tok) substr(tok, 1, 1))

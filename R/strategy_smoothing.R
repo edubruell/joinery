@@ -152,9 +152,7 @@ smooth_rip_log <- function() {
 #'
 #' @export
 smooth_rip_offset <- function(alpha = 0.5) {
-  if (!is.numeric(alpha) || length(alpha) != 1L || alpha < 0) {
-    rlang::abort("`alpha` must be a single non negative numeric value.")
-  }
+  check_number_decimal(alpha, min = 0)
   Smoothing_Offset(method = "offset", alpha = alpha)
 }
 
@@ -166,8 +164,9 @@ smooth_rip_offset <- function(alpha = 0.5) {
 #'
 #' @export
 smooth_rip_softmax <- function(temperature = 1) {
-  if (!is.numeric(temperature) || length(temperature) != 1L || temperature <= 0) {
-    rlang::abort("`temperature` must be a single positive numeric value.")
+  check_number_decimal(temperature, min = 0)
+  if (temperature <= 0) {
+    cli::cli_abort("{.arg temperature} must be strictly positive")
   }
   Smoothing_Softmax(method = "softmax", temperature = temperature)
 }

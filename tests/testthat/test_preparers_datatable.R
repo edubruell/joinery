@@ -618,13 +618,13 @@ test_that("date_tokens() extracts date components correctly", {
   # Invalid component name
   expect_error(
     date_tokens("2023-12-31", components = "invalid"),
-    "components must be valid"
+    "components.*invalid"
   )
   
   # Mixed valid and invalid components
   expect_error(
     date_tokens("2023-12-31", components = c("year", "invalid")),
-    "components must be valid"
+    "components.*invalid"
   )
 })
 

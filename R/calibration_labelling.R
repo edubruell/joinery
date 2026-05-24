@@ -92,14 +92,8 @@
 #'
 #' @export
 export_for_labelling <- function(sample, file, default_label = 1L) {
-  if (missing(file) || !is.character(file) || length(file) != 1L ||
-      is.na(file) || !nzchar(file)) {
-    stop("`file` must be a non-empty character scalar path.", call. = FALSE)
-  }
-  if (!is.numeric(default_label) || length(default_label) != 1L ||
-      is.na(default_label) || !default_label %in% c(0L, 1L)) {
-    stop("`default_label` must be 0L or 1L.", call. = FALSE)
-  }
+  check_name(file)
+  check_number_whole(default_label, min = 0, max = 1)
   default_label <- as.integer(default_label)
 
   rows <- .labelling_extract_rows(sample)
@@ -139,10 +133,7 @@ export_for_labelling <- function(sample, file, default_label = 1L) {
 #'
 #' @export
 import_labels <- function(file) {
-  if (missing(file) || !is.character(file) || length(file) != 1L ||
-      is.na(file) || !nzchar(file)) {
-    stop("`file` must be a non-empty character scalar path.", call. = FALSE)
-  }
+  check_name(file)
   if (!file.exists(file)) {
     cli::cli_abort("File does not exist: {.file {file}}")
   }

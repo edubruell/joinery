@@ -259,20 +259,16 @@ search_strategy <- function(...,
                             max_candidates = Inf,
                             feedback_strength = 0) {
 
-  if (!is.numeric(min_rarity)) {
-    rlang::abort("`min_rarity` must be numeric.")
+  check_number_decimal(min_rarity, min = 0)
+  check_number_decimal(threshold)
+  check_number_decimal(max_candidates, min = 0, allow_infinite = TRUE)
+  if (is.finite(max_candidates) && max_candidates <= 0) {
+    cli::cli_abort("{.arg max_candidates} must be positive")
   }
+  check_number_decimal(feedback_strength, min = 0)
 
   if (!S7_inherits(smoothing, Smoothing)) {
-    rlang::abort("`smoothing` must be a `Smoothing` object created by a smooth_rip_*() helper.")
-  }
-
-  if (!is.numeric(max_candidates) || length(max_candidates) != 1L || max_candidates <= 0) {
-    rlang::abort("`max_candidates` must be a single positive numeric value.")
-  }
-
-  if (!is.numeric(feedback_strength) || length(feedback_strength) != 1L || feedback_strength < 0) {
-    rlang::abort("`feedback_strength` must be a single non-negative numeric value.")
+    cli::cli_abort("{.arg smoothing} must be a {.cls Smoothing} object created by a {.fn smooth_rip_*} helper")
   }
 
   fmls <- rlang::list2(...)
@@ -288,7 +284,7 @@ search_strategy <- function(...,
   preparers <- map(fmls, function(fml) {
 
     if (!rlang::is_formula(fml)) {
-      rlang::abort("All arguments to search_strategy() must be formulas.")
+      cli::cli_abort("All arguments to {.fn search_strategy} must be formulas")
     }
 
     col <- rlang::as_string(rlang::f_lhs(fml))
@@ -307,25 +303,21 @@ search_strategy <- function(...,
 
   names(preparers) <- map_chr(preparers, function(p) p@column)
 
-  if (!is.null(block_by) && !is.character(block_by)) {
-    rlang::abort("`block_by` must be NULL or a character vector.")
+  if (!is.null(block_by)) {
+    check_character(block_by)
   }
   if (length(weights) > 0 &&
       (is.null(names(weights)) || any(names(weights) == ""))) {
-    rlang::abort("`weights` must be a named numeric vector.")
+    cli::cli_abort("{.arg weights} must be a named numeric vector")
   }
   if (length(weights) > 0) {
-    preparer_cols <- vapply(preparers, function(p) p@column, character(1))
+    preparer_cols <- map_chr(preparers, function(p) p@column)
     bad_wt <- setdiff(names(weights), preparer_cols)
-    if (length(bad_wt) > 0L)
-      rlang::abort(paste0(
-        "`weights` names not found in any preparer column: ",
-        paste(bad_wt, collapse = ", ")
-      ))
+    if (length(bad_wt) > 0L) {
+      cli::cli_abort("{.arg weights} names not found in any preparer column: {.field {bad_wt}}")
+    }
   }
-  if (!is.character(rarity) || length(rarity) != 1L) {
-    rlang::abort("`rarity` must be a single character string.")
-  }
+  check_string(rarity)
 
   Search_Strategy(
     preparers  = preparers,

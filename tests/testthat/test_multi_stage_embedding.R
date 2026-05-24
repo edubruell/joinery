@@ -87,7 +87,7 @@ test_that("multi_stage_match() rejects non-strategy objects", {
       make_base(), make_target(), "id", "id",
       strategies = list(token = token_strategy(), bogus = list())
     ),
-    "Search_Strategy or Embedding_Strategy"
+    "Search_Strategy.*Embedding_Strategy"
   )
 })
 
@@ -97,7 +97,7 @@ test_that("multi_stage_match() rejects empty strategies list", {
       make_base(), make_target(), "id", "id",
       strategies = list()
     ),
-    "must not be empty"
+    "non-empty list"
   )
 })
 
