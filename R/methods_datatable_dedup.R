@@ -45,7 +45,7 @@ method(
   # Guarantee weight coverage
   missing_w <- setdiff(unique(tokens$src_column), names(weights))
   if (length(missing_w) > 0) {
-    stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
+    cli::cli_abort("Weights missing for columns: {.field {missing_w}}")
   }
 
   # --- 4. Compute pairwise scores through helper ----------------------------
@@ -63,7 +63,7 @@ method(
 
   # Apply threshold
   thr <- strategy@threshold
-  if (is.null(thr)) stop("Strategy must define a threshold.")
+  if (is.null(thr)) cli::cli_abort("Strategy must define a threshold")
   scored <- scored[score >= thr]
 
   # Apply containment limit
@@ -141,7 +141,7 @@ method(
   dt <- data.table::copy(base_table)
 
   if (!id %in% names(dt)) {
-    stop(sprintf("ID '%s' not found in base_table", id), call. = FALSE)
+    cli::cli_abort("ID {.field {id}} not found in base_table")
   }
   duplicate_ids <- duplicates[rank!=1L,]$id
   to_remove <- as.character(dt[[id]]) %in% duplicate_ids

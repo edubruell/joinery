@@ -191,20 +191,19 @@ embedding_strategy <- function(columns = NULL,
 
   # Check tidyllm availability
   if (!requireNamespace("tidyllm", quietly = TRUE)) {
-    stop(
-      "Package 'tidyllm' is required for embedding strategies.\n",
-      "Install it with: install.packages('tidyllm')",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "{.fn embedding_strategy} requires the {.pkg tidyllm} package",
+      "i" = "Install it via {.run install.packages(\"tidyllm\")}"
+    ))
   }
   
   # Validate inputs
   if (missing(embedding_model)) {
-    stop("embedding_model is required", call. = FALSE)
+    cli::cli_abort("{.arg embedding_model} is required")
   }
-  
+
   if (missing(threshold)) {
-    stop("threshold is required", call. = FALSE)
+    cli::cli_abort("{.arg threshold} is required")
   }
   
   if (is.null(columns)) {
@@ -255,21 +254,16 @@ assemble_record_text <- function(data, id, columns = character(0), sep = " ") {
     columns <- names(data)[is_char_like & names(data) != id]
     
     if (length(columns) == 0) {
-      stop(
-        "No character-like columns found for embedding. ",
-        "Specify columns explicitly or ensure data contains text columns.",
-        call. = FALSE
-      )
+      cli::cli_abort(c(
+        "No character-like columns found for embedding",
+        "i" = "Specify {.arg columns} explicitly or ensure data contains text columns"
+      ))
     }
   } else {
     # Validate specified columns exist
     missing_cols <- setdiff(columns, names(data))
     if (length(missing_cols) > 0) {
-      stop(
-        "Columns not found in data: ",
-        paste(missing_cols, collapse = ", "),
-        call. = FALSE
-      )
+      cli::cli_abort("Columns not found in data: {.field {missing_cols}}")
     }
   }
   

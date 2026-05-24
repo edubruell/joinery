@@ -154,7 +154,7 @@ test_that("import_labels errors on invalid equal values", {
   edited <- fread(tmp, na.strings = c("", "NA"))
   edited[1L, equal := 7L]
   fwrite(edited, tmp)
-  expect_error(import_labels(tmp), "0, 1, or empty")
+  expect_error(import_labels(tmp), "0.*1.*empty")
 })
 
 test_that("import_labels errors when a block has no resolvable default", {
@@ -165,7 +165,7 @@ test_that("import_labels errors when a block has no resolvable default", {
   # blank out the header row defaults for match_id == 1, plus its target
   edited[match_id == 1L, equal := NA_integer_]
   fwrite(edited, tmp)
-  expect_error(import_labels(tmp), "no `equal`")
+  expect_error(import_labels(tmp), "no equal value")
 })
 
 

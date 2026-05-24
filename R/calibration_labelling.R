@@ -49,19 +49,12 @@
 .labelling_is_header <- function(dt, match_type) {
   if (match_type == "candidates") {
     if (!"source" %in% names(dt)) {
-      stop(
-        "Candidate matches CSV must have a `source` column ",
-        "(values 'base' / 'target').",
-        call. = FALSE
-      )
+      cli::cli_abort("Candidate matches CSV must have a {.field source} column (values {.val base}/{.val target})")
     }
     dt[["source"]] == "base"
   } else {
     if (!"rank" %in% names(dt)) {
-      stop(
-        "Duplicate matches CSV must have a `rank` column.",
-        call. = FALSE
-      )
+      cli::cli_abort("Duplicate matches CSV must have a {.field rank} column")
     }
     dt[["rank"]] == 1L
   }
@@ -111,10 +104,7 @@ export_for_labelling <- function(sample, file, default_label = 1L) {
 
   rows <- .labelling_extract_rows(sample)
   if (nrow(rows) == 0L) {
-    stop(
-      "Cannot export an empty sample for labelling - at least one match row required.",
-      call. = FALSE
-    )
+    cli::cli_abort("Cannot export an empty sample for labelling — at least one match row required")
   }
   match_type <- .detect_match_type(rows)
 
@@ -154,31 +144,24 @@ import_labels <- function(file) {
     stop("`file` must be a non-empty character scalar path.", call. = FALSE)
   }
   if (!file.exists(file)) {
-    stop(sprintf("File does not exist: %s", file), call. = FALSE)
+    cli::cli_abort("File does not exist: {.file {file}}")
   }
 
   dt <- data.table::fread(file, na.strings = c("", "NA"))
   if (nrow(dt) == 0L) {
-    stop("Imported labels file is empty.", call. = FALSE)
+    cli::cli_abort("Imported labels file is empty")
   }
   if (!"equal" %in% names(dt)) {
-    stop(
-      "Imported labels file must contain an `equal` column ",
-      "(produced by export_for_labelling()).",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "Imported labels file must contain an {.field equal} column",
+      "i" = "It should be produced by {.fn export_for_labelling}"
+    ))
   }
 
   match_type <- .detect_match_type(dt)
   block_col  <- .labelling_block_id_col(match_type)
   if (!block_col %in% names(dt)) {
-    stop(
-      sprintf(
-        "Imported labels file missing block key column `%s` required for %s matches.",
-        block_col, match_type
-      ),
-      call. = FALSE
-    )
+    cli::cli_abort("Imported labels file missing block key column {.field {block_col}} required for {match_type} matches")
   }
   is_header <- .labelling_is_header(dt, match_type)
 
@@ -186,14 +169,13 @@ import_labels <- function(file) {
   raw_equal <- dt[["equal"]]
   equal_int <- suppressWarnings(as.integer(raw_equal))
   if (any(!is.na(raw_equal) & is.na(equal_int))) {
-    stop(
-      "Column `equal` must be coercible to integer 0L / 1L (or empty for ",
-      "block-default).",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "Column {.field equal} must be coercible to integer 0L/1L",
+      "i" = "Empty cells are allowed for block-default inheritance"
+    ))
   }
   if (any(!is.na(equal_int) & !(equal_int %in% c(0L, 1L)))) {
-    stop("Column `equal` may only contain 0, 1, or empty values.", call. = FALSE)
+    cli::cli_abort("Column {.field equal} may only contain {.val 0}, {.val 1}, or empty values")
   }
   dt[, equal := equal_int]
 
@@ -213,14 +195,10 @@ import_labels <- function(file) {
   unresolved <- is.na(dt$equal)
   if (any(unresolved)) {
     n_unresolved <- sum(unresolved)
-    stop(
-      sprintf(
-        "%d row(s) have no `equal` value and no block default to inherit. ",
-        n_unresolved
-      ),
-      "Either fill `equal` on those rows or on their block headers.",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "{n_unresolved} row(s) have no {.field equal} value and no block default to inherit",
+      "i" = "Fill {.field equal} on those rows or on their block headers"
+    ))
   }
 
   dt[, .block_default := NULL]

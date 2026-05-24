@@ -43,8 +43,7 @@
     idx <- which(matches[["duplicate_group"]] == match_id)
     grp <- matches[idx, ]
     if (nrow(grp) < 1L) {
-      stop(sprintf("match_id %d not found in `matches` (duplicate_group column).",
-                   match_id), call. = FALSE)
+      cli::cli_abort("match_id {.val {match_id}} not found in {.arg matches} ({.field duplicate_group} column)")
     }
     grp_ord <- grp[order(grp[["rank"]]), ]
     lhs_id  <- as.character(grp_ord[["id"]][1L])
@@ -54,7 +53,7 @@
     idx <- which(matches[["match_id"]] == match_id)
     grp <- matches[idx, ]
     if (nrow(grp) == 0L) {
-      stop(sprintf("match_id %d not found in `matches`.", match_id), call. = FALSE)
+      cli::cli_abort("match_id {.val {match_id}} not found in {.arg matches}")
     }
     lhs_id <- as.character(grp[["id"]][grp[["source"]] == "base"][1L])
     rhs_id <- as.character(grp[["id"]][grp[["source"]] == "target"][1L])
@@ -116,11 +115,10 @@ method(
               match_id = 1L, ...) {
 
   if (missing(base) || is.null(base)) {
-    stop("`base` is required for the ergonomic form of explain_match().",
-         call. = FALSE)
+    cli::cli_abort("{.arg base} is required for the ergonomic form of {.fn explain_match}")
   }
   if (missing(id) || is.null(id)) {
-    stop("`id` (name of the ID column in `base`) is required.", call. = FALSE)
+    cli::cli_abort("{.arg id} (name of the ID column in {.arg base}) is required")
   }
 
   base_dt   <- data.table::as.data.table(base)
@@ -147,7 +145,7 @@ method(
 
   } else { # candidates
     if (is.null(target_dt)) {
-      stop("`target` is required for explaining candidate matches.", call. = FALSE)
+      cli::cli_abort("{.arg target} is required for explaining candidate matches")
     }
     base_tokens   <- prepare_search_data(base_dt,   id,        x)
     base_tokens[, side := "base"]
@@ -175,10 +173,7 @@ method(
   }
 
   if (nrow(lhs_tokens) == 0L || nrow(rhs_tokens) == 0L) {
-    stop(sprintf(
-      "No tokens found for pair (%s, %s). Check that `base`/`target` contain these IDs.",
-      lhs_id, rhs_id
-    ), call. = FALSE)
+    cli::cli_abort("No tokens found for pair ({.val {lhs_id}}, {.val {rhs_id}}). Check that {.arg base}/{.arg target} contain these IDs")
   }
 
   # ---- Attribution ---------------------------------------------------------
@@ -209,16 +204,13 @@ method(
 ) <- function(matches, x, id, strategy, match_id = 1L, ...) {
 
   if (missing(id) || is.null(id)) {
-    stop("`id` (name of the ID column in the tokens table `x`) is required.",
-         call. = FALSE)
+    cli::cli_abort("{.arg id} (name of the ID column in the tokens table {.arg x}) is required")
   }
   if (missing(strategy) || is.null(strategy)) {
-    stop("`strategy` is required for the power-user form of explain_match().",
-         call. = FALSE)
+    cli::cli_abort("{.arg strategy} is required for the power-user form of {.fn explain_match}")
   }
   if (!id %in% names(x)) {
-    stop(sprintf("ID column '%s' not found in the tokens table `x`.", id),
-         call. = FALSE)
+    cli::cli_abort("ID column {.field {id}} not found in the tokens table {.arg x}")
   }
 
   match_id  <- as.integer(match_id)
@@ -232,10 +224,7 @@ method(
   rhs_tokens <- x[.id_vals == rhs_id, ]
 
   if (nrow(lhs_tokens) == 0L || nrow(rhs_tokens) == 0L) {
-    stop(sprintf(
-      "No tokens found for pair (%s, %s) in the provided tokens table.",
-      lhs_id, rhs_id
-    ), call. = FALSE)
+    cli::cli_abort("No tokens found for pair ({.val {lhs_id}}, {.val {rhs_id}}) in the provided tokens table")
   }
 
   weights     <- .resolve_weights_explain(strategy)

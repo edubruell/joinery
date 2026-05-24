@@ -22,14 +22,15 @@
   ))
 
   if (!(is_parsnip_spec || is_parsnip_fit || is_workflow_obj)) {
-    stop(
-      "`model` must be \"logistic\", a parsnip model spec, ",
-      "a fitted parsnip model, or a (fitted or unfitted) workflow.",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "{.arg model} must be {.val \"logistic\"}, a parsnip model spec, a fitted parsnip model, or a (fitted or unfitted) workflow"
+    ))
   }
   if (!requireNamespace("parsnip", quietly = TRUE)) {
-    stop("Tidymodels path requires the `parsnip` package.", call. = FALSE)
+    cli::cli_abort(c(
+      "{.fn fit_filter} with tidymodels requires the {.pkg parsnip} package",
+      "i" = "Install it via {.run install.packages(\"parsnip\")}"
+    ))
   }
 
   ft  <- data.table::as.data.table(features@features)
@@ -51,8 +52,10 @@
   joined <- merge(ft, lab, by = c("match_id", "found"),
                   all.x = FALSE, all.y = FALSE, sort = FALSE)
   if (nrow(joined) == 0L) {
-    stop("No features rows matched any label row on (match_id, found).",
-         call. = FALSE)
+    cli::cli_abort(c(
+      "No features rows matched any label row on (match_id, found)",
+      "i" = "Make sure {.arg labels} came from the same matches table"
+    ))
   }
 
   predictors <- .feature_predictors(joined)
@@ -71,8 +74,10 @@
     model
   } else if (is_workflow_obj) {
     if (!requireNamespace("workflows", quietly = TRUE)) {
-      stop("Workflow fitting requires the `workflows` package.",
-           call. = FALSE)
+      cli::cli_abort(c(
+        "Workflow fitting requires the {.pkg workflows} package",
+        "i" = "Install it via {.run install.packages(\"workflows\")}"
+      ))
     }
     generics::fit(model, data = df)
   } else {
@@ -84,8 +89,10 @@
   training_prob <- {
     pr <- stats::predict(fit, new_data = df, type = "prob")
     if (!".pred_1" %in% names(pr)) {
-      stop("parsnip predict() did not return a `.pred_1` column.",
-           call. = FALSE)
+      cli::cli_abort(c(
+        "{.fn parsnip::predict}() did not return a {.field .pred_1} column",
+        "i" = "{.cls Filter_Model} was not trained with the joinery convention"
+      ))
     }
     as.numeric(pr[[".pred_1"]])
   }

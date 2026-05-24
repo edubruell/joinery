@@ -9,14 +9,14 @@ fake_model <- structure(list(model = "fake"), class = "ollama_model")
 test_that("embedding_strategy() errors when embedding_model is missing", {
   expect_error(
     embedding_strategy(threshold = 0.5),
-    "embedding_model is required"
+    "embedding_model.*required"
   )
 })
 
 test_that("embedding_strategy() errors when threshold is missing", {
   expect_error(
     embedding_strategy(embedding_model = fake_model),
-    "threshold is required"
+    "threshold.*required"
   )
 })
 

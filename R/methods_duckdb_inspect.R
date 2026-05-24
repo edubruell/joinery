@@ -27,13 +27,13 @@ method(
   )$name
   
   if (!id %in% data_cols) {
-    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+    cli::cli_abort("ID column {.field {id}} not found in data")
   }
   if (!column %in% data_cols) {
-    stop(sprintf("Column '%s' not found in data", column), call. = FALSE)
+    cli::cli_abort("Column {.field {column}} not found in data")
   }
   if (!column %in% names(strategy@preparers)) {
-    stop(sprintf("Column '%s' not found in strategy preparers", column), call. = FALSE)
+    cli::cli_abort("Column {.field {column}} not found in strategy preparers")
   }
   
   # --- 1. Create single-column strategy for efficiency ---------------------

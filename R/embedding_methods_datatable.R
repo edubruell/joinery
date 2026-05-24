@@ -6,14 +6,16 @@ method(
 ) <- function(data, id, strategy) {
 
   if (!requireNamespace("tidyllm", quietly = TRUE)) {
-    stop("Package 'tidyllm' is required for embedding-based matching. ",
-         "Install it with install.packages('tidyllm').", call. = FALSE)
+    cli::cli_abort(c(
+      "{.fn compute_embeddings} requires the {.pkg tidyllm} package",
+      "i" = "Install it via {.run install.packages(\"tidyllm\")}"
+    ))
   }
 
   dt <- data.table::copy(data)
 
   if (!id %in% names(dt)) {
-    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+    cli::cli_abort("ID column {.field {id}} not found in data")
   }
 
   # Validate blocking columns if present
@@ -21,11 +23,7 @@ method(
   if (!is.null(block_by)) {
     missing_cols <- setdiff(block_by, names(dt))
     if (length(missing_cols) > 0) {
-      stop(
-        "Blocking columns not found in data: ",
-        paste(missing_cols, collapse = ", "),
-        call. = FALSE
-      )
+      cli::cli_abort("Blocking columns not found in data: {.field {missing_cols}}")
     }
   }
 
@@ -113,10 +111,10 @@ method(
 
   # Validate columns
   if (!all(c("id", "embedding") %in% names(base_dt))) {
-    stop("base_embeddings must have columns: id, embedding", call. = FALSE)
+    cli::cli_abort("base_embeddings must have columns: {.field id}, {.field embedding}")
   }
   if (!all(c("id", "embedding") %in% names(target_dt))) {
-    stop("target_embeddings must have columns: id, embedding", call. = FALSE)
+    cli::cli_abort("target_embeddings must have columns: {.field id}, {.field embedding}")
   }
 
   block_by <- strategy@block_by
@@ -128,18 +126,10 @@ method(
     missing_target <- setdiff(block_by, names(target_dt))
 
     if (length(missing_base) > 0) {
-      stop(
-        "Blocking columns missing from base_embeddings: ",
-        paste(missing_base, collapse = ", "),
-        call. = FALSE
-      )
+      cli::cli_abort("Blocking columns missing from base_embeddings: {.field {missing_base}}")
     }
     if (length(missing_target) > 0) {
-      stop(
-        "Blocking columns missing from target_embeddings: ",
-        paste(missing_target, collapse = ", "),
-        call. = FALSE
-      )
+      cli::cli_abort("Blocking columns missing from target_embeddings: {.field {missing_target}}")
     }
 
     # Blocked join: only compare records with matching block values
@@ -177,7 +167,7 @@ method(
 
   # Validate no unsupported arguments
   if (!is.null(weights)) {
-    stop("Embedding strategies do not support weights", call. = FALSE)
+    cli::cli_abort("Embedding strategies do not support weights")
   }
 
   thr <- threshold %||% strategy@threshold
@@ -283,7 +273,10 @@ method(
 
   # Find connected components using igraph
   if (!requireNamespace("igraph", quietly = TRUE)) {
-    stop("Package 'igraph' required for duplicate detection", call. = FALSE)
+    cli::cli_abort(c(
+      "{.fn detect_duplicates} requires the {.pkg igraph} package",
+      "i" = "Install it via {.run install.packages(\"igraph\")}"
+    ))
   }
 
   g <- igraph::graph_from_data_frame(

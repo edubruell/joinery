@@ -36,18 +36,18 @@
 .collapse_pair_labels <- function(labels) {
   dt <- data.table::as.data.table(labels)
   if (!"equal" %in% names(dt)) {
-    stop("`labels` must contain an `equal` column (0L/1L).", call. = FALSE)
+    cli::cli_abort("{.arg labels} must contain an {.field equal} column (0L/1L)")
   }
   mt <- .detect_match_type(dt)
   if (mt == "candidates") {
     if (!"source" %in% names(dt)) {
-      stop("Candidate labels must have a `source` column.", call. = FALSE)
+      cli::cli_abort("Candidate labels must have a {.field source} column")
     }
     out <- dt[dt$source == "target",
               .(match_id, found = id, equal = as.integer(equal))]
   } else {
     if (!"rank" %in% names(dt)) {
-      stop("Duplicate labels must have a `rank` column.", call. = FALSE)
+      cli::cli_abort("Duplicate labels must have a {.field rank} column")
     }
     out <- dt[dt$rank >= 2L,
               .(match_id = duplicate_group,
@@ -140,8 +140,7 @@
                              ...) {
 
   if (!S7::S7_inherits(features, Match_Features)) {
-    stop("`features` must be a Match_Features object (from match_features()).",
-         call. = FALSE)
+    cli::cli_abort("{.arg features} must be a {.cls Match_Features} object (from {.fn match_features})")
   }
   if (!identical(model, "logistic")) {
     # tidymodels path: accept a parsnip model spec, a fitted parsnip object,
@@ -158,12 +157,12 @@
 
   ft <- data.table::as.data.table(features@features)
   if (nrow(ft) == 0L) {
-    stop("`features` contains no rows.", call. = FALSE)
+    cli::cli_abort("{.arg features} contains no rows")
   }
 
   lab <- .collapse_pair_labels(labels)
   if (nrow(lab) == 0L) {
-    stop("No labelled pair rows to fit on.", call. = FALSE)
+    cli::cli_abort("No labelled pair rows to fit on")
   }
 
   ft[, searched := as.character(searched)]
@@ -188,27 +187,25 @@
     all.x = FALSE, all.y = FALSE, sort = FALSE
   )
   if (nrow(joined) == 0L) {
-    stop(
-      "No features rows matched any label row on (match_id, found). ",
-      "Make sure `labels` came from the same matches table.",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "No features rows matched any label row on (match_id, found)",
+      "i" = "Make sure {.arg labels} came from the same matches table"
+    ))
   }
 
   predictors <- .feature_predictors(joined)
   if (length(predictors) == 0L) {
-    stop("No numeric predictor columns found in `features`.", call. = FALSE)
+    cli::cli_abort("No numeric predictor columns found in {.arg features}")
   }
 
   X <- .build_design(joined, predictors, na_fill = na_fill)
   y <- as.integer(joined$equal)
 
   if (length(unique(y)) < 2L) {
-    stop(
-      "Labels contain only one class -- cannot fit a binary classifier. ",
-      "Need both equal == 0L and equal == 1L rows.",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "Labels contain only one class — cannot fit a binary classifier",
+      "i" = "Need both {.field equal} == 0L and {.field equal} == 1L rows"
+    ))
   }
 
   # Drop predictors that are constant in the training data -- glm would
@@ -221,7 +218,7 @@
   }, logical(1L))
   fit_predictors <- predictors[keep]
   if (length(fit_predictors) == 0L) {
-    stop("All predictors are constant -- cannot fit a model.", call. = FALSE)
+    cli::cli_abort("All predictors are constant — cannot fit a model")
   }
 
   weights <- NULL
@@ -229,7 +226,7 @@
     p1 <- mean(y == 1L)
     p0 <- 1 - p1
     if (p1 == 0 || p0 == 0) {
-      stop("Class-weighted fit requires both classes present.", call. = FALSE)
+      cli::cli_abort("Class-weighted fit requires both classes present")
     }
     weights <- ifelse(y == 1L, 1 / (2 * p1), 1 / (2 * p0))
   }
@@ -282,7 +279,7 @@
 #' @noRd
 .predict_filter <- function(features_dt, filter_model) {
   if (!S7::S7_inherits(filter_model, Filter_Model)) {
-    stop("`filter_model` must be a Filter_Model object.", call. = FALSE)
+    cli::cli_abort("{.arg filter_model} must be a {.cls Filter_Model} object")
   }
 
   predictors <- filter_model@predictors
@@ -297,8 +294,10 @@
 
   if (filter_model@backend %in% c("parsnip", "workflow")) {
     if (!requireNamespace("parsnip", quietly = TRUE)) {
-      stop("Filter_Model uses tidymodels but `parsnip` is not installed.",
-           call. = FALSE)
+      cli::cli_abort(c(
+        "{.fn apply_filter} with tidymodels requires the {.pkg parsnip} package",
+        "i" = "Install it via {.run install.packages(\"parsnip\")}"
+      ))
     }
     pr <- stats::predict(filter_model@fit, new_data = newdf,
                          type = "prob")
@@ -306,9 +305,10 @@
     # class is `.pred_1` (training fixes `equal` to `factor(..., levels =
     # c(0L, 1L))`, so `1` is always the second level).
     if (!".pred_1" %in% names(pr)) {
-      stop("parsnip predict() did not return a `.pred_1` column; ",
-           "Filter_Model was not trained with the joinery convention.",
-           call. = FALSE)
+      cli::cli_abort(c(
+        "{.fn parsnip::predict}() did not return a {.field .pred_1} column",
+        "i" = "{.cls Filter_Model} was not trained with the joinery convention"
+      ))
     }
     return(as.numeric(pr[[".pred_1"]]))
   }
@@ -341,7 +341,7 @@
                                ...) {
 
   if (!S7::S7_inherits(features, Match_Features)) {
-    stop("`features` must be a Match_Features object.", call. = FALSE)
+    cli::cli_abort("{.arg features} must be a {.cls Match_Features} object")
   }
 
   ft <- data.table::copy(data.table::as.data.table(features@features))
@@ -371,7 +371,7 @@
   }
   thr <- as.numeric(thr)
   if (!is.finite(thr) || thr < 0 || thr > 1) {
-    stop("`threshold` must be a finite probability in [0, 1].", call. = FALSE)
+    cli::cli_abort("{.arg threshold} must be a finite probability in [0, 1]")
   }
 
   ft[, tp_prob := prob]

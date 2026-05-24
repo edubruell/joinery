@@ -17,11 +17,11 @@ method(
   dt <- data.table::copy(data)
 
   if (!id %in% names(dt)) {
-    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+    cli::cli_abort("ID column {.field {id}} not found in data")
   }
 
   if (!"id" %in% names(matches)) {
-    stop("`matches` must contain a column named 'id'", call. = FALSE)
+    cli::cli_abort("{.arg matches} must contain a column named {.field id}")
   }
 
   # normalize types

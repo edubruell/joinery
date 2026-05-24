@@ -26,19 +26,19 @@ method(
     con,
     paste0("PRAGMA table_info(", data_tbl, ");")
   )$name
-  
+
   if (!id %in% data_cols) {
-    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+    cli::cli_abort("ID column {.field {id}} not found in data")
   }
-  
+
   # Validate: matches table has an 'id' column
   matches_cols <- DBI::dbGetQuery(
     con,
     paste0("PRAGMA table_info(", matches_tbl, ");")
   )$name
-  
+
   if (!"id" %in% matches_cols) {
-    stop("`matches` must contain a column named 'id'", call. = FALSE)
+    cli::cli_abort("{.arg matches} must contain a column named {.field id}")
   }
   
   # Generate output table name

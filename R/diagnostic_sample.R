@@ -78,11 +78,10 @@
 #' @noRd
 .sample_ambiguous <- function(dt, n, match_type) {
   if (match_type == "duplicates") {
-    stop(
-      "`mode = 'ambiguous'` is not applicable to duplicate match tables.\n",
-      "Ambiguity is only meaningful for candidate matches (from `search_candidates()`).",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "{.arg mode} {.val ambiguous} is not applicable to duplicate match tables",
+      "i" = "Ambiguity is only meaningful for candidate matches (from {.fn search_candidates})"
+    ))
   }
   base_rows <- dt[dt[["source"]] == "base"]
   n_cands   <- base_rows[, .(n_candidates = data.table::uniqueN(match_id)), by = "id"]
@@ -152,13 +151,7 @@
   }
   missing_cols <- setdiff(stratify_by, cols)
   if (length(missing_cols)) {
-    stop(
-      sprintf(
-        "`stratify_by` references columns not in the matches table: %s",
-        paste0("\"", missing_cols, "\"", collapse = ", ")
-      ),
-      call. = FALSE
-    )
+    cli::cli_abort("{.arg stratify_by} references columns not in the matches table: {.field {missing_cols}}")
   }
   stratify_by
 }
@@ -204,12 +197,10 @@ method(
   }
 
   if (mode == "borderline" && is.null(threshold)) {
-    stop(
-      "`mode = 'borderline'` requires a `threshold` argument.\n",
-      "Supply `threshold = <numeric>` (the strategy threshold used when ",
-      "producing this match table).",
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "{.arg mode} {.val borderline} requires a {.arg threshold} argument",
+      "i" = "Supply {.arg threshold = <numeric>} (the strategy threshold used when producing this match table)"
+    ))
   }
 
   # If we stratify with random mode, set seed once at the outer level so

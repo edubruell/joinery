@@ -82,7 +82,7 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
       "SUM(rarity + ", alpha, ") OVER (PARTITION BY ", partition_by, ")"
     )
   } else {
-    stop("Unknown smoothing method: ", sm@method, call. = FALSE)
+    cli::cli_abort("Unknown smoothing method: {.val {sm@method}}")
   }
   
   sql_enriched <- paste0(
@@ -302,7 +302,7 @@ method(
         ")) * LOG(1.0 + N / df)"
       ),
       bm25 = "LOG((N - df + 0.5) / (df + 0.5))",
-      stop("Unknown rarity method: ", rarity_method)
+      cli::cli_abort("Unknown rarity method: {.val {rarity_method}}")
     )
 
     # Two-level SQL: inner query computes freq/df/N as window functions; outer

@@ -37,7 +37,7 @@
 rarity_histogram <- function(x, ...) {
   crs <- x@column_rarity_stats
   if (is.null(crs) || nrow(crs) == 0L)
-    stop("`column_rarity_stats` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field column_rarity_stats} is NULL or empty")
   dt <- data.table::as.data.table(crs)
   # flip=TRUE swaps axes; tinyplot applies xlab to vertical, ylab to horizontal
   .tinyplot_call(
@@ -60,7 +60,7 @@ rarity_histogram <- function(x, ...) {
 token_frequency_plot <- function(x, ...) {
   cts <- x@column_token_stats
   if (is.null(cts) || nrow(cts) == 0L)
-    stop("`column_token_stats` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field column_token_stats} is NULL or empty")
   dt <- data.table::as.data.table(cts)
   .tinyplot_call(
     call_args = list(avg_tokens_per_record ~ column, data = dt,
@@ -82,10 +82,7 @@ token_frequency_plot <- function(x, ...) {
 block_size_plot <- function(x, ...) {
   bs <- x@block_summary
   if (is.null(bs))
-    stop(
-      "No `block_by` was set on the strategy; `block_summary` is NULL.",
-      call. = FALSE
-    )
+    cli::cli_abort("No {.arg block_by} was set on the strategy; {.field block_summary} is NULL")
   dt <- data.table::as.data.table(bs$distribution)
   .tinyplot_call(
     call_args = list(n_records ~ block_key, data = dt,
@@ -108,17 +105,14 @@ block_size_plot <- function(x, ...) {
 vocab_overlap_plot <- function(x, ...) {
   vo <- attr(x, "vocab_overlap")
   if (is.null(vo) || length(vo) == 0L)
-    stop(
-      "No vocab overlap computed. Supply `target` to `audit_strategy()`.",
-      call. = FALSE
-    )
+    cli::cli_abort("No vocab overlap computed. Supply {.arg target} to {.fn audit_strategy}")
   dt <- data.table::data.table(
     column  = names(vo),
     overlap = unname(unlist(vo))
   )
   dt <- dt[!is.na(overlap)]
   if (nrow(dt) == 0L)
-    stop("All vocab overlap values are NA.", call. = FALSE)
+    cli::cli_abort("All vocab overlap values are NA")
   .tinyplot_call(
     call_args = list(overlap ~ column, data = dt,
                      type = tinyplot::type_barplot(), flip = TRUE),
@@ -151,11 +145,11 @@ similarity_histogram <- function(x,
                                  ...) {
   ss <- x@similarity_sample
   if (is.null(ss) || nrow(ss) == 0L)
-    stop("`similarity_sample` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field similarity_sample} is NULL or empty")
   sims <- ss$similarity
   sims <- sims[is.finite(sims)]
   if (length(sims) == 0L)
-    stop("All similarity values are NA/non-finite.", call. = FALSE)
+    cli::cli_abort("All similarity values are NA/non-finite")
 
   breaks <- seq(min(sims), max(sims), length.out = bins + 1L)
   if (length(unique(breaks)) < 2L) {
@@ -199,7 +193,7 @@ norm_plot <- function(x, ...) {
   ns <- x@norm_summary
   if (length(ns) == 0L || is.null(ns$quantiles) ||
       all(is.na(ns$quantiles))) {
-    stop("`norm_summary` is empty or all-NA.", call. = FALSE)
+    cli::cli_abort("{.field norm_summary} is empty or all-NA")
   }
   q <- ns$quantiles
   dt <- data.table::data.table(
@@ -292,10 +286,7 @@ coverage_plot <- function(x, ...) {
   vals <- c(base = cov$base_coverage, target = cov$target_coverage)
   vals <- vals[!is.na(vals)]
   if (length(vals) == 0L)
-    stop(
-      "No coverage data available (both base and target coverage are NA).",
-      call. = FALSE
-    )
+    cli::cli_abort("No coverage data available (both base and target coverage are NA)")
   dt <- data.table::data.table(side = names(vals), coverage = unname(vals))
   .tinyplot_call(
     call_args = list(coverage ~ side, data = dt,
@@ -326,14 +317,10 @@ coverage_plot <- function(x, ...) {
 #' @noRd
 cluster_size_plot <- function(x, ...) {
   if (x@match_type != "duplicates")
-    stop(
-      "`cluster_size_plot()` requires `match_type == \"duplicates\"`. ",
-      "Got: \"", x@match_type, "\".",
-      call. = FALSE
-    )
+    cli::cli_abort("{.fn cluster_size_plot} requires {.code match_type == \"duplicates\"}. Got: {.val {x@match_type}}")
   cd <- x@cluster_dist
   if (is.null(cd) || nrow(cd) == 0L)
-    stop("`cluster_dist` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field cluster_dist} is NULL or empty")
   dt <- data.table::as.data.table(cd)
   .tinyplot_call(
     call_args = list(n_clusters ~ cluster_size, data = dt,
@@ -355,14 +342,10 @@ cluster_size_plot <- function(x, ...) {
 #' @noRd
 ambiguity_plot <- function(x, ...) {
   if (x@match_type != "candidates")
-    stop(
-      "`ambiguity_plot()` requires `match_type == \"candidates\"`. ",
-      "Got: \"", x@match_type, "\".",
-      call. = FALSE
-    )
+    cli::cli_abort("{.fn ambiguity_plot} requires {.code match_type == \"candidates\"}. Got: {.val {x@match_type}}")
   ad <- x@ambiguity_dist
   if (is.null(ad) || nrow(ad) == 0L)
-    stop("`ambiguity_dist` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field ambiguity_dist} is NULL or empty")
   dt <- data.table::as.data.table(ad)
   .tinyplot_call(
     call_args = list(n_records ~ candidates_per_record, data = dt,
@@ -384,14 +367,10 @@ ambiguity_plot <- function(x, ...) {
 #' @noRd
 top_gap_density <- function(x, ...) {
   if (x@match_type != "candidates")
-    stop(
-      "`top_gap_density()` requires `match_type == \"candidates\"`. ",
-      "Got: \"", x@match_type, "\".",
-      call. = FALSE
-    )
+    cli::cli_abort("{.fn top_gap_density} requires {.code match_type == \"candidates\"}. Got: {.val {x@match_type}}")
   tgd <- x@top_gap_dist
   if (is.null(tgd) || nrow(tgd) == 0L)
-    stop("`top_gap_dist` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field top_gap_dist} is NULL or empty")
   dt <- data.table::copy(tgd)
   dt[, bin_mid := round((bin_lower + bin_upper) / 2, 3L)]
   .tinyplot_call(
@@ -418,7 +397,7 @@ top_gap_density <- function(x, ...) {
 contribution_plot <- function(x, ...) {
   pcc <- x@per_column_contrib
   if (is.null(pcc) || nrow(pcc) == 0L)
-    stop("`per_column_contrib` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field per_column_contrib} is NULL or empty")
   dt <- data.table::as.data.table(pcc)
   .tinyplot_call(
     call_args = list(contribution ~ src_column, data = dt,
@@ -440,7 +419,7 @@ contribution_plot <- function(x, ...) {
 token_contribution_plot <- function(x, ...) {
   st <- x@shared_tokens
   if (is.null(st) || nrow(st) == 0L)
-    stop("`shared_tokens` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field shared_tokens} is NULL or empty")
   dt <- data.table::copy(data.table::as.data.table(st))
   dt[, token_label := paste0(src_column, ": ", token)]
   data.table::setorder(dt, src_column, -contribution)
@@ -473,7 +452,7 @@ token_contribution_plot <- function(x, ...) {
 stage_coverage_plot <- function(x, ...) {
   mc <- x@marginal_coverage
   if (is.null(mc) || nrow(mc) == 0L)
-    stop("`marginal_coverage` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field marginal_coverage} is NULL or empty")
   mc  <- data.table::copy(mc)
   n   <- nrow(mc)
   mc[, stage_idx := seq_len(n)]
@@ -518,7 +497,7 @@ stage_coverage_plot <- function(x, ...) {
 stage_score_plot <- function(x, ...) {
   sds <- x@score_dist_by_stage
   if (is.null(sds) || nrow(sds) == 0L)
-    stop("`score_dist_by_stage` is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field score_dist_by_stage} is NULL or empty")
   sds <- data.table::copy(sds)
   sds[, bin_mid := round((bin_lower + bin_upper) / 2, 3L)]
   .tinyplot_call(
@@ -555,9 +534,9 @@ plot.Stage_Comparison <- function(x, ...) stage_coverage_plot(x, ...)
 plot.Match_Sample <- function(x, ...) {
   rows <- x@rows
   if (is.null(rows) || nrow(rows) == 0L)
-    stop("`rows` slot is NULL or empty.", call. = FALSE)
+    cli::cli_abort("{.field rows} slot is NULL or empty")
   if (!"score" %in% names(rows))
-    stop("`rows` does not contain a `score` column.", call. = FALSE)
+    cli::cli_abort("{.field rows} does not contain a {.field score} column")
   dt <- data.table::data.table(score = rows$score)
   .tinyplot_call(
     call_args = list(~score, data = dt,

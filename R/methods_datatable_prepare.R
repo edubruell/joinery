@@ -22,7 +22,7 @@ method(
   dt <- data.table::copy(data)
 
   if (!id %in% names(dt)) {
-    stop(sprintf("ID column '%s' not found in data", id), call. = FALSE)
+    cli::cli_abort("ID column {.field {id}} not found in data")
   }
 
   .check_reserved_names(names(dt), id)
@@ -87,7 +87,7 @@ method(
 
     col <- prep@column
     if (!col %in% names(dt)) {
-      stop(sprintf("Column '%s' not found in data", col), call. = FALSE)
+      cli::cli_abort("Column {.field {col}} not found in data")
     }
 
     tokens <- Reduce(
@@ -119,8 +119,7 @@ method(
   if (!is.null(block_by)) {
     missing <- setdiff(block_by, names(dt))
     if (length(missing) > 0) {
-      stop("Blocking columns not found: ",
-           paste(missing, collapse = ", "), call. = FALSE)
+      cli::cli_abort("Blocking columns not found: {.field {missing}}")
     }
 
     block_dt <- dt[, c(id, block_by), with = FALSE]
@@ -151,7 +150,7 @@ method(
   if (!is.null(block_by)) {
     missing <- setdiff(block_by, names(dt))
     if (length(missing) > 0) {
-      stop("Block columns missing: ", paste(missing, collapse = ", "))
+      cli::cli_abort("Block columns missing: {.field {missing}}")
     }
   }
 
@@ -181,7 +180,7 @@ method(
       },
       "smoothed_inverse_freq" = 1 / (f + 1),
       "bm25"         = log((n - d + 0.5) / (d + 0.5)),
-      stop("Unknown rarity method: ", rarity_method)
+      cli::cli_abort("Unknown rarity method: {.val {rarity_method}}")
     )
   }]
 
@@ -209,7 +208,7 @@ method(
     names(weights)
   )
   if (length(missing_w) > 0) {
-    stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
+    cli::cli_abort("Weights missing for columns: {.field {missing_w}}")
   }
 
   lhs_tokens[, weight := weights[src_column]]
@@ -314,7 +313,7 @@ method(
     names(weights)
   )
   if (length(missing_w) > 0) {
-    stop("Weights missing for columns: ", paste(missing_w, collapse = ", "))
+    cli::cli_abort("Weights missing for columns: {.field {missing_w}}")
   }
 
   # Weights
