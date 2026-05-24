@@ -43,11 +43,11 @@
   }
   if (is.null(top_n$default)) top_n$default <- 5L
 
-  out <- vapply(columns, function(col) {
+  out <- map_int(columns, function(col) {
     v <- top_n[[col]]
     if (is.null(v)) v <- top_n$default
     as.integer(v)
-  }, integer(1L))
+  })
   names(out) <- columns
   out
 }
@@ -278,7 +278,7 @@
   emb <- compute_embeddings(subset, id_col, s_unnorm)
   # `compute_embeddings` returns id column named after `id_col`.
   id_vals <- as.character(emb[[id_col]])
-  norms <- vapply(emb$embedding, function(v) sqrt(sum(v * v)), numeric(1))
+  norms <- map_dbl(emb$embedding, function(v) sqrt(sum(v * v)))
   data.table::data.table(id = id_vals, norm = norms)
 }
 

@@ -649,9 +649,9 @@ method(format.Match_Explanation, Match_Explanation) <- function(x, ...) {
     for (i in seq_len(min(nrow(x@pair), 2L))) {
       label <- if (i == 1L) "  lhs" else "  rhs"
       vals  <- paste(
-        vapply(names(x@pair), function(col) {
+        map_chr(names(x@pair), function(col) {
           sprintf("%s=%s", col, as.character(x@pair[[col]][i]))
-        }, character(1L)),
+        }),
         collapse = "   "
       )
       push(label, "  ", vals)
@@ -895,9 +895,9 @@ method(print.Stage_Comparison, Stage_Comparison) <- function(x, ...) {
   }
   out <- data.table::copy(mc)
   stages <- names(x@per_stage_overview)
-  n_pairs <- vapply(stages, function(s) {
+  n_pairs <- map_int(stages, function(s) {
     as.integer(x@per_stage_overview[[s]]@n_records$n_pairs_or_groups %||% NA_integer_)
-  }, integer(1L))
+  })
   # only add n_pairs column if all stages present
   if (length(n_pairs) == nrow(out)) {
     out[, n_pairs_or_groups := n_pairs]

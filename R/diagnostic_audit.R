@@ -32,10 +32,10 @@
   cols <- names(strategy@preparers)
   n    <- nrow(data)
   stats::setNames(
-    vapply(cols, function(col) {
+    map_dbl(cols, function(col) {
       if (!col %in% names(data)) return(NA_real_)
       sum(is.na(data[[col]])) / n
-    }, numeric(1L)),
+    }),
     cols
   )
 }
@@ -124,7 +124,7 @@
     unique_ids[, block_key := as.character(unique_ids[[block_by]])]
   } else {
     # Multi-column block: paste columns together
-    cols_to_paste <- lapply(block_by, function(b) as.character(unique_ids[[b]]))
+    cols_to_paste <- map(block_by, function(b) as.character(unique_ids[[b]]))
     unique_ids[, block_key := do.call(paste, c(cols_to_paste, list(sep = ", ")))]
   }
 
@@ -157,12 +157,12 @@
 .compute_vocab_overlap <- function(base_tokens, target_tokens) {
   cols <- unique(base_tokens$src_column)
   stats::setNames(
-    vapply(cols, function(col) {
+    map_dbl(cols, function(col) {
       base_vocab   <- unique(base_tokens[src_column == col, token])
       target_vocab <- unique(target_tokens[src_column == col, token])
       if (length(base_vocab) == 0L) return(NA_real_)
       mean(base_vocab %in% target_vocab)
-    }, numeric(1L)),
+    }),
     cols
   )
 }
@@ -368,10 +368,9 @@ method(
       iqr       = NA_real_
     ))
   }
-  norms <- vapply(
+  norms <- map_dbl(
     embeddings$embedding,
-    function(v) sqrt(sum(as.numeric(v)^2)),
-    numeric(1L)
+    function(v) sqrt(sum(as.numeric(v)^2))
   )
   norms <- norms[is.finite(norms)]
   if (length(norms) == 0L) {
@@ -432,14 +431,14 @@ method(
   }
 
   emb <- embeddings$embedding
-  sims <- vapply(seq_along(i), function(k) {
+  sims <- map_dbl(seq_along(i), function(k) {
     v1 <- as.numeric(emb[[i[k]]])
     v2 <- as.numeric(emb[[j[k]]])
     n1 <- sqrt(sum(v1^2))
     n2 <- sqrt(sum(v2^2))
     if (n1 == 0 || n2 == 0) NA_real_
     else sum(v1 * v2) / (n1 * n2)
-  }, numeric(1L))
+  })
 
   ids <- as.character(embeddings[[id_col]])
   data.table::data.table(

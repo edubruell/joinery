@@ -83,7 +83,7 @@
   P <- sum(y_int == 1L)
   N <- sum(y_int == 0L)
 
-  out <- lapply(grid, function(t) {
+  out <- map(grid, function(t) {
     pred <- as.integer(prob >= t)
     tp <- sum(pred == 1L & y_int == 1L)
     fp <- sum(pred == 1L & y_int == 0L)

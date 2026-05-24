@@ -127,7 +127,7 @@ method(
     emb_vecs <- emb_tbl$embeddings
 
     if (strategy@normalize) {
-      emb_vecs <- lapply(emb_vecs, function(vec) {
+      emb_vecs <- map(emb_vecs, function(vec) {
         norm <- sqrt(sum(vec^2))
         if (norm > 0) vec / norm else vec
       })
@@ -143,9 +143,9 @@ method(
     cli::cli_alert_info("Embedding Batch {pnum(i)}/{pnum(total_batches)}")
 
     # Serialize vectors to JSON strings; DuckDB casts VARCHAR → FLOAT[dim]
-    emb_json <- vapply(emb_vecs, function(v) {
+    emb_json <- map_chr(emb_vecs, function(v) {
       paste0("[", paste(v, collapse = ","), "]")
-    }, character(1L))
+    })
 
     batch_df <- data.frame(
       id       = batch_ids,
@@ -328,9 +328,9 @@ method(
 
   build_select <- function(cols_available) {
     paste(
-      vapply(common_cols, function(col) {
+      map_chr(common_cols, function(col) {
         if (col %in% cols_available) col else paste0("NULL AS ", col)
-      }, character(1L)),
+      }),
       collapse = ", "
     )
   }

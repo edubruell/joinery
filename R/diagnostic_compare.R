@@ -42,7 +42,7 @@
   seen_base   <- character()
   seen_target <- character()
 
-  rows <- lapply(stages, function(s) {
+  rows <- map(stages, function(s) {
     sdt <- dt[stage == s]
 
     cur_base <- if (match_type == "candidates") {
@@ -87,7 +87,7 @@
 .score_dist_by_stage_dt <- function(dt, bins = 50L) {
   stages <- unique(dt$stage)
 
-  hists <- lapply(stages, function(s) {
+  hists <- map(stages, function(s) {
     h <- .score_distribution(dt[stage == s]$score, bins = bins)$histogram
     if (nrow(h) > 0L) h[, stage := s]
     h
@@ -115,7 +115,7 @@ method(
   stages     <- unique(dt$stage)
 
   # per-stage Match_Overview objects
-  per_stage <- lapply(stages, function(s) {
+  per_stage <- map(stages, function(s) {
     stage_dt <- dt[stage == s][, stage := NULL][]
     summarise_matches(stage_dt, base = base, target = target, bins = bins, ...)
   })

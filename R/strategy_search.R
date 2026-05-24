@@ -84,25 +84,24 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
     for (i in seq_along(x@preparers)) {
       prep <- x@preparers[[i]]
 
-      step_labels <- vapply(
+      step_labels <- map_chr(
         prep@steps,
         function(s) {
           if (length(s@args) == 0) {
             sprintf("%s()", s@name)
           } else {
             arg_names <- names(s@args)
-            args_fmt <- vapply(seq_along(s@args), function(j) {
+            args_fmt <- map_chr(seq_along(s@args), function(j) {
               val <- deparse(s@args[[j]], nlines = 1)
               if (is.null(arg_names) || arg_names[j] == "") {
                 val
               } else {
                 sprintf("%s = %s", arg_names[j], val)
               }
-            }, character(1))
+            })
             sprintf("%s(%s)", s@name, paste(args_fmt, collapse = ", "))
           }
-        },
-        character(1)
+        }
       )
 
       bullets[[i]] <- sprintf(

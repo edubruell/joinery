@@ -104,7 +104,7 @@ drop_joinery_temp_tables <- function(
 ) {
   existing <- DBI::dbListTables(con)
   
-  to_drop <- unlist(lapply(prefixes, function(pfx) {
+  to_drop <- unlist(map(prefixes, function(pfx) {
     grep(paste0("^", pfx), existing, value = TRUE)
   }))
   

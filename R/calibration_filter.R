@@ -68,9 +68,9 @@
 .feature_predictors <- function(features_dt) {
   drop <- c("searched", "found", "match_id", "stage", "equal",
             "tp_prob", "predicted_tp")
-  numeric_like <- vapply(features_dt, function(v) {
+  numeric_like <- map_lgl(features_dt, function(v) {
     is.numeric(v) || is.integer(v) || is.logical(v)
-  }, logical(1L))
+  })
   cols <- setdiff(names(features_dt)[numeric_like], drop)
   cols
 }
@@ -212,10 +212,10 @@
   # silently produce NA coefficients otherwise. Keep them in
   # @predictors so apply_filter() still emits a column for them (they
   # will contribute zero).
-  keep <- vapply(predictors, function(col) {
+  keep <- map_lgl(predictors, function(col) {
     v <- X[[col]]
     length(unique(stats::na.omit(v))) > 1L
-  }, logical(1L))
+  })
   fit_predictors <- predictors[keep]
   if (length(fit_predictors) == 0L) {
     cli::cli_abort("All predictors are constant — cannot fit a model")

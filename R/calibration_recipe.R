@@ -13,7 +13,7 @@
 
 #' @noRd
 .tidymodels_available <- function(pkgs = c("recipes", "parsnip")) {
-  all(vapply(pkgs, requireNamespace, logical(1L), quietly = TRUE))
+  every(pkgs, requireNamespace, quietly = TRUE)
 }
 
 #' @noRd
