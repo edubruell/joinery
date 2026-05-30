@@ -64,6 +64,19 @@
     )
   ),
   list(
+    id        = "cluster_identical_name_street",
+    signal    = "n_identical_entity_groups",
+    threshold = 5,
+    op        = ">=",
+    lever     = "ingest / cardinality",
+    suppresses = "duplicates_mega_cluster",
+    context_fn = function(signals) signals[["entity_cols_label"]],
+    message_fn = function(v, cols) sprintf(
+      "%d duplicate groups have identical values across all entity columns (%s); this usually indicates the input has multiple rows per real-world entity (e.g. exploded categories, joined child rows). Check ingest cardinality before tuning the strategy.",
+      as.integer(v), cols
+    )
+  ),
+  list(
     id        = "low_coverage_candidates",
     signal    = "base_coverage_candidates",
     threshold = 0.05,
@@ -194,10 +207,18 @@
   )
 }
 
+# Recommendation suppression semantics:
+#   - `suppresses` may be a character scalar or vector of catalog ids
+#   - suppression takes effect only if the suppressing entry fires
+#   - suppressed entries are removed from the output even if they
+#     also fired (the suppressing entry's message is the "winner")
+#   - circular suppression resolves in catalog-source order: whichever
+#     entry is listed first wins. Keep catalog ordering deliberate.
 #' @noRd
 .dispatch_recommendations <- function(signals, catalog = .diagnostics_catalog) {
-  ids  <- character()
-  msgs <- character()
+  ids       <- character()
+  msgs      <- character()
+  suppress  <- character()
 
   for (entry in catalog) {
     v <- signals[[entry$signal]]
@@ -209,7 +230,16 @@
       ctx <- if (!is.null(entry$context_fn)) entry$context_fn(signals) else NULL
       msg <- if (!is.null(ctx)) entry$message_fn(v, ctx) else entry$message_fn(v)
       msgs <- c(msgs, msg)
+      if (!is.null(entry$suppresses)) {
+        suppress <- c(suppress, entry$suppresses)
+      }
     }
+  }
+
+  if (length(suppress)) {
+    keep <- !ids %in% suppress
+    ids  <- ids[keep]
+    msgs <- msgs[keep]
   }
 
   list(ids = ids, messages = msgs)

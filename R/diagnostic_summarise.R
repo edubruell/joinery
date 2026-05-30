@@ -131,7 +131,8 @@ method(
   summarise_matches,
   DT_tbl
 ) <- function(matches, base = NULL, target = NULL, bins = 50L,
-               threshold = NULL, borderline_epsilon = 0.05, ...) {
+               threshold = NULL, borderline_epsilon = 0.05,
+               entity_cols = NULL, ...) {
 
   match_type <- .detect_match_type(matches)
   dt <- data.table::as.data.table(matches)
@@ -175,6 +176,26 @@ method(
     target_coverage <- NA_real_
 
     signals[["max_cluster_size"]] <- as.numeric(max_cluster_size)
+
+    # Identical-entity groups (Item 4 cardinality recommendation):
+    # if entity_cols is supplied, count duplicate groups where every
+    # listed column is single-valued. Such groups usually indicate an
+    # upstream cardinality artefact (e.g. exploded categories), not a
+    # real-world duplicate cluster.
+    if (!is.null(entity_cols) && length(entity_cols)) {
+      ec <- intersect(entity_cols, names(dt))
+      if (length(ec)) {
+        per_group_unique <- dt[, lapply(.SD, data.table::uniqueN),
+                               .SDcols = ec, by = "duplicate_group"]
+        all_one <- per_group_unique[,
+          Reduce("&", lapply(.SD, function(x) x == 1L)),
+          .SDcols = ec]
+        n_identical <- sum(all_one, na.rm = TRUE)
+        signals[["n_identical_entity_groups"]] <- as.numeric(n_identical)
+        signals[["entity_cols_label"]] <- paste(ec, collapse = ", ")
+        cluster_summary$n_identical_entity_groups <- as.integer(n_identical)
+      }
+    }
 
   } else { # candidates
 
@@ -297,9 +318,11 @@ method(
   summarise_matches,
   Duck_tbl
 ) <- function(matches, base = NULL, target = NULL, bins = 50L,
-               threshold = NULL, borderline_epsilon = 0.05, ...) {
+               threshold = NULL, borderline_epsilon = 0.05,
+               entity_cols = NULL, ...) {
 
   con      <- matches$src$con
+  matches  <- .materialise_duck_input(matches, con)
   tbl_name <- matches$lazy_query$x
 
   # --- detect match type ---------------------------------------------------
@@ -366,6 +389,34 @@ method(
     target_coverage <- NA_real_
 
     signals[["max_cluster_size"]] <- as.numeric(max_cluster_size)
+
+    # Identical-entity groups (Item 4). Resolve entity_cols against
+    # the table's actual columns, then count groups where every
+    # listed column has exactly one distinct value.
+    if (!is.null(entity_cols) && length(entity_cols)) {
+      tbl_cols <- col_rows$column_name
+      ec <- intersect(entity_cols, tbl_cols)
+      if (length(ec)) {
+        distinct_exprs <- paste(
+          sprintf('COUNT(DISTINCT "%s") AS "n_%s"', ec, ec),
+          collapse = ", "
+        )
+        all_one_clause <- paste(
+          sprintf('"n_%s" = 1', ec), collapse = " AND "
+        )
+        n_identical <- DBI::dbGetQuery(con, paste0(
+          "WITH per_group AS (\n",
+          "  SELECT duplicate_group, ", distinct_exprs, "\n",
+          "  FROM \"", tbl_name, "\"\n",
+          "  GROUP BY duplicate_group\n",
+          ")\n",
+          "SELECT COUNT(*) AS n FROM per_group WHERE ", all_one_clause
+        ))$n
+        signals[["n_identical_entity_groups"]] <- as.numeric(n_identical)
+        signals[["entity_cols_label"]] <- paste(ec, collapse = ", ")
+        cluster_summary$n_identical_entity_groups <- as.integer(n_identical)
+      }
+    }
 
   } else { # candidates
 

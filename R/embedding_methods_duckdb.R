@@ -60,6 +60,7 @@ method(
 
   con        <- data$src$con
   .ensure_vss(con)
+  data       <- .materialise_duck_input(data, con)
   id_q       <- sprintf('"%s"', id)
   table_name <- data$lazy_query$x
   tmp        <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))
@@ -196,6 +197,8 @@ method(
 
   con <- base_table$src$con
   .ensure_vss(con)
+  base_table   <- .materialise_duck_input(base_table, con)
+  target_table <- .materialise_duck_input(target_table, con)
 
   thr         <- threshold %||% strategy@threshold
   base_id_q   <- sprintf('"%s"', base_id)
@@ -386,6 +389,7 @@ method(
 
   con <- base_table$src$con
   .ensure_vss(con)
+  base_table <- .materialise_duck_input(base_table, con)
 
   thr      <- threshold %||% strategy@threshold
   id_q     <- sprintf('"%s"', id)

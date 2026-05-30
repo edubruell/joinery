@@ -15,7 +15,9 @@ method(
 ) <- function(data, id, matches) {
   
   con <- data$src$con
-  
+  data    <- .materialise_duck_input(data, con)
+  matches <- .materialise_duck_input(matches, con)
+
   data_tbl    <- data$lazy_query$x
   matches_tbl <- matches$lazy_query$x
   

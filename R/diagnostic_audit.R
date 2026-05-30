@@ -264,6 +264,7 @@ method(
 ) <- function(data, id, strategy, target = NULL, sample_n = NULL, ...) {
 
   con      <- data$src$con
+  data     <- .materialise_duck_input(data, con)
   tbl_name <- data$lazy_query$x
 
   # Determine how many rows to pull
@@ -291,6 +292,7 @@ method(
   target_dt <- if (!is.null(target)) {
     if (inherits(target, "tbl_duckdb_connection")) {
       t_con      <- target$src$con
+      target     <- .materialise_duck_input(target, t_con)
       t_tbl_name <- target$lazy_query$x
       t_n <- DBI::dbGetQuery(
         t_con, paste0("SELECT COUNT(*) AS n FROM \"", t_tbl_name, "\"")
@@ -569,6 +571,7 @@ method(
               ...) {
 
   con      <- data$src$con
+  data     <- .materialise_duck_input(data, con)
   tbl_name <- data$lazy_query$x
 
   if (is.null(sample_n)) {

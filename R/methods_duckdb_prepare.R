@@ -235,6 +235,8 @@ method(
 
   lazy  <- data
   con   <- lazy$src$con
+  lazy  <- .materialise_duck_input(lazy, con)
+  data  <- lazy
   table <- lazy$lazy_query$x
 
   .check_reserved_names(dplyr::tbl_vars(data), id)

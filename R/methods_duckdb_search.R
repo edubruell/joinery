@@ -45,6 +45,10 @@ method(
   con <- base_table$src$con
   base_id_q   <- sprintf('"%s"', base_id)
   target_id_q <- sprintf('"%s"', target_id)
+  # Materialise filtered lazy inputs so the final-join SQL that reads
+  # `<table>$lazy_query$x` as a table name doesn't break.
+  base_table   <- .materialise_duck_input(base_table, con)
+  target_table <- .materialise_duck_input(target_table, con)
 
   block_by <- strategy@block_by %||% NULL
   tmp <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))

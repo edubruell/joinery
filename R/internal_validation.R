@@ -53,6 +53,35 @@ utils::globalVariables(c(
   "stage", "contribution"
 )
 
+# Materialise a DuckDB lazy input into a temp table if it is not
+# already backed by a single named table.
+#
+# joinery's DuckDB backend frequently reads `data$lazy_query$x` to
+# emit SQL like `SELECT ... FROM <name>`. That field is a length-1
+# character only when `data` is a bare `tbl(con, "name")`; filtered
+# inputs (`tbl(con, "name") |> filter(...)`) carry a nested lazy
+# query there instead, which breaks the string interpolation.
+#
+# Returns a DuckDB tbl whose `$lazy_query$x` is guaranteed to be a
+# length-1 character. The temp table (when created) lives for the
+# lifetime of the DBI connection.
+.materialise_duck_input <- function(data, con = NULL) {
+  con <- con %||% data$src$con
+  x <- data$lazy_query$x
+  if (is.character(x) && length(x) == 1L) {
+    return(data)
+  }
+  tmp_in <- paste0("_joinery_input_", sample.int(1e9, 1))
+  DBI::dbExecute(con, paste0(
+    "CREATE TEMP TABLE ", tmp_in, " AS ",
+    dbplyr::sql_render(data)
+  ))
+  cli::cli_inform(c(
+    i = "Materialised filtered DuckDB input as temp table {.field {tmp_in}}."
+  ))
+  dplyr::tbl(con, tmp_in)
+}
+
 .check_reserved_names <- function(data_cols, id_col, call = rlang::caller_env()) {
   all_user_cols <- union(data_cols, id_col)
   bad <- intersect(all_user_cols, .JOINERY_RESERVED_COLS)

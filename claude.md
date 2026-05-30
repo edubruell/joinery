@@ -46,7 +46,7 @@ methods on them.
 - **Add a new diagnostic verb** → new generic in `generics_diagnostic.R`, new result class in `diagnostic_classes.R`, new verb file `diagnostic_<verb>.R`, plot helpers in `diagnostic_plots.R`, threshold rules in `diagnostic_recommendations.R`.
 - **Add a new backend** → five `methods_<backend>_<stage>.R` files (`prepare`, `dedup`, `search`, `multistage`, `inspect`) plus optionally `embedding_methods_<backend>.R`. Add `Collate:` entries after the existing methods blocks.
 - **Extend calibration** → verb code in `calibration_<verb>.R`; result classes in `calibration_classes.R`; generic declarations in `generics_calibration.R`. Tidymodels-specific code is isolated in `calibration_tidymodels.R` / `calibration_recipe.R` so the `Suggests` dependency boundary is visible.
-- **Change error message style** → `internal_validation.R` carries the `cli::cli_abort()` exemplar; new code should follow that style (see `notes/code_quality_pass.md` Pass 1).
+- **Change error message style** → `internal_validation.R` carries the `cli::cli_abort()` exemplar; new code should follow that style.
 
 ## Core S7 Classes
 
@@ -199,9 +199,15 @@ For detailed guidance on specific topics, consult:
 - **`notes/duckdb_backend.md`** — Design philosophy, batch execution architecture, no-SQL-translation approach.
 - **`notes/duckdb_performance.md`** — Performance tuning guide, batch size recommendations, optimization strategies.
 
+**Current Work (v0.8 practicality test):**
+- **`notes/yp_panel_joinery_plan.md`** — Active plan: rebuild the full German Yellow-Pages panel (all years, all branches) with joinery's DuckDB backend, blocked by `(plz2, wz08_3)`. First real-life stress test of v0.8. **Read this before doing any YP-related work.**
+- **`notes/v08_lessons.md`** — Running log of design-relevant insights surfaced *while* running the YP build through joinery. Captures rough edges in `block_by`, audit verbs, progress reporting, and docs framing that we want to revisit during the v0.8 application pass. Items promoted to actionable package work appear as stubs pointing at `v08_implementation_plan.md`.
+- **`notes/v08_implementation_plan.md`** — Actionable v0.8 implementation pass. Ordered list of bugs surfaced by the YP run (empty-result schema, filtered-lazy materialise, block-aware CC iteration, cardinality recommendation) plus the `local_tests/yp_dedup_smoke.R` test bed. Each item carries file paths, fix shape, test plan, and a fresh-context agent audit prompt. Read this before touching `R/methods_duckdb_*` or `R/diagnostic_recommendations.R`.
+- **`notes/yp_panel_legacy_workflow.md`** — Retrospective of the legacy MatchMakeR pipeline that built the existing Hausärzte panel; raw-data layout, blocking decisions, output schemas, and which legacy decisions to carry over or revisit. Source data lives at `/Users/ebr/Dropbox/medlaborsupply/gelbe_seiten_raw/` (raw text + cached parquet at `.../pqt/`); legacy scripts at `/Users/ebr/Dropbox/medlaborsupply/gelbe_seiten_raw/read_yellow_pages.R` and `/Users/ebr/Dropbox/medlaborsupply/entry_regulations_R/{deduplicate_yp_data,create_yp_panel}.R`.
+- **Working folder for YP-test scripts and intermediates:** `localwip/yp_panel/` (untracked; `localwip/` is in both `.gitignore` and `.Rbuildignore`). Already contains `wz08_3_labels.csv` (274 WZ08-3 group codes + English labels, extracted from `localwip/Labels_SIAB_7523_v2_btr_basis_en.log`). Branche → WZ08-3 classifier (Phase 1) will follow the tidyllm pattern from `/Users/ebr/Dropbox/Keeping the Doctor Away/gop_matching/gop_tidyllm_code.R`.
+
 **Project Planning:**
-- **`notes/code_quality_pass.md`** — In-flight code-quality refactor (started May 2026): unified naming schema, six numbered passes (cli_abort, check_*() shims, purrr shim, file reshuffle, CLAUDE.md legend, readability). Read before adding new files or new validation patterns; new code should follow the schema and styles described there even before the refactor is fully landed.
-- **`notes/code_quality_pass1_progress.md`** — Per-file status of the cli_abort migration; the resume point for any session continuing Pass 1.
+- **`notes/code_quality_pass.md`** — Completed code-quality refactor (May 2026): unified naming schema and error/validation styles now in place across the package. Reference for the conventions new code should follow.
 - **`notes/roadmap.md`** — Strategic roadmap, feature priorities, current phase.
 - **`notes/embedding_design.md`** — Implementation design for embedding-based matching.
 - **`notes/diagnostics_design.md`** — Design notes for the diagnostics verbs.

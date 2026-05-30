@@ -1,3 +1,35 @@
+# joinery 0.8.0
+
+## Phase 0.8: Stability & Quality Assurance
+
+Consolidates the internals after the 0.7 calibration work, with a focus on consistent error reporting, validation, and code organisation. Public output schemas are unchanged; one new optional argument on `summarise_matches()`. Includes a batch of bug fixes surfaced by the YP-panel practicality test.
+
+### Internal Improvements
+
+* **Unified error reporting**: migrated `stop()` / `rlang::abort()` call sites to `cli::cli_abort()` for consistent, formatted diagnostics across the package.
+* **Validation shims**: adopted `rlang` `check_*()` helpers at exported entry points for uniform argument checking.
+* **`purrr` shim**: replaced ad-hoc functional patterns with the vendored standalone `purrr` shim in user-facing glue code.
+* **File layout**: reorganised `R/` under an eight-prefix naming schema (`strategy_`, `preparer_`, `generics_`, `methods_<backend>_<stage>`, `embedding_methods_`, `diagnostic_`, `calibration_`, `internal_`); see `CLAUDE.md` for the legend.
+* **Readability pass**: extracted repeated constants and tightened internal helpers.
+
+### Bug fixes surfaced by the YP practicality test
+
+* **DuckDB dedup empty-result schema** — `detect_duplicates()` on a DuckDB tbl now returns the full base schema with zero rows when no pairs cross threshold, so per-block results can be `UNION`-ed without a column-count mismatch.
+* **Filtered lazy DuckDB inputs** — every user-facing DuckDB method (`detect_duplicates`, `search_candidates`, `prepare_search_data`, `extract_unmatched`, `audit_strategy`, `summarise_matches`, embedding equivalents) now accepts `tbl(con, "x") |> filter(...)` inputs. Filtered lazies are silently materialised to a TEMP TABLE.
+* **Block-aware connected components in DuckDB dedup** — the recursive CTE now iterates per block instead of running one global recursion, which previously OOMed on disk at corpus scale. Result objects carry an `attr("wall_seconds")` for downstream wall-clock budgeting.
+
+### New optional API
+
+* `summarise_matches(..., entity_cols = c(...))` — when supplied, counts duplicate groups whose listed columns are single-valued and fires a new `cluster_identical_name_street` recommendation that shadows the generic `duplicates_mega_cluster` advice. Useful for distinguishing real "stopword" clusters from upstream cardinality artefacts.
+* Recommendations catalog: new `suppresses` field lets a firing rule shadow another rule's message.
+
+### Tests
+
+* `R CMD check` clean; full test suite passes (1734 PASS / 0 FAIL).
+* New `local_tests/yp_dedup_smoke.R` exercises the four fixes end-to-end on a real YP slice.
+
+---
+
 # joinery 0.7.0
 
 ## Phase 0.7: Ex Post ML & Error Calibration
