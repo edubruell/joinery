@@ -17,6 +17,7 @@ Consolidates the internals after the 0.7 calibration work, with a focus on consi
 * **DuckDB dedup empty-result schema** — `detect_duplicates()` on a DuckDB tbl now returns the full base schema with zero rows when no pairs cross threshold, so per-block results can be `UNION`-ed without a column-count mismatch.
 * **Filtered lazy DuckDB inputs** — every user-facing DuckDB method (`detect_duplicates`, `search_candidates`, `prepare_search_data`, `extract_unmatched`, `audit_strategy`, `summarise_matches`, embedding equivalents) now accepts `tbl(con, "x") |> filter(...)` inputs. Filtered lazies are silently materialised to a TEMP TABLE.
 * **Block-aware connected components in DuckDB dedup** — the recursive CTE now iterates per block instead of running one global recursion, which previously OOMed on disk at corpus scale. Result objects carry an `attr("wall_seconds")` for downstream wall-clock budgeting.
+* **Scoring now uses token SETS, not bags** — a token repeated within one record's column (e.g. `"Fritzel … Fritzel … Fritzel"`) previously inflated a pair's score through the token-overlap self-join, producing scores above the `sum(weights)` ceiling (up to 2.8 on real Yellow-Pages data) and breaking the `[0, 1]`-style threshold semantics. The scoring path on both backends now collapses within-record token multiplicity before computing rIP and the overlap join, so `score ∈ [0, sum(weights)]`. The fix is confined to scoring (`.score_pairs_sql`, `.score_token_pairs`, and `explain_match`'s attribution, which stay in lock-step for the round-trip contract); rarity is untouched, so `inverse_freq` keeps its corpus term-frequency definition. The change is a no-op for records whose tokens are already distinct.
 
 ### New optional API
 
@@ -25,8 +26,9 @@ Consolidates the internals after the 0.7 calibration work, with a focus on consi
 
 ### Tests
 
-* `R CMD check` clean; full test suite passes (1734 PASS / 0 FAIL).
+* `R CMD check` clean; full test suite passes (1741 PASS / 0 FAIL).
 * New `local_tests/yp_dedup_smoke.R` exercises the four fixes end-to-end on a real YP slice.
+* New `tests/testthat/test-score-token-set-semantics.R` pins the set-semantics scoring bound, backend parity, and the explain round-trip on a multiplicity pair.
 
 ---
 

@@ -188,6 +188,25 @@ method(
 }
 
 
+#' Internal helper: collapse a token table to set semantics
+#'
+#' Scoring treats each record's tokens as a SET, not a bag: a token repeated
+#' within one record's column must contribute once, not once per occurrence.
+#' Without this, the token-overlap join multiplies a shared token's rIP by the
+#' product of its per-record multiplicities, inflating scores past the
+#' `sum(weights)` ceiling (e.g. "Fritzel … Fritzel … Fritzel" scoring 2.8).
+#'
+#' Deduping happens here, in the scoring path, rather than in
+#' `prepare_search_data()` / `compute_rarity()` on purpose: `inverse_freq`
+#' rarity is `1 / freq` where `freq` is the corpus term-frequency, so collapsing
+#' upstream would silently redefine the rarity metric. `rarity` is constant per
+#' `(block, src_column, token)`, so `unique()` retains the correct value.
+#' @noRd
+.collapse_token_set <- function(tokens, id_col, block_by) {
+  keys <- c(id_col, "src_column", "token", block_by)
+  unique(tokens, by = keys)
+}
+
 #' Internal helper: compute pairwise scores between two token tables
 #' @noRd
 .score_token_pairs <- function(
@@ -201,6 +220,10 @@ method(
 
   block_by <- strategy@block_by %||% character()
   by_cols  <- c("src_column", "token", block_by)
+
+  # Set semantics: collapse within-record token multiplicity before scoring.
+  lhs_tokens <- .collapse_token_set(lhs_tokens, id_lhs, block_by)
+  rhs_tokens <- .collapse_token_set(rhs_tokens, id_rhs, block_by)
 
   # Validate weights
   missing_w <- setdiff(
@@ -301,11 +324,15 @@ method(
     strategy,
     weights
 ) {
-  lhs <- data.table::copy(lhs_tokens)
-  rhs <- data.table::copy(rhs_tokens)
-
   block_by <- strategy@block_by %||% character()
   by_cols  <- c("src_column", "token", block_by)
+
+  # Set semantics: collapse within-record token multiplicity before
+  # attribution, identically to .score_token_pairs(), so the round-trip
+  # contract sum(per_column_contrib$contribution) * feedback_factor == score
+  # continues to hold.
+  lhs <- .collapse_token_set(data.table::copy(lhs_tokens), id_lhs, block_by)
+  rhs <- .collapse_token_set(data.table::copy(rhs_tokens), id_rhs, block_by)
 
   # Validate weights — same check as .score_token_pairs()
   missing_w <- setdiff(

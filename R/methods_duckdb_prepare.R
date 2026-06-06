@@ -85,12 +85,19 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
     cli::cli_abort("Unknown smoothing method: {.val {sm@method}}")
   }
   
+  # Set semantics: collapse within-record token multiplicity before computing
+  # rIP and the overlap join. The token table has no per-occurrence column
+  # (row_id is the record id, shared by a token's repeated occurrences), and
+  # freq/df/N/rarity are constant per (block, src_column, token), so SELECT
+  # DISTINCT * collapses a repeated token to one row per record. This is a
+  # no-op for records whose tokens are already distinct. rarity (and hence
+  # inverse_freq = 1/freq, a corpus term-frequency) is left untouched.
   sql_enriched <- paste0(
     "CREATE TEMP TABLE ", enriched_tbl, " AS\n",
     "SELECT *,\n",
     "  ", weight_expr, " AS weight,\n",
     "  ", rip_expr, " AS rip\n",
-    "FROM ", tokens_tbl, ";\n"
+    "FROM (SELECT DISTINCT * FROM ", tokens_tbl, ") AS _token_set;\n"
   )
   
   DBI::dbExecute(con, sql_enriched)
