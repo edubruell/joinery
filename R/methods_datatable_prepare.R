@@ -27,6 +27,19 @@ method(
 
   .check_reserved_names(names(dt), id)
 
+  # Non-unique id is a data problem the caller usually doesn't know they have:
+  # rows sharing an id are folded into one record (their tokens are pooled), and
+  # before the block-merge fix below it caused an opaque cartesian crash. Warn
+  # once, with the count, so the duplication is visible rather than silent.
+  n_dup_ids <- sum(duplicated(dt[[id]]))
+  if (n_dup_ids > 0L) {
+    cli::cli_warn(c(
+      "!" = "{.arg id} column {.field {id}} is not unique: {n_dup_ids} duplicate value{?s}.",
+      "i" = "Rows sharing an id are treated as one record (tokens pooled). \\
+             De-duplicate {.arg data} or supply a unique id if that is not intended."
+    ))
+  }
+
   preparers <- strategy@preparers
   block_by  <- strategy@block_by
 
@@ -122,7 +135,13 @@ method(
       cli::cli_abort("Blocking columns not found: {.field {missing}}")
     }
 
-    block_dt <- dt[, c(id, block_by), with = FALSE]
+    # Block attributes are per-record, so attach one row per id. Deduping by id
+    # here is mandatory, not just tidy: if `id` is non-unique (duplicate rows in
+    # `data`), a raw `dt[, c(id, block_by)]` carries one row per duplicate, and
+    # the many-to-one block merge becomes many-to-many — a cartesian explosion
+    # that trips data.table's allow.cartesian guard deep in merge() with an
+    # opaque error. `unique(by = id)` keeps the merge strictly many-to-one.
+    block_dt <- unique(dt[, c(id, block_by), with = FALSE], by = id)
     tokens <- merge(tokens, block_dt, by = id, all.x = TRUE)
   }
 

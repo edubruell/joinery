@@ -74,10 +74,12 @@ test_that("dedup pairs are (rank-1, rank-k) for k >= 2 within each group", {
   dups <- detect_duplicates(base, "id", s)
   mf   <- match_features(dups, s, base = base, id = "id")
 
-  # 4 records all in one group → 3 pairs
+  # 4 records all in one group → 3 pairs. All scores tie at 0.5, so the
+  # rank-1 representative is the smallest id under the deterministic
+  # tie-break ("a"), consistent with the DuckDB component root MIN(id).
   expect_equal(nrow(mf@features), 3L)
-  expect_true(all(mf@features$searched == "d"))
-  expect_setequal(mf@features$found, c("a", "b", "c"))
+  expect_true(all(mf@features$searched == "a"))
+  expect_setequal(mf@features$found, c("b", "c", "d"))
 })
 
 
@@ -92,25 +94,26 @@ test_that("matched / found-only / search-only aIPs match hand-worked values", {
   ft <- mf@features
 
   # All occ=2 tokens have aIP = 0; all occ=1 tokens have aIP = 1.
-  pair_db <- ft[searched == "d" & found == "b"]   # {john,doe} vs {jon,smith}
-  pair_da <- ft[searched == "d" & found == "a"]   # {john,doe} vs {john,smith}
-  pair_dc <- ft[searched == "d" & found == "c"]   # {john,doe} vs {jane,doe}
+  # Rank-1 rep is "a" (smallest id; all scores tie), so searched == "a".
+  pair_ac <- ft[searched == "a" & found == "c"]   # {john,smith} vs {jane,doe}
+  pair_ad <- ft[searched == "a" & found == "d"]   # {john,smith} vs {john,doe}
+  pair_ab <- ft[searched == "a" & found == "b"]   # {john,smith} vs {jon,smith}
 
-  # (d, b): no matched tokens; found-only = {jon=1, smith=0}
-  #         search-only = {john=0, doe=0}
-  expect_true(is.na(pair_db$m_name_1))
-  expect_equal(sort(c(pair_db$f_name_1, pair_db$f_name_2),
+  # (a, c): no matched tokens; found-only = {jane=1, doe=0}
+  #         search-only = {john=0, smith=0}
+  expect_true(is.na(pair_ac$m_name_1))
+  expect_equal(sort(c(pair_ac$f_name_1, pair_ac$f_name_2),
                     na.last = TRUE), c(0, 1))
 
-  # (d, a): matched={john=0}; found-only={smith=0}; search-only={doe=0}
-  expect_equal(pair_da$m_name_1, 0)
-  expect_equal(pair_da$f_name_1, 0)
-  expect_equal(pair_da$s_name_1, 0)
+  # (a, d): matched={john=0}; found-only={doe=0}; search-only={smith=0}
+  expect_equal(pair_ad$m_name_1, 0)
+  expect_equal(pair_ad$f_name_1, 0)
+  expect_equal(pair_ad$s_name_1, 0)
 
-  # (d, c): matched={doe=0}; found-only={jane=1}; search-only={john=0}
-  expect_equal(pair_dc$m_name_1, 0)
-  expect_equal(pair_dc$f_name_1, 1)
-  expect_equal(pair_dc$s_name_1, 0)
+  # (a, b): matched={smith=0}; found-only={jon=1}; search-only={john=0}
+  expect_equal(pair_ab$m_name_1, 0)
+  expect_equal(pair_ab$f_name_1, 1)
+  expect_equal(pair_ab$s_name_1, 0)
 })
 
 
@@ -503,9 +506,9 @@ test_that("string-sim columns appear on dedup match results (token)", {
   mf   <- match_features(dups, s, base = base, id = "id")
   expect_true("sim_sf_name" %in% names(mf@features))
   expect_true("sim_fs_name" %in% names(mf@features))
-  # (d, a) pair: "john doe" vs "john smith" → finite, in (0,1)
-  row_da <- mf@features[searched == "d" & found == "a"]
-  expect_true(row_da$sim_sf_name > 0 & row_da$sim_sf_name < 1)
+  # (a, d) pair: "john smith" vs "john doe" → finite, in (0,1)
+  row_ad <- mf@features[searched == "a" & found == "d"]
+  expect_true(row_ad$sim_sf_name > 0 & row_ad$sim_sf_name < 1)
 })
 
 test_that("Embedding_Strategy dedup path emits cosine_sim and norms from base", {

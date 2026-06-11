@@ -58,6 +58,59 @@ detect_duplicates <- new_generic(
   c("base_table", "id", "strategy")
 )
 
+#' Resolve an Edge List into Entities
+#'
+#' @description
+#' Group a list of record-pair edges into entities via connected
+#' components, assign each vertex a within-entity rank, and mark a canonical
+#' representative. This is the shared entity-resolution kernel underlying
+#' [detect_duplicates()]; it is exposed so that *any* edge list — not only a
+#' `detect_duplicates()` self-join — can be resolved into entity ids.
+#'
+#' @details
+#' Output is deterministic: given identical `edges`, the returned
+#' `entity` / `rep` / `rank` are byte-identical regardless of edge row order.
+#' `entity` is a dense integer label assigned in ascending order of each
+#' component's smallest member id (its *root*). The representative (`rep`,
+#' the rank-1 member) is chosen by: descending best `score` (when supplied),
+#' then ascending `rep_by` (when supplied), then ascending `id`.
+#'
+#' @param edges A backend table of record-pair edges (one row per edge).
+#' @param id_a,id_b Character scalars naming the two endpoint columns in
+#'   `edges`.
+#' @param score Optional character scalar naming a per-edge score column in
+#'   `edges`. When supplied, within-entity `rank` is ordered by descending
+#'   best score (the maximum over a vertex's incident edges) and that best
+#'   score is returned as an extra `score` column. When `NULL`, ranking
+#'   falls back to the `rep_by`/`id` rule.
+#' @param vertices Optional. All vertex ids to include, so that ids absent
+#'   from every edge come back as their own singleton entity (rank 1,
+#'   `rep` = self). Either an atomic vector of ids, or a table with an `id`
+#'   column (plus any `rep_by` column). When `NULL`, only ids appearing in
+#'   `edges` are returned.
+#' @param rep_by Optional character scalar naming a priority column (on the
+#'   `vertices` table) used to pick the canonical representative: the member
+#'   with the smallest `rep_by` wins, ties broken by smallest `id`.
+#' @param block_by Optional character vector of columns in `edges` used to
+#'   run connected components per block (DuckDB backend).
+#' @param ... Additional arguments passed to backend-specific methods.
+#'
+#' @return One row per resolved vertex:
+#' \describe{
+#'   \item{id}{The vertex id.}
+#'   \item{entity}{Integer entity (connected-component) label.}
+#'   \item{rep}{The canonical representative id of the entity.}
+#'   \item{rank}{Rank within the entity; rank 1 is the representative.}
+#'   \item{score}{Best incident-edge score per vertex (only when `score` is
+#'     supplied).}
+#' }
+#'
+#' @export
+resolve_entities <- new_generic(
+  "resolve_entities",
+  c("edges", "id_a", "id_b")
+)
+
 #' Deduplicate a Table
 #'
 #' @description

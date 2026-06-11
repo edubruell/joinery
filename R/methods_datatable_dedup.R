@@ -84,38 +84,22 @@ method(
     ))
   }
 
-  # --- 5. Connected components ----------------------------------------------
-  edges <- scored[, .(
-    from = lhs_id,
-    to   = rhs_id
-  )]
-
-  edges <- rbind(edges, edges[, .(from = to, to = from)])
-
-  all_ids <- unique(tokens[[id]])
-
-  g <- igraph::graph_from_data_frame(edges, directed = FALSE, vertices = all_ids)
-  comp <- igraph::components(g)
-
-  membership_dt <- data.table(
-    id              = names(comp$membership),
-    duplicate_group = unname(comp$membership)
+  # --- 5. Resolve entities from scored edges --------------------------------
+  # Delegate connected components + best-score + rank to the shared kernel.
+  # `vertices = all ids` reproduces the singleton-aware component labelling
+  # this method has always used; singletons (non-duplicates) carry NA score
+  # and are dropped below so only duplicate records are returned.
+  ent <- resolve_entities(
+    edges    = scored[, .(from = lhs_id, to = rhs_id, score = score)],
+    id_a     = "from",
+    id_b     = "to",
+    score    = "score",
+    vertices = unique(tokens[[id]])
   )
 
-  # --- 6. Scores and ranks --------------------------------------------------
-  scored_long <- rbindlist(list(
-    scored[, .(id = lhs_id, score)],
-    scored[, .(id = rhs_id, score)]
-  ))
-
-  best <- scored_long[
-    , .(score = max(score, na.rm = TRUE)),
-    by = id
-  ]
-
-  result <- membership_dt[best, on = "id"]
-
-  result[, rank := rank(-score, ties.method = "first"), by = duplicate_group]
+  ent <- ent[!is.na(score)]
+  data.table::setnames(ent, "entity", "duplicate_group")
+  result <- ent[, .(id, duplicate_group, score, rank)]
   setkeyv(result, c("duplicate_group", "rank"))
 
   # --- 7. Attach original data ----------------------------------------------

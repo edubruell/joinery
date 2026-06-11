@@ -121,15 +121,14 @@ method(
   }
   
   # ----------------------------------------------------------
-  # 5. TEMP: edges (both directions), carrying block columns
+  # 5. Build a directed edge relation (a, b, score [, block cols]).
   # ----------------------------------------------------------
   # Each pair is within-block by construction (.score_pairs_sql uses
-  # block_join), so both endpoints share the same block tuple. We
-  # attach the block columns to each edge so the connected-components
-  # step can iterate per block instead of running one global recursion
-  # over the full corpus (which OOMs on disk at scale — see
-  # v08_implementation_plan Item 3).
-  edges_tbl <- tmp("_joinery_tmp_edges")
+  # block_join), so both endpoints share the same block tuple. We attach
+  # the block columns to each edge so `resolve_entities()` can iterate
+  # connected components per block instead of one global recursion over
+  # the full corpus (which OOMs on disk at scale — v08 §14).
+  edges_in <- tmp("_joinery_tmp_edges_in")
   base_tbl_for_blocks <- base_table$lazy_query$x
 
   block_cols_sel <- if (length(block_by)) {
@@ -142,12 +141,8 @@ method(
   DBI::dbExecute(
     con,
     paste0(
-      "CREATE TEMP TABLE ", edges_tbl, " AS\n",
-      "SELECT p.id1 AS a, p.id2 AS b", block_cols_sel, "\n",
-      "FROM ", pairs_tbl, " p\n",
-      block_cols_join,
-      "UNION ALL\n",
-      "SELECT p.id2 AS a, p.id1 AS b", block_cols_sel, "\n",
+      "CREATE TEMP TABLE ", edges_in, " AS\n",
+      "SELECT p.id1 AS a, p.id2 AS b, p.score AS score", block_cols_sel, "\n",
       "FROM ", pairs_tbl, " p\n",
       block_cols_join,
       ";\n"
@@ -155,142 +150,46 @@ method(
   )
 
   # ----------------------------------------------------------
-  # 6. TEMP: connected components — iterate per block.
+  # 6. Resolve entities — the shared connected-components kernel.
   # ----------------------------------------------------------
-  comp_tbl <- tmp("_joinery_tmp_components")
-
-  cc_select_sql <- function(edges_src) {
-    paste0(
-      "WITH RECURSIVE cc AS (\n",
-      "  SELECT a AS node, a AS label FROM ", edges_src, "\n",
-      "  UNION\n",
-      "  SELECT e.b AS node, MIN(cc.label) AS label\n",
-      "  FROM ", edges_src, " e\n",
-      "  JOIN cc ON e.a = cc.node\n",
-      "  WHERE cc.label < e.b\n",
-      "  GROUP BY e.b\n",
-      ")\n",
-      "SELECT node AS id, MIN(label) AS root\n",
-      "FROM cc\n",
-      "GROUP BY node\n"
-    )
-  }
-
-  cc_wall_start <- Sys.time()
-
-  if (!length(block_by)) {
-    # No blocking — one-shot CC over the full edge set.
-    DBI::dbExecute(con, paste0(
-      "CREATE TEMP TABLE ", comp_tbl, " AS\n",
-      cc_select_sql(edges_tbl), ";"
-    ))
-  } else {
-    bsel <- paste(sprintf('"%s"', block_by), collapse = ", ")
-    blocks <- DBI::dbGetQuery(con, paste0(
-      "SELECT DISTINCT ", bsel, " FROM ", edges_tbl
-    ))
-
-    initialised <- FALSE
-    blk_edges <- tmp("_joinery_tmp_blk_edges")
-
-    for (b in seq_len(nrow(blocks))) {
-      conds <- vapply(block_by, function(col) {
-        v <- blocks[[col]][b]
-        if (is.na(v)) {
-          sprintf('"%s" IS NULL', col)
-        } else {
-          sprintf('"%s" = %s', col, DBI::dbQuoteLiteral(con, v))
-        }
-      }, character(1))
-      filter_clause <- paste0(" WHERE ", paste(conds, collapse = " AND "))
-
-      DBI::dbExecute(con, paste0(
-        "CREATE OR REPLACE TEMP TABLE ", blk_edges, " AS\n",
-        "SELECT a, b FROM ", edges_tbl, filter_clause, ";"
-      ))
-
-      if (!initialised) {
-        DBI::dbExecute(con, paste0(
-          "CREATE TEMP TABLE ", comp_tbl, " AS\n",
-          cc_select_sql(blk_edges), ";"
-        ))
-        initialised <- TRUE
-      } else {
-        DBI::dbExecute(con, paste0(
-          "INSERT INTO ", comp_tbl, "\n",
-          cc_select_sql(blk_edges), ";"
-        ))
-      }
-    }
-
-    if (initialised) {
-      DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", blk_edges))
-    } else {
-      # No blocks had edges (shouldn't reach here — n_pairs > 0 was
-      # checked earlier — but be defensive).
-      DBI::dbExecute(con, paste0(
-        "CREATE TEMP TABLE ", comp_tbl, " AS\n",
-        cc_select_sql(edges_tbl), ";"
-      ))
-    }
-  }
-
-  cc_wall_seconds <- as.numeric(
-    difftime(Sys.time(), cc_wall_start, units = "secs")
+  ent <- resolve_entities(
+    dplyr::tbl(con, edges_in), "a", "b",
+    score    = "score",
+    block_by = block_by,
+    debug    = debug
   )
-  
+  ent_name <- ent$lazy_query$x
+  cc_wall_seconds <- attr(ent, "wall_seconds") %||% NA_real_
+
   # ----------------------------------------------------------
-  # 7. TEMP: best score per id
-  # ----------------------------------------------------------
-  best_tbl <- tmp("_joinery_best_scores")
-  
-  sql_best <- paste0(
-    "CREATE TEMP TABLE ", best_tbl, " AS\n",
-    "SELECT id,\n",
-    "       MAX(score) AS score\n",
-    "FROM (\n",
-    "  SELECT id1 AS id, score FROM ", pairs_tbl, "\n",
-    "  UNION ALL\n",
-    "  SELECT id2 AS id, score FROM ", pairs_tbl, "\n",
-    ")\n",
-    "GROUP BY id;\n"
-  )
-  DBI::dbExecute(con, sql_best)
-  
-  # ----------------------------------------------------------
-  # 8. FINAL: join components + best score + base table + ranks
+  # 7. FINAL: relabel entity -> duplicate_group, attach base columns.
   # ----------------------------------------------------------
   out_name <- tmp("_joinery_tmp_dups")
   base_tbl <- base_table$lazy_query$x
-  
+
   final_sql <- paste0(
     "CREATE TABLE ", out_name, " AS\n",
-    "SELECT c.id AS id,\n",
-    "       DENSE_RANK() OVER (ORDER BY c.root) AS duplicate_group,\n",
-    "       b.score,\n",
-    "       ROW_NUMBER() OVER (\n",
-    "         PARTITION BY c.root\n",
-    "         ORDER BY b.score DESC NULLS LAST\n",
-    "       ) AS rank,\n",
+    "SELECT e.id AS id,\n",
+    "       e.entity AS duplicate_group,\n",
+    "       e.score AS score,\n",
+    "       e.rank AS rank,\n",
     "       bt.* EXCLUDE (", id_q, ")\n",
-    "FROM ", comp_tbl, " c\n",
-    "LEFT JOIN ", best_tbl, " b ON c.id = b.id\n",
-    "LEFT JOIN ", base_tbl, " bt ON c.id = bt.", id_q, "\n",
+    "FROM ", ent_name, " e\n",
+    "LEFT JOIN ", base_tbl, " bt ON e.id = bt.", id_q, "\n",
     "ORDER BY duplicate_group, rank;\n"
   )
-  
-  
+
   DBI::dbExecute(con, final_sql)
-  
+
   # Drop intermediate tables unless debugging
   if (!debug) {
     # Note: pairs_tbl and its intermediate tables (from .score_pairs_sql helper)
-    # are already temp tables and will be cleaned up automatically
-    walk(c(pairs_tbl, edges_tbl, comp_tbl, best_tbl), function(tbl) {
+    # are already temp tables and will be cleaned up automatically.
+    walk(c(pairs_tbl, edges_in, ent_name), function(tbl) {
       DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", tbl))
     })
   }
-  
+
   result <- dplyr::tbl(con, out_name)
   attr(result, "wall_seconds") <- cc_wall_seconds
   result

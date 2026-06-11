@@ -1287,3 +1287,30 @@ test_that("strip_vowels() removes vowels correctly", {
   )
 })
 
+
+test_that("prepare_search_data tolerates a non-unique id (warns, no cartesian crash)", {
+  # Regression: a non-unique id once exploded the block-attach merge into a
+  # cartesian (data.table allow.cartesian guard). block_dt must be unique by id,
+  # and the duplication must surface as a warning rather than a crash.
+  dt <- data.table::data.table(
+    id     = c("a", "a", "a", "b", "c"),       # "a" repeated
+    name   = c("mueller", "mueller", "mueller", "schmidt", "mueller"),
+    street = c("hauptstr", "hauptstr", "hauptstr", "ringstr", "hauptstr"),
+    blk    = c("1", "1", "1", "1", "1")
+  )
+  strat <- search_strategy(
+    name   ~ normalize_text + word_tokens(min_nchar = 3),
+    street ~ normalize_text + word_tokens(min_nchar = 3),
+    weights = c(name = 0.6, street = 0.4), block_by = "blk", threshold = 0.9
+  )
+  expect_warning(
+    tok <- prepare_search_data(dt, "id", strat),
+    "not unique"
+  )
+  # Block column attached exactly once per (id, token) — no row multiplication.
+  expect_true(all(tok$blk == "1"))
+  expect_equal(data.table::uniqueN(tok$id), 3L)
+  # A unique-id frame must not warn.
+  dt2 <- dt[!duplicated(id)]
+  expect_no_warning(prepare_search_data(dt2, "id", strat))
+})
