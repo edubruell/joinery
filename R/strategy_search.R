@@ -211,6 +211,40 @@ expr_to_step <- function(expr) {
 }
 
 
+#' Parse `column ~ steps` formulas into a named list of Search_Preparers
+#'
+#' Shared by [search_strategy()] and [exact_strategy()] — both consume the
+#' same `column ~ step1 + step2` tokenization grammar; only the matching half
+#' differs. Keeping one parser prevents the two constructors from drifting.
+#' @noRd
+.parse_strategy_formulas <- function(fmls) {
+  flatten_plus_calls <- function(expr) {
+    if (rlang::is_call(expr, "+")) {
+      c(flatten_plus_calls(expr[[2]]), flatten_plus_calls(expr[[3]]))
+    } else {
+      list(expr)
+    }
+  }
+
+  preparers <- map(fmls, function(fml) {
+    if (!rlang::is_formula(fml)) {
+      cli::cli_abort("All strategy arguments must be {.cls formula}s of the form {.code column ~ steps}.")
+    }
+
+    col <- rlang::as_string(rlang::f_lhs(fml))
+    rhs <- rlang::f_rhs(fml)
+
+    steps <- if (rlang::is_call(rhs, "+")) flatten_plus_calls(rhs) else list(rhs)
+    steps <- map(steps, expr_to_step)
+
+    Search_Preparer(col, steps)
+  })
+
+  names(preparers) <- map_chr(preparers, function(p) p@column)
+  preparers
+}
+
+
 #' Define a Search Strategy for Record Linkage
 #'
 #' @description
@@ -270,37 +304,7 @@ search_strategy <- function(...,
     cli::cli_abort("{.arg smoothing} must be a {.cls Smoothing} object created by a {.fn smooth_rip_*} helper")
   }
 
-  fmls <- rlang::list2(...)
-
-  flatten_plus_calls <- function(expr) {
-    if (rlang::is_call(expr, "+")) {
-      c(flatten_plus_calls(expr[[2]]), flatten_plus_calls(expr[[3]]))
-    } else {
-      list(expr)
-    }
-  }
-
-  preparers <- map(fmls, function(fml) {
-
-    if (!rlang::is_formula(fml)) {
-      cli::cli_abort("All arguments to {.fn search_strategy} must be formulas")
-    }
-
-    col <- rlang::as_string(rlang::f_lhs(fml))
-    rhs <- rlang::f_rhs(fml)
-
-    if (rlang::is_call(rhs, "+")) {
-      steps <- flatten_plus_calls(rhs)
-    } else {
-      steps <- list(rhs)
-    }
-
-    steps <- map(steps, expr_to_step)
-
-    Search_Preparer(col, steps)
-  })
-
-  names(preparers) <- map_chr(preparers, function(p) p@column)
+  preparers <- .parse_strategy_formulas(rlang::list2(...))
 
   if (!is.null(block_by)) {
     check_character(block_by)

@@ -23,7 +23,7 @@ kind of code is inside before you open the file.
 
 | Prefix | Role |
 |---|---|
-| `strategy_*.R` | S7 strategy classes & their constructors (`Step`, `Search_Preparer`, smoothing family, `Search_Strategy`, `Embedding_Strategy`). |
+| `strategy_*.R` | S7 strategy classes & their constructors (`Step`, `Search_Preparer`, smoothing family, `Search_Strategy`, `Embedding_Strategy`, `Exact_Strategy`). |
 | `preparer_*.R` | Step preparer functions (text → tokens), grouped by signature shape (`preparer_word.R` is text-in/text-out; `preparer_tokens.R` produces or operates on tokens). |
 | `generics_*.R` | S7 generic declarations, grouped by lifecycle era (`generics_core.R`, `generics_calibration.R`, `generics_embedding.R`, `generics_diagnostic.R`). |
 | `methods_<backend>_<stage>.R` | Token-backend dispatch, one file per (backend, workflow stage) — e.g. `methods_datatable_prepare.R`, `methods_duckdb_search.R`. Stages: `prepare`, `resolve`, `materialize`, `dedup`, `search`, `multistage`, `inspect`; DuckDB also has `methods_duckdb_batch.R` for the batching machinery. The `resolve` stage holds the shared connected-components entity kernel (`resolve_entities()`) that `dedup` delegates to. The `materialize` stage holds `materialize_records()`, the rehydrate-by-id semi-join complement of `extract_unmatched()`. |
@@ -47,7 +47,7 @@ methods on them.
 - **Add a new backend** → six `methods_<backend>_<stage>.R` files (`prepare`, `resolve`, `dedup`, `search`, `multistage`, `inspect`) plus optionally `embedding_methods_<backend>.R`. Add `Collate:` entries after the existing methods blocks (`resolve` before `dedup`, since `dedup` delegates to it).
 - **Extend calibration** → verb code in `calibration_<verb>.R`; result classes in `calibration_classes.R`; generic declarations in `generics_calibration.R`. Tidymodels-specific code is isolated in `calibration_tidymodels.R` / `calibration_recipe.R` so the `Suggests` dependency boundary is visible.
 - **Change error message style** → `internal_validation.R` carries the `cli::cli_abort()` exemplar; new code should follow that style.
-- **Exact (score-1.0) token-set prefilter** → `R/exact_links.R` holds `exact_token_links()` (both backend methods + the fingerprint/containment helpers). It rides `prepare_search_data()` for tokenization (never a parallel fingerprint) and returns `$links` + the `$residual` complement; self-form links feed `resolve_entities()`, the residual feeds `materialize_records()`.
+- **Exact (score-1.0) token-set matching** → it is a **strategy**, not a verb: `exact_strategy()` builds an `Exact_Strategy` (class + constructor in `R/strategy_exact.R`), and the standard apply verbs dispatch on it — `detect_duplicates()` (dedup face) and `search_candidates()` (cross face), implemented per-backend in `R/exact_methods_datatable.R` / `R/exact_methods_duckdb.R`, which also hold the shared fingerprint/containment kernel. Both return the **standard** schema with `score == 1.0`. The fingerprint rides `prepare_search_data()` (never a parallel fingerprint); the residual is the existing `extract_unmatched()`, and staging is `multi_stage_dedup` / `multi_stage_search` composing `list(exact_strategy(...), search_strategy(...))`. `Exact_Strategy` mirrors `Embedding_Strategy` as a sibling strategy class.
 
 ## Core S7 Classes
 
