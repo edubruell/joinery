@@ -21,4 +21,5 @@ NULL
   registerS3method("plot", "joinery::Match_Sample",      plot.Match_Sample,      envir = pkg)
   registerS3method("plot", "joinery::Stage_Comparison",  plot.Stage_Comparison,  envir = pkg)
   registerS3method("plot", "joinery::Embedding_Audit",   plot.Embedding_Audit,   envir = pkg)
+  registerS3method("plot", "joinery::Strategy_Plan",      plot.Strategy_Plan,     envir = pkg)
 }

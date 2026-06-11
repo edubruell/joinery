@@ -180,6 +180,57 @@ rarity_distribution <- new_generic(
 )
 
 
+#' Plan a Search Strategy from Raw Inputs
+#'
+#' @description
+#' Pre-match, **pre-strategy** diagnostic (Stage 08, plan item A7). Where
+#' [audit_strategy()] grades a *given* strategy and [rarity_distribution()]
+#' reads one column distribution, `plan_strategy()` helps you **find** the
+#' strategy: it surveys a set of candidate blockings and surfaces the
+#' cost/recall knee *before* the run.
+#'
+#' It is deliberately **scoring-free** — no token-overlap join, no pair
+#' scoring. Every probe is `O(rows)` or `O(blocks)`: a `GROUP BY` plus
+#' arithmetic, never a materialized pair set. It returns a `Strategy_Plan`
+#' carrying four reads: the blocking-resolution frontier (per candidate:
+#' `#blocks`, size distribution, `Sum(na*nb)` brute-pair **count**, and the
+#' share of exact-token-set twins that stay co-blocked), the exact-set
+#' persister rate, the residual structure (matchable vs one-sided +
+#' per-column partial-recoverable shares), and per-column discriminativeness
+#' with a `min_rarity` → intermediate-size cost curve and the empty-column
+#' score-ceiling warning.
+#'
+#' Dispatches on `c("base", "strategy")`; the strategy supplies only the
+#' preparer pipeline (its own `block_by` is ignored — `block_candidates` is
+#' the thing being chosen).
+#'
+#' @param base A data.frame / tibble / data.table (or backend table).
+#' @param strategy A `Search_Strategy` supplying the tokenization to plan
+#'   against.
+#' @param target Optional second table. `NULL` (default) plans a dedup;
+#'   non-`NULL` plans a cross-table search.
+#' @param block_candidates Named list of candidate `block_by` specs to compare
+#'   (e.g. `list(plz2 = "plz2", plz5_wz = c("plz5", "wz08_3"))`).
+#' @param base_id Character scalar naming the id column in `base` (required).
+#' @param target_id Character scalar naming the id column in `target`
+#'   (defaults to `base_id`).
+#' @param ... Backend-specific arguments. Notably `n_offenders`,
+#'   `min_rarity_grid`, `containment` (opt-in §22 read; the only read that
+#'   performs a bounded structural join), and `sample_n` (DuckDB).
+#'
+#' @return A `Strategy_Plan` object.
+#'
+#' @seealso [audit_strategy()] (grades a chosen strategy — downstream of this),
+#'   [rarity_distribution()] (the column-distribution read this subsumes),
+#'   [exact_strategy()] (the front-stage the persister rate sizes).
+#'
+#' @export
+plan_strategy <- new_generic(
+  "plan_strategy",
+  c("base", "strategy")
+)
+
+
 #' Recommendations from a Diagnostic Object
 #'
 #' @description

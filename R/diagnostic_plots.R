@@ -512,6 +512,44 @@ stage_score_plot <- function(x, ...) {
 
 
 # ---------------------------------------------------------------------------
+# Strategy_Plan plots
+# ---------------------------------------------------------------------------
+
+#' Cost/recall frontier scatter for a strategy plan
+#'
+#' Plots each candidate block key at (candidate, exact_twin_survival) — the
+#' recall axis — with the brute-pair cost in the point labels. The knee is the
+#' cheapest candidate whose twin survival stays high.
+#'
+#' @param x A `Strategy_Plan` object from [plan_strategy()].
+#' @param ... Passed to [tinyplot::tinyplot()].
+#' @return Invisibly, the plotted `data.table` (frontier).
+#' @noRd
+frontier_plot <- function(x, ...) {
+  fr <- x@frontier
+  if (is.null(fr) || nrow(fr) == 0L)
+    cli::cli_abort("{.field frontier} is NULL or empty")
+  fr <- data.table::copy(fr)[!is.na(exact_twin_survival)]
+  if (nrow(fr) == 0L)
+    cli::cli_abort("frontier has no candidate with a defined twin survival")
+  n  <- nrow(fr)
+  fr[, cand_idx := seq_len(n)]
+  block_names <- fr$block_key
+  xaxl_fn <- function(v) block_names[as.integer(round(v))]
+  .tinyplot_call(
+    call_args = list(exact_twin_survival ~ cand_idx, data = fr,
+                     type = "p", xaxb = seq_len(n), xaxl = xaxl_fn,
+                     ylim = c(0, 1)),
+    defaults  = list(theme = "clean", xlab = "Candidate block",
+                     ylab = "Exact-twin survival",
+                     main = "Blocking frontier (recall axis)"),
+    user_dots = list(...)
+  )
+  invisible(fr)
+}
+
+
+# ---------------------------------------------------------------------------
 # Default plot() methods (plain S3 dispatch — S7 objects expose S3 classes)
 # ---------------------------------------------------------------------------
 
@@ -520,6 +558,9 @@ plot.Match_Overview <- function(x, ...) score_histogram(x, ...)
 
 #' @noRd
 plot.Strategy_Audit <- function(x, ...) rarity_histogram(x, ...)
+
+#' @noRd
+plot.Strategy_Plan <- function(x, ...) frontier_plot(x, ...)
 
 #' @noRd
 plot.Embedding_Audit <- function(x, ...) similarity_histogram(x, ...)

@@ -177,6 +177,58 @@
     )
   ),
   list(
+    id         = "blocking_knee",
+    signal     = "blocking_knee_savings",
+    threshold  = 0.25,
+    op         = ">",
+    lever      = "block_by",
+    context_fn = function(signals) {
+      list(block = signals[["blocking_knee_block"]],
+           surv  = signals[["blocking_knee_survival"]])
+    },
+    message_fn = function(v, ctx) sprintf(
+      "block key '%s' keeps %.1f%% of exact twins while cutting brute pairs by %.0f%%; prefer this coarser block.",
+      ctx$block, 100 * ctx$surv, 100 * v
+    )
+  ),
+  list(
+    id         = "empty_column_ceiling",
+    signal     = "max_empty_column_rate",
+    threshold  = 0.10,
+    op         = ">",
+    lever      = "on_missing / exact_strategy front stage",
+    context_fn = function(signals) {
+      list(col = signals[["max_empty_column_name"]],
+           ceil = signals[["max_empty_column_ceiling"]])
+    },
+    message_fn = function(v, ctx) sprintf(
+      "%.1f%% of records have empty `%s`; their score ceiling is %.3f (1 - weight) — they cannot match above it. Consider an `exact_strategy()` front stage.",
+      100 * v, ctx$col, ctx$ceil
+    )
+  ),
+  list(
+    id         = "consider_containment",
+    signal     = "containment_share",
+    threshold  = 0.05,
+    op         = ">",
+    lever      = "exact_strategy(containment=)",
+    message_fn = function(v) sprintf(
+      "%.1f%% of records are a strict token-set subset of another; consider enabling `containment` on an `exact_strategy()`.",
+      100 * v
+    )
+  ),
+  list(
+    id         = "est_comparisons_too_high",
+    signal     = "est_comparisons",
+    threshold  = 1e9,
+    op         = ">",
+    lever      = "block_by / min_rarity",
+    message_fn = function(v) sprintf(
+      "the cheapest candidate block still implies ~%.2g brute comparisons; tighten `block_by` or raise `min_rarity`.",
+      v
+    )
+  ),
+  list(
     id         = "low_yield_stage",
     signal     = "min_stage_base_pct",
     threshold  = 0.01,
