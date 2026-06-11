@@ -145,19 +145,20 @@ test_that("deduplicate_table() works with data.frame input", {
 })
 
 
-# ── multi_stage_match ────────────────────────────────────────────────────────
+# ── multi_stage_search ────────────────────────────────────────────────────────
 
-test_that("multi_stage_match() works with tibble inputs", {
-  out <- multi_stage_match(
+test_that("multi_stage_search() works with tibble inputs", {
+  out <- multi_stage_search(
     base_tbl(), target_tbl(), "id", "id",
     strategies = list(s1 = token_strat())
   )
   expect_true(tibble::is_tibble(out))
-  expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(out)))
+  expect_true(all(c("entity", "id", "rep", "rank", "score", "stage") %in% names(out)))
+  expect_false(is.null(attr(out, "ledger")))   # directed ledger preserved
 })
 
-test_that("multi_stage_match() works with data.frame inputs", {
-  out <- multi_stage_match(
+test_that("multi_stage_search() works with data.frame inputs", {
+  out <- multi_stage_search(
     base_df(), target_df(), "id", "id",
     strategies = list(s1 = token_strat())
   )

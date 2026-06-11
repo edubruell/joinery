@@ -26,7 +26,7 @@
 #'
 #' Embedding strategies compute one embedding vector per record and use
 #' cosine similarity for matching. They are designed for use in multi-stage
-#' workflows via `multi_stage_match()`.
+#' workflows via `multi_stage_search()`.
 #'
 #' @slot columns Character vector. If empty (character(0)),
 #'   all non-id character columns are used.
@@ -168,7 +168,7 @@ method(print.Search_Preparer, Embedding_Strategy) <- function(x, ...) {
 #' )
 #' 
 #' # Use in multi-stage workflow
-#' results <- multi_stage_match(
+#' results <- multi_stage_search(
 #'   base_table = customers_a,
 #'   target_table = customers_b,
 #'   base_id = "id_a",

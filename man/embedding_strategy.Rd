@@ -63,7 +63,7 @@ emb_strat <- embedding_strategy(
 )
 
 # Use in multi-stage workflow
-results <- multi_stage_match(
+results <- multi_stage_search(
   base_table = customers_a,
   target_table = customers_b,
   base_id = "id_a",

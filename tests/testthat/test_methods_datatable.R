@@ -307,7 +307,7 @@ test_that("extract_unmatched() works for data.table backend", {
 })
 
 
-test_that("multi_stage_match works with example data", {
+test_that("multi_stage_search works with example data", {
   base   <- as.data.table(base_example)
   target <- as.data.table(target_example)
   
@@ -330,7 +330,7 @@ test_that("multi_stage_match works with example data", {
   # Intentionally no names supplied → should auto-name strategy_1, strategy_2
   strategies <- list(strat_a, strat_b)
   
-  res <- multi_stage_match(
+  res <- multi_stage_search(
     base,
     target,
     base_id = "id_base",
@@ -339,23 +339,19 @@ test_that("multi_stage_match works with example data", {
   )
   
   expect_s3_class(res, "data.table")
-  
-  # Output schema should contain:
-  expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(res)))
-  
-  # Stages must equal the auto names
-  expect_true(all(unique(res$stage) %in% c("strategy_1", "strategy_2")))
-  
-  # Global match IDs must be unique
-  expect_equal(
-    length(unique(res$match_id)),
-    length(unique(res$match_id))
-  )
-  
+
+  # Output is the cross-source entity grouping + directed ledger attribute.
+  expect_true(all(c("entity", "id", "rep", "rank", "score", "stage") %in% names(res)))
+  led <- attr(res, "ledger")
+  expect_false(is.null(led))
+  expect_true(all(c("from", "to", "stage", "score") %in% names(led)))
+
+  # Stages (on the ledger edges) must equal the auto names
+  expect_true(all(unique(led$stage) %in% c("strategy_1", "strategy_2")))
+
   # Basic sanity
-  expect_gt(nrow(res), 0)
+  expect_gt(nrow(led), 0)
   expect_true(all(res$rank >= 1))
-  expect_true(all(res$source %in% c("base", "target")))
 })
 
 test_that("log smoothing increases ngram similarity", {
@@ -681,7 +677,7 @@ test_that("extract_unmatched() errors on bad inputs", {
   expect_error(extract_unmatched(dt, "id", matches_bad))
 })
 
-test_that("multi_stage_match() exits early when stage 1 exhausts residuals", {
+test_that("multi_stage_search() exits early when stage 1 exhausts residuals", {
   base   <- data.table(id = c("B1", "B2"), name = c("alpha", "beta"))
   target <- data.table(id = c("T1", "T2"), name = c("alpha", "beta"))
 
@@ -695,14 +691,16 @@ test_that("multi_stage_match() exits early when stage 1 exhausts residuals", {
     threshold = 0.1
   )
 
-  res <- multi_stage_match(base, target, "id", "id",
+  res <- multi_stage_search(base, target, "id", "id",
                            list(strat_exact, strat_fallback))
 
-  expect_gt(nrow(res), 0)
-  expect_true(all(res$stage == "strategy_1"))
+  led <- attr(res, "ledger")
+  expect_gt(nrow(led), 0)
+  # Stage 1 links everything, so no edge is contributed by stage 2.
+  expect_true(all(led$stage == "strategy_1"))
 })
 
-test_that("multi_stage_match() returns empty schema when no matches found", {
+test_that("multi_stage_search() returns singleton entities when no matches found", {
   base   <- data.table(id = "B1", name = "alpha")
   target <- data.table(id = "T1", name = "omega")
 
@@ -711,10 +709,13 @@ test_that("multi_stage_match() returns empty schema when no matches found", {
     threshold = 0.99
   )
 
-  result <- multi_stage_match(base, target, "id", "id", list(strat))
+  result <- multi_stage_search(base, target, "id", "id", list(strat))
 
-  expect_equal(nrow(result), 0)
-  expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(result)))
+  # Every record comes back as its own singleton entity; the ledger is empty.
+  expect_setequal(result$id, c("B1", "T1"))
+  expect_equal(uniqueN(result$entity), 2L)
+  expect_equal(nrow(attr(result, "ledger")), 0L)
+  expect_true(all(c("entity", "id", "rep", "rank", "score", "stage") %in% names(result)))
 })
 
 test_that("max_candidates trims pairwise candidates in detect_duplicates", {

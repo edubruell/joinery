@@ -2,7 +2,7 @@
 # data.table backend — residual extraction & multi-stage matching
 # ============================================================
 #
-# `extract_unmatched()` and `multi_stage_match()` methods for
+# `extract_unmatched()` and `multi_stage_search()` methods for
 # in-memory data.table inputs.
 #
 # ============================================================
@@ -37,93 +37,142 @@ method(
   dt[!(.id_vals %in% matched_ids)]
 }
 
-# Method: multi_stage_match
+# Method: multi_stage_search
 #------------------------------------------------------------------------------
 method(
-  multi_stage_match,
+  multi_stage_search,
   list(DT_tbl, DT_tbl, class_character, class_character, class_list)
 ) <- function(base_table,
               target_table,
               base_id,
               target_id,
               strategies,
+              self        = FALSE,
+              source_by   = NULL,
+              collapse    = c("none", "rep", "union"),
+              rep_rule    = c("canonical", "newest", "longest_lived",
+                              "most_complete", "union"),
+              rebind      = c("explicit", "self", "accumulate"),
+              direction   = c("forward", "backward", "bidirectional"),
+              edge_filter = NULL,
+              rep_by      = NULL,
               ...) {
 
-  # ---- VALIDATION ----------------------------------------------------------
-  if (!is.list(strategies) || length(strategies) == 0L) {
-    cli::cli_abort("{.arg strategies} must be a non-empty list")
+  pol      <- .check_search_policy(collapse, rebind, direction, rep_rule)
+  rep_rule <- pol$rep_rule
+
+  base_dt   <- data.table::copy(base_table)
+  base_dt[[base_id]] <- as.character(base_dt[[base_id]])
+  if (self) {
+    target_dt <- base_dt
+    target_id <- base_id
+  } else {
+    target_dt <- data.table::copy(target_table)
+    target_dt[[target_id]] <- as.character(target_dt[[target_id]])
   }
 
-  # If names missing:  assign "strategy_1", "strategy_2", …
-  if (is.null(names(strategies)) || any(names(strategies) == "")) {
-    names(strategies) <- paste0("strategy_", seq_along(strategies))
-  }
-
-  # Ensure all elements are Search_Strategy or Embedding_Strategy
-  valid_strategy <- function(s) S7_inherits(s, Search_Strategy) || S7_inherits(s, Embedding_Strategy)
-  if (!all(map_lgl(strategies, valid_strategy))) {
-    cli::cli_abort("{.arg strategies} must be a list of {.cls Search_Strategy} or {.cls Embedding_Strategy} objects")
-  }
-
-  # ---- PREP ----------------------------------------------------------------
-  base_res   <- data.table::copy(base_table)
-  target_res <- data.table::copy(target_table)
-
-  all_matches   <- list()
-  match_counter <- 0L
-
-  # ---- MAIN LOOP -----------------------------------------------------------
-  for (stage_name in names(strategies)) {
-    strategy <- strategies[[stage_name]]
-
-    # Run stage matching
-    stage_matches <- search_candidates(
-      base_res,
-      target_res,
-      base_id,
-      target_id,
-      strategy = strategy
-    )
-
-    if (nrow(stage_matches) > 0) {
-      # Label stage
-      stage_matches[, stage := stage_name]
-
-      # Make match_id globally unique across stages
-      # original match_id resets inside search_candidates
-      stage_matches[, match_id := match_id + match_counter]
-
-      match_counter <- max(stage_matches$match_id)
-
-      all_matches[[stage_name]] <- stage_matches
-
-      # Remove matched rows (per side)
-      base_res <- extract_unmatched(
-        base_res, base_id, stage_matches[source == "base"]
-      )
-      target_res <- extract_unmatched(
-        target_res, target_id, stage_matches[source == "target"]
-      )
-
-      # Stop if one side is empty
-      if (nrow(base_res) == 0L || nrow(target_res) == 0L) break
+  extra_cols <- c(source_by, rep_by)
+  for (cc in extra_cols) {
+    if (!cc %in% names(base_dt) || (!self && !cc %in% names(target_dt))) {
+      cli::cli_abort("Column {.field {cc}} ({.arg source_by}/{.arg rep_by}) must exist on both tables.")
     }
   }
 
-  # ---- RETURN --------------------------------------------------------------
-  if (length(all_matches) == 0L) {
-    # Empty-structure return (schema only)
-    return(data.table::data.table(
-      match_id = integer(),
-      score    = numeric(),
-      stage    = character(),
-      source   = character(),
-      id       = character(),
-      rank     = integer()
-    ))
+  staged <- .run_staged_search(
+    base = base_dt, target = target_dt, base_id = base_id, target_id = target_id,
+    strategies = strategies, self = self, source_by = source_by,
+    collapse = pol$collapse, rep_rule = rep_rule, rebind = pol$rebind,
+    direction = pol$direction, edge_filter = edge_filter, rep_by = rep_by
+  )
+
+  # Pooled vertex / source map: one row per record across both sides.
+  vslice <- function(dt, idcol) {
+    cols <- c(idcol, extra_cols)
+    s <- dt[, cols, with = FALSE]
+    data.table::setnames(s, idcol, "id")
+    s[, id := as.character(id)]
+    s
+  }
+  vertices <- if (self) {
+    vslice(base_dt, base_id)
+  } else {
+    data.table::rbindlist(list(vslice(base_dt, base_id),
+                               vslice(target_dt, target_id)),
+                          use.names = TRUE, fill = TRUE)
+  }
+  vertices <- unique(vertices, by = "id")
+
+  .finalize_search_grouping(staged$ledger, vertices, source_by, rep_by)
+}
+
+# Method: multi_stage_dedup
+#------------------------------------------------------------------------------
+# Staged dedup over a single table: accumulate the links every stage finds and
+# resolve connected components ONCE at the end (so A~B in stage 1 + B~C in
+# stage 3 -> one entity). Composes the shared engine (R/internal_staging.R) +
+# resolve_entities (the only CC) + materialize_records (the only rehydrate).
+method(
+  multi_stage_dedup,
+  list(DT_tbl, class_character, class_list)
+) <- function(table, id, strategies,
+              rep_by = NULL, edge_filter = NULL, ...) {
+
+  dt <- data.table::copy(table)
+  if (!id %in% names(dt)) {
+    cli::cli_abort("ID column {.field {id}} not found in {.arg table}.")
+  }
+  dt[[id]] <- as.character(dt[[id]])
+  if (!is.null(rep_by) && !rep_by %in% names(dt)) {
+    cli::cli_abort("{.arg rep_by} ({.val {rep_by}}) must be a column in {.arg table}.")
   }
 
-  out <- data.table::rbindlist(all_matches, use.names = TRUE, fill = TRUE)
-  data.table::setorder(out, match_id, stage, source, rank)
-  out[]
+  all_ids <- unique(dt[[id]])
+
+  staged <- .run_staged_dedup(dt, id, strategies, all_ids,
+                              edge_filter = edge_filter)
+  edges <- staged$edges
+
+  empty_out <- function() {
+    out <- data.table::data.table(
+      duplicate_group = integer(), id = character(),
+      score = numeric(), rank = integer(), stage = character()
+    )
+    merge(out, dt, by.x = "id", by.y = id, all.x = TRUE, sort = FALSE)[]
+  }
+  if (nrow(edges) == 0L) return(empty_out())
+
+  # --- final connected components over ALL accumulated edges ----------------
+  verts <- if (is.null(rep_by)) {
+    all_ids
+  } else {
+    unique(dt[, c(id, rep_by), with = FALSE], by = id) |>
+      data.table::setnames(id, "id")
+  }
+  ent <- resolve_entities(
+    edges    = edges[, .(from, to, score)],
+    id_a     = "from",
+    id_b     = "to",
+    score    = "score",
+    vertices = verts,
+    rep_by   = rep_by
+  )
+  ent <- ent[!is.na(score)]                 # drop singletons -> only duplicates
+  if (nrow(ent) == 0L) return(empty_out())
+
+  # --- stage that first linked each record ----------------------------------
+  stage_levels <- unique(edges$stage)
+  long <- data.table::rbindlist(list(
+    edges[, .(id = from, stage)],
+    edges[, .(id = to,   stage)]
+  ))
+  long[, so := match(stage, stage_levels)]
+  first_stage <- long[, .(stage = stage_levels[min(so)]), by = "id"]
+
+  data.table::setnames(ent, "entity", "duplicate_group")
+  result <- ent[, .(id, duplicate_group, score, rank)]
+  result <- first_stage[result, on = "id"]
+  data.table::setcolorder(result, c("duplicate_group", "id", "score", "rank", "stage"))
+  data.table::setkeyv(result, c("duplicate_group", "rank"))
+
+  merge(result, dt, by.x = "id", by.y = id, all.x = TRUE, sort = FALSE)[]
 }

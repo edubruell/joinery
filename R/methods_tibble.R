@@ -14,7 +14,7 @@
 #   - Call the DT_tbl method implementation
 #       (prepare_search_data, compute_rarity, detect_duplicates,
 #        search_candidates, deduplicate_table, extract_unmatched,
-#        multi_stage_match, .inspect_tokens)
+#        multi_stage_search, .inspect_tokens)
 #
 #   - Convert results back to the original container type
 #       using back_to_original()
@@ -230,31 +230,68 @@ method(
 }
 
 ################################################################################
-# multi_stage_match
+# multi_stage_search
+################################################################################
+
+# Re-attach the directed ledger that the entity-grouping return carries as an
+# attribute (as_tibble / as.data.frame drop custom attributes).
+.ms_search_back <- function(out, template) {
+  ledger <- attr(out, "ledger", exact = TRUE)
+  res <- back_to_original(out, template)
+  if (!is.null(ledger)) attr(res, "ledger") <- ledger
+  res
+}
+
+method(
+  multi_stage_search,
+  list(.jyDF, .jyDF, class_character, class_character, class_list)
+) <- function(base_table, target_table, base_id, target_id, strategies, ...) {
+  out <- multi_stage_search(as_DT(base_table), as_DT(target_table), base_id, target_id, strategies, ...)
+  .ms_search_back(out, base_table)
+}
+
+method(
+  multi_stage_search,
+  list(.jyTBL_DF, .jyTBL_DF, class_character, class_character, class_list)
+) <- function(base_table, target_table, base_id, target_id, strategies, ...) {
+  out <- multi_stage_search(as_DT(base_table), as_DT(target_table), base_id, target_id, strategies, ...)
+  .ms_search_back(out, base_table)
+}
+
+method(
+  multi_stage_search,
+  list(.jyTBL, .jyTBL, class_character, class_character, class_list)
+) <- function(base_table, target_table, base_id, target_id, strategies, ...) {
+  out <- multi_stage_search(as_DT(base_table), as_DT(target_table), base_id, target_id, strategies, ...)
+  .ms_search_back(out, base_table)
+}
+
+################################################################################
+# multi_stage_dedup
 ################################################################################
 
 method(
-  multi_stage_match,
-  list(.jyDF, .jyDF, class_character, class_character, class_list)
-) <- function(base_table, target_table, base_id, target_id, strategies, ...) {
-  out <- multi_stage_match(as_DT(base_table), as_DT(target_table), base_id, target_id, strategies, ...)
-  back_to_original(out, base_table)
+  multi_stage_dedup,
+  list(.jyDF, class_character, class_list)
+) <- function(table, id, strategies, ...) {
+  out <- multi_stage_dedup(as_DT(table), id, strategies, ...)
+  back_to_original(out, table)
 }
 
 method(
-  multi_stage_match,
-  list(.jyTBL_DF, .jyTBL_DF, class_character, class_character, class_list)
-) <- function(base_table, target_table, base_id, target_id, strategies, ...) {
-  out <- multi_stage_match(as_DT(base_table), as_DT(target_table), base_id, target_id, strategies, ...)
-  back_to_original(out, base_table)
+  multi_stage_dedup,
+  list(.jyTBL_DF, class_character, class_list)
+) <- function(table, id, strategies, ...) {
+  out <- multi_stage_dedup(as_DT(table), id, strategies, ...)
+  back_to_original(out, table)
 }
 
 method(
-  multi_stage_match,
-  list(.jyTBL, .jyTBL, class_character, class_character, class_list)
-) <- function(base_table, target_table, base_id, target_id, strategies, ...) {
-  out <- multi_stage_match(as_DT(base_table), as_DT(target_table), base_id, target_id, strategies, ...)
-  back_to_original(out, base_table)
+  multi_stage_dedup,
+  list(.jyTBL, class_character, class_list)
+) <- function(table, id, strategies, ...) {
+  out <- multi_stage_dedup(as_DT(table), id, strategies, ...)
+  back_to_original(out, table)
 }
 
 ################################################################################

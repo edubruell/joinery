@@ -258,27 +258,103 @@ materialize_records <- new_generic(
 )
 
 
-#' Multi-stage record linkage
+#' Multi-source staged entity resolution (the search face)
 #'
 #' @description
-#' Generic for running several search strategies in sequence on a pair of
-#' tables. Backend methods are responsible for executing the per-stage
-#' matching, removing matched rows, and combining results.
+#' Link the same real-world entity across a **source** axis (multiple datasets,
+#' or multiple vintages of one dataset) by running an ordered list of strategies
+#' as successive directed-search passes, accumulating a directed edge **ledger**,
+#' and resolving it into a single cross-source **entity grouping** (each record's
+#' trajectory) via [resolve_entities()] — the shared output tail.
+#'
+#' This is the search face of the staged layer; [multi_stage_dedup()] is the
+#' dedup face. Both wrap the shared staged engine (`R/internal_staging.R`). The
+#' search stays a *directed* search (base/target distinct) because completeness
+#' differs across sources (§22 containment asymmetry), which a dedup self-join
+#' would discard.
 #'
 #' @param base_table The left table in the linkage.
-#' @param target_table The right table in the linkage.
+#' @param target_table The right table (pass `base_table` with `self = TRUE`
+#'   for a pooled-corpus self-search).
 #' @param base_id Character scalar naming the ID column in `base_table`.
 #' @param target_id Character scalar naming the ID column in `target_table`.
-#' @param strategies Named list of `Search_Strategy` objects defining the
-#'   stages to run (in order).
+#' @param strategies Named, ordered list; each element is an `Exact_Strategy`,
+#'   `Search_Strategy`, or `Embedding_Strategy` (S7 dispatch picks the method).
+#' @param self Logical; `TRUE` pools `base_table` as both sides (staged
+#'   self-search). Edges stay directed and carry the source-pair.
+#' @param source_by Optional character vector naming the generic provenance
+#'   column(s) (e.g. `"year"`, `"register"`, or a composite). When set, each
+#'   ledger edge is tagged `within_source`/`cross_source` with the source-pair,
+#'   and the grouping carries `source` / `covered_sources`.
+#' @param collapse Between-stage policy: `"none"` (residual only), `"rep"`
+#'   (collapse each found group to one representative — collapse-and-continue).
+#' @param rep_rule Representative-selection rule for collapse / canonicalisation.
+#' @param rebind How the next stage's sides form from {reps, residual}:
+#'   `"explicit"`, `"self"`, or `"accumulate"` (incremental panel update).
+#' @param direction Per-stage scoring orientation: `"forward"`, `"backward"`,
+#'   or `"bidirectional"`.
+#' @param edge_filter Optional `function(edges, stage_name) -> edges` per-stage
+#'   callback on the directed edges.
+#' @param rep_by Optional priority column for representative selection
+#'   (passed to [resolve_entities()]).
 #' @param ... Additional backend-specific arguments.
 #'
-#' @return A backend-specific match table, or `NULL` if no matches are found.
+#' @return The cross-source **entity grouping**, one row per pooled record:
+#'   `entity | id | rep | rank | score | source | covered_sources | n_in_entity
+#'   | stage`. The directed edge ledger (`from | to | score | stage |
+#'   source_from | source_to | within_source | direction`) rides as the
+#'   `"ledger"` attribute.
+#'
+#' @seealso [multi_stage_dedup()] (dedup face), [resolve_entities()].
 #'
 #' @export
-multi_stage_match <- new_generic(
-  "multi_stage_match",
+multi_stage_search <- new_generic(
+  "multi_stage_search",
   c("base_table", "target_table", "base_id", "target_id", "strategies")
+)
+
+
+#' Staged duplicate detection (within one table)
+#'
+#' @description
+#' Run an ordered list of strategies as successive dedup passes over a single
+#' table, accumulating the links each stage finds and resolving connected
+#' components **once at the end**. The headline use is the §29 architecture:
+#' an exact collapse front stage, then progressively **looser-blocked** fuzzy
+#' passes over the still-unmatched residual, so a record linked `A~B` in an
+#' early stage and `B~C` in a later one closes into a single entity `{A,B,C}`.
+#'
+#' This is the dedup face of the staged layer; [multi_stage_search()] is the
+#' search face. Both wrap the shared staged engine (`R/internal_staging.R`) and
+#' resolve to entities via [resolve_entities()]. `multi_stage_dedup()` takes a
+#' single `table` (never `base`/`target`) — cross-source staged linkage is a
+#' directed search, which is [multi_stage_search()].
+#'
+#' @param table A data.frame / tibble / data.table (or backend table) to
+#'   deduplicate.
+#' @param id Character scalar naming the ID column in `table`.
+#' @param strategies Named, ordered list. Each element is an `Exact_Strategy`,
+#'   `Search_Strategy`, or `Embedding_Strategy`; the loop calls one apply verb
+#'   and S7 dispatch picks the method — there is no exact/fuzzy branch.
+#' @param rep_by Optional character scalar naming a priority column on `table`
+#'   used to pick each entity's canonical representative (passed straight to
+#'   [resolve_entities()]: smallest `rep_by` wins, ties by smallest id).
+#' @param edge_filter Optional `function(edges, stage_name) -> edges` callback
+#'   applied to each stage's edges before accumulation (e.g. a domain-specific
+#'   mover guard). `edges` carries `from`, `to`, `score`, `stage`.
+#' @param ... Additional backend-specific arguments.
+#'
+#' @return Standard dedup schema: `duplicate_group | id | score | rank` plus the
+#'   original columns of `table`, and a `stage` column recording which stage
+#'   first linked each record.
+#'
+#' @seealso [multi_stage_search()] (search face), [resolve_entities()] (the
+#'   shared entity-resolution tail).
+#'
+#' @export
+multi_stage_dedup <- new_generic(
+  "multi_stage_dedup",
+  c("table", "id", "strategies")
 )
 
 

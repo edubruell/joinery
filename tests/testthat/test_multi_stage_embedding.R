@@ -1,10 +1,11 @@
 skip_if_not_installed("tidyllm")
 
-# Tests for multi_stage_match() across mixed strategy types:
-# token (Search_Strategy) followed by embedding (Embedding_Strategy)
-# on residuals. Verifies the validation guard accepts Embedding_Strategy,
-# residual extraction works across strategy types, and match_ids are
-# globally unique across stages.
+# Tests for multi_stage_search() across mixed strategy types:
+# token (Search_Strategy) followed by embedding (Embedding_Strategy) on
+# residuals. multi_stage_search() resolves to a cross-source ENTITY GROUPING
+# (one row per record) with the directed edge ledger on the "ledger" attribute;
+# these tests verify the guard accepts Embedding_Strategy, residual handling
+# works across strategy types, and the stage tagging is correct.
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -66,24 +67,28 @@ emb_strategy <- function(threshold = 0.99) {
   )
 }
 
+ent_of <- function(out, i) out[id == i]$entity
+
 
 # ── Validation: guard accepts Embedding_Strategy ──────────────────────────────
 
-test_that("multi_stage_match() (data.table) accepts Embedding_Strategy in the list", {
+test_that("multi_stage_search() (data.table) returns the entity grouping + ledger", {
   local_mocked_bindings(embed = make_embed_mock(), .package = "tidyllm")
 
-  out <- multi_stage_match(
+  out <- multi_stage_search(
     make_base(), make_target(), "id", "id",
     strategies = list(token = token_strategy(), emb = emb_strategy())
   )
 
   expect_s3_class(out, "data.table")
-  expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(out)))
+  expect_true(all(c("entity", "id", "rep", "rank", "score", "stage") %in% names(out)))
+  expect_false(is.null(attr(out, "ledger")))
+  expect_true(all(c("from", "to", "stage", "score") %in% names(attr(out, "ledger"))))
 })
 
-test_that("multi_stage_match() rejects non-strategy objects", {
+test_that("multi_stage_search() rejects non-strategy objects", {
   expect_error(
-    multi_stage_match(
+    multi_stage_search(
       make_base(), make_target(), "id", "id",
       strategies = list(token = token_strategy(), bogus = list())
     ),
@@ -91,9 +96,9 @@ test_that("multi_stage_match() rejects non-strategy objects", {
   )
 })
 
-test_that("multi_stage_match() rejects empty strategies list", {
+test_that("multi_stage_search() rejects empty strategies list", {
   expect_error(
-    multi_stage_match(
+    multi_stage_search(
       make_base(), make_target(), "id", "id",
       strategies = list()
     ),
@@ -104,80 +109,74 @@ test_that("multi_stage_match() rejects empty strategies list", {
 
 # ── data.table: token → embedding pipeline ────────────────────────────────────
 
-test_that("token + embedding stages tag matches with stage names", {
+test_that("token + embedding stages link the right pairs into entities", {
   local_mocked_bindings(embed = make_embed_mock(), .package = "tidyllm")
 
-  out <- multi_stage_match(
+  out <- multi_stage_search(
     make_base(), make_target(), "id", "id",
     strategies = list(token = token_strategy(), emb = emb_strategy())
   )
 
-  expect_setequal(unique(out$stage), c("token", "emb"))
+  # A1/A2 one entity (token stage); B1/B2 one entity (emb stage).
+  expect_equal(ent_of(out, "A1"), ent_of(out, "A2"))
+  expect_equal(ent_of(out, "B1"), ent_of(out, "B2"))
+  expect_true(ent_of(out, "A1") != ent_of(out, "B1"))
 
-  token_ids <- unique(out[stage == "token", id])
-  emb_ids   <- unique(out[stage == "emb",   id])
-  expect_true(all(c("A1", "A2") %in% token_ids))
-  expect_true(all(c("B1", "B2") %in% emb_ids))
+  expect_equal(unique(out[id %in% c("A1", "A2")]$stage), "token")
+  expect_equal(unique(out[id %in% c("B1", "B2")]$stage), "emb")
 })
 
 test_that("records matched in stage 1 are not re-matched in stage 2", {
   local_mocked_bindings(embed = make_embed_mock(), .package = "tidyllm")
 
-  out <- multi_stage_match(
+  out <- multi_stage_search(
     make_base(), make_target(), "id", "id",
     strategies = list(token = token_strategy(), emb = emb_strategy())
   )
-
-  # A1 / A2 are matched by tokens; the embedding stage must not surface them.
-  expect_false(any(out[stage == "emb", id] %in% c("A1", "A2")))
+  led <- attr(out, "ledger")
+  # A1 / A2 are linked by tokens; the embedding stage must not re-link them.
+  emb_ids <- unique(c(led[stage == "emb"]$from, led[stage == "emb"]$to))
+  expect_false(any(c("A1", "A2") %in% emb_ids))
 })
 
-test_that("multi_stage_match() produces globally unique match_ids across stages", {
+test_that("each ledger edge belongs to exactly one stage", {
   local_mocked_bindings(embed = make_embed_mock(), .package = "tidyllm")
 
-  out <- multi_stage_match(
+  out <- multi_stage_search(
     make_base(), make_target(), "id", "id",
     strategies = list(token = token_strategy(), emb = emb_strategy())
   )
-
-  # match_id is duplicated within a match (one for each side), but each match
-  # group must belong to exactly one stage.
-  by_match <- out[, .(stages = length(unique(stage))), by = match_id]
-  expect_true(all(by_match$stages == 1L))
+  led <- attr(out, "ledger")
+  expect_setequal(unique(led$stage), c("token", "emb"))
 })
 
-test_that("multi_stage_match() returns empty schema when no stage matches", {
+test_that("multi_stage_search() with no matches returns singleton entities", {
   local_mocked_bindings(embed = make_embed_mock(), .package = "tidyllm")
 
-  # Both strategies set extreme thresholds so nothing matches.
   no_token <- search_strategy(
     name ~ normalize_text() + word_tokens(min_nchar = 50L),
     threshold = 0.99
   )
   no_emb <- emb_strategy(threshold = 0.99999)
 
-  # Disjoint fixture: nothing should match across either stage.
   base_dt   <- data.table::data.table(id = "X", name = "qzzqz")
   target_dt <- data.table::data.table(id = "Y", name = "wkkwk")
 
-  out <- multi_stage_match(
+  out <- multi_stage_search(
     base_dt, target_dt, "id", "id",
     strategies = list(token = no_token, emb = no_emb)
   )
 
-  expect_equal(nrow(out), 0L)
-  expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(out)))
+  # Nothing links → every record is its own singleton entity.
+  expect_setequal(out$id, c("X", "Y"))
+  expect_equal(uniqueN(out$entity), 2L)
+  expect_equal(nrow(attr(out, "ledger")), 0L)
 })
 
 
 # ── DuckDB: token → embedding pipeline ────────────────────────────────────────
 
-# Natural mixed-strategy shape on DuckDB: token stage 1 catches A1/A2 (shared
-# word tokens), embedding stage 2 catches B1/B2 (no token overlap, but mocked
-# vectors match). This pattern previously aborted on tiny fixtures because
-# prepare_search_data() → batch_map() emitted NA windows on the small-table
-# fast path; locked in by the fix in notes/batch_duckdb_brittleness.md.
-test_that("DuckDB multi_stage_match() runs token → embedding end-to-end on small tables", {
+test_that("DuckDB multi_stage_search() runs token → embedding end-to-end on small tables", {
   skip_if_not_installed("duckdb")
   skip_if_not_installed("DBI")
   skip_if_not_installed("dplyr")
@@ -192,7 +191,7 @@ test_that("DuckDB multi_stage_match() runs token → embedding end-to-end on sma
   DBI::dbWriteTable(con, "base_tbl",   as.data.frame(make_base()))
   DBI::dbWriteTable(con, "target_tbl", as.data.frame(make_target()))
 
-  out <- multi_stage_match(
+  out <- multi_stage_search(
     dplyr::tbl(con, "base_tbl"),
     dplyr::tbl(con, "target_tbl"),
     "id", "id",
@@ -201,15 +200,11 @@ test_that("DuckDB multi_stage_match() runs token → embedding end-to-end on sma
       emb   = emb_strategy(threshold = 0.99)
     )
   )
-  out_df <- as.data.frame(out)
+  grp <- as.data.table(dplyr::collect(out))
 
-  expect_true(all(c("match_id", "score", "stage", "source", "id", "rank") %in% names(out_df)))
-  expect_setequal(unique(out_df$stage), c("token", "emb"))
-
-  token_ids <- unique(out_df$id[out_df$stage == "token"])
-  emb_ids   <- unique(out_df$id[out_df$stage == "emb"])
-  expect_true(all(c("A1", "A2") %in% token_ids))
-  expect_true(all(c("B1", "B2") %in% emb_ids))
-  # Stage-1 records do not bleed into stage 2.
-  expect_false(any(c("A1", "A2") %in% emb_ids))
+  expect_true(all(c("entity", "id", "rep", "rank", "score", "stage") %in% names(grp)))
+  expect_equal(grp[id == "A1"]$entity, grp[id == "A2"]$entity)
+  expect_equal(grp[id == "B1"]$entity, grp[id == "B2"]$entity)
+  expect_equal(unique(grp[id %in% c("A1", "A2")]$stage), "token")
+  expect_equal(unique(grp[id %in% c("B1", "B2")]$stage), "emb")
 })

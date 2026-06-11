@@ -24,7 +24,7 @@ make_ms_target <- function() {
   data.table(id = paste0("t", 1:12), name = paste0("target_", 1:12))
 }
 
-# Two-stage candidate matches — disjoint ids (mirrors multi_stage_match output)
+# Two-stage candidate matches — disjoint ids (mirrors multi_stage_search output)
 # Stage "token": 4 match pairs (base: b1-b4, target: t1-t4)
 # Stage "embedding": 2 match pairs (base: b5-b6, target: t5-t6)
 # → 4 base added by token, 2 base added by embedding; no overlap
