@@ -10,6 +10,7 @@ search_strategy(
   weights = numeric(),
   rarity = "inverse_freq",
   min_rarity = 0,
+  max_token_df = Inf,
   threshold = 0.9,
   smoothing = smooth_rip_identity(),
   max_candidates = Inf,
@@ -35,6 +36,15 @@ Default is `"inverse_freq"`.}
 \item{min_rarity}{Numeric scalar specifying the minimum rarity value required
 for a token to be included in similarity scoring. Tokens with rarity below
 this threshold are filtered out. Default is `0`.}
+
+\item{max_token_df}{Numeric scalar specifying the maximum raw document
+frequency a token may have within its `(block, column)` to be kept. Tokens
+appearing in more than `max_token_df` records are dropped *before* the
+token-overlap join, so a single hyper-common token (a house number,
+`STRASSE`) can't fan out a block even at `min_rarity = 0`. The blunt
+document-frequency companion to the rarity-metric `min_rarity`; the two
+cut on different axes and compose. Default is `Inf` (off). See
+[rarity_distribution()] to choose a value from the token distribution.}
 
 \item{threshold}{Numeric scalar specifying the minimum relative identification
 potential required for two records to be considered matches. Default is `0.9`.}

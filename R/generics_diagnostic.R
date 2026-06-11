@@ -145,6 +145,41 @@ compare_stages <- new_generic(
 )
 
 
+#' Read the Token Rarity Distribution
+#'
+#' @description
+#' Pre-match read-side helper. Runs `prepare_search_data()` +
+#' `compute_rarity()` and reports, per `(column[, block])`, the token
+#' document-frequency / rarity distribution plus an **offender list** — the
+#' top document-frequency tokens that drive fan-out in the overlap join.
+#' Use it to *set* `min_rarity` / `max_token_df` from the actual token
+#' distribution instead of guessing.
+#'
+#' It is deliberately **scoring-free**: no token-overlap join, no pair
+#' scoring — only tokenization and the per-token rarity computation. It is the
+#' cheap distribution lookup that the future strategy-planning verb
+#' ([plan_strategy()], Stage 08) will subsume with a full `min_rarity` cost
+#' curve.
+#'
+#' @param data A data.frame / tibble / data.table (or backend-specific table).
+#' @param id Character scalar naming the ID column in `data`.
+#' @param strategy A `Search_Strategy` object.
+#' @param ... Additional backend-specific arguments. Notably `n_offenders`
+#'   (integer; how many top-df tokens to list, default 20) and `sample_n`
+#'   (DuckDB: rows to pull before delegating; default all).
+#'
+#' @return A `Rarity_Distribution` object.
+#'
+#' @seealso [search_strategy()] for the `min_rarity` / `max_token_df` levers
+#'   this verb informs; [audit_strategy()] for the broader pre-match audit.
+#'
+#' @export
+rarity_distribution <- new_generic(
+  "rarity_distribution",
+  c("data", "id", "strategy")
+)
+
+
 #' Recommendations from a Diagnostic Object
 #'
 #' @description

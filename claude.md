@@ -76,6 +76,7 @@ Contains:
 - `weights` – named numeric vector (optional)
 - `block_by` – character vector (optional)
 - `rarity` – `"inverse_freq"` (default) or `"tfidf"`
+- `min_rarity` / `max_token_df` – the two **pre-join** cut levers (default `0` / `Inf`). Applied in one predicate to the token table *before* the `(column, token, block)` overlap join on both backends (`.rarity_prefilter_dt` / `.rarity_prefilter_sql`): `min_rarity` floors the rarity metric, `max_token_df` caps raw document frequency. `rarity_distribution()` reads the distribution to set them.
 - `threshold` – default match threshold
 
 Constructed via:
@@ -126,6 +127,7 @@ Five diagnostic verbs, organised around four user questions (Q1 will-it-work, Q2
 - `explain_match()` → `Match_Explanation` (per-token attribution for `Search_Strategy`; pair+score only for `Embedding_Strategy`)
 - `sample_matches()` → `Match_Sample` (modes: `high`, `low`, `borderline`, `ambiguous`, `top_gap`, `random`; also `stratify_by` and `expand_to_block` for stratified labelling-set construction)
 - `compare_stages()` → `Stage_Comparison` (multi-stage diagnostics)
+- `rarity_distribution()` → `Rarity_Distribution` (pre-match, read-side; v0.8 Stage 04). Scoring-free `prepare_search_data()` + `compute_rarity()` only — no overlap join — reporting the per-`(column[, block])` df/rarity distribution and the top-df **offender list** (fan-out drivers), plus a `suggested_min_rarity` per column. Use it to *set* the `min_rarity` / `max_token_df` levers from the real token distribution. Lives in `R/diagnostic_rarity.R`; the cheap seed that `plan_strategy()` (Stage 08) will subsume.
 
 Recommendations live in `R/diagnostics_recommendations.R` (signal → threshold → message), surfaced via inline `cli` warnings in `print()` and the `recommendations(x)` accessor.
 

@@ -124,6 +124,7 @@ method(print.Search_Strategy, Exact_Strategy) <- function(x, ...) {
     rarity            = strategy@rarity,
     threshold         = 1,
     min_rarity        = 0,
+    max_token_df      = Inf,
     smoothing         = smooth_rip_identity(),
     max_candidates    = Inf,
     feedback_strength = 0

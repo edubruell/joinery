@@ -58,16 +58,17 @@ method(
   
   tokens <- compute_rarity(tokens, strategy)
   tbl_tokens <- tokens$lazy_query$x
-  
-  if (strategy@min_rarity > 0) {
-    threshold <- strategy@min_rarity
-    
+
+  # Pre-join cut: rarity floor + document-frequency cap, in one predicate,
+  # before .score_pairs_sql() does the (src_column, token, block) self-join.
+  prefilter <- .rarity_prefilter_sql(strategy)
+  if (!is.null(prefilter)) {
     sql <- paste0(
       "CREATE OR REPLACE TABLE ", tbl_tokens, " AS\n",
       "SELECT * FROM ", tbl_tokens, "\n",
-      "WHERE rarity >= ", threshold, ";"
+      "WHERE ", prefilter, ";"
     )
-    
+
     DBI::dbExecute(con, sql)
   }
   

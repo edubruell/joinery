@@ -26,10 +26,10 @@ method(
   )
 
   # --- 2. Compute rarity ---------------------------------------------------
+  # Thin the token table BEFORE the overlap join (inside .score_token_pairs):
+  # the rarity floor and document-frequency cap are the cheap pre-join levers.
   tokens <- compute_rarity(tokens, strategy)
-  if (strategy@min_rarity > 0) {
-    tokens <- tokens[rarity >= strategy@min_rarity]
-  }
+  tokens <- .rarity_prefilter_dt(tokens, strategy)
 
   # --- 3. Determine weights -----------------------------------------------
   if (is.null(weights)) {

@@ -37,6 +37,10 @@
 #' @slot threshold  A numeric scalar containing the match or deduplication threshold
 #' @slot min_rarity  Numeric scalar between 0 and Inf.
 #'   Tokens with rarity below this value are removed before scoring.
+#' @slot max_token_df Numeric scalar between 1 and Inf. Tokens appearing in
+#'   more than this many records within their `(block, column)` are removed
+#'   before scoring (a raw document-frequency cap, the blunt companion to the
+#'   rarity-metric `min_rarity`). Default `Inf` (off).
 #' @slot smoothing A [Smoothing] object describing how rIP should be smoothed
 #'   within each record and column before scoring.
 #' @slot max_candidates Numeric scalar specifying the maximum number of candidate
@@ -57,6 +61,7 @@ Search_Strategy <- new_class("Search_Strategy",
                                rarity    = class_character,
                                threshold = class_numeric,
                                min_rarity = class_any,
+                               max_token_df = new_property(class_numeric, default = Inf),
                                smoothing = Smoothing,
                                max_candidates = class_numeric,
                                feedback_strength = class_numeric
@@ -145,7 +150,11 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
   }
 
   # rarity
-  cli::cli_text("rarity: {x@rarity} (min={format(x@min_rarity)})")
+  if (is.finite(x@max_token_df)) {
+    cli::cli_text("rarity: {x@rarity} (min={format(x@min_rarity)}, max_token_df={format(x@max_token_df)})")
+  } else {
+    cli::cli_text("rarity: {x@rarity} (min={format(x@min_rarity)})")
+  }
 
   # smoothing
   sm <- x@smoothing
@@ -267,6 +276,14 @@ expr_to_step <- function(expr) {
 #' @param min_rarity Numeric scalar specifying the minimum rarity value required
 #'   for a token to be included in similarity scoring. Tokens with rarity below
 #'   this threshold are filtered out. Default is `0`.
+#' @param max_token_df Numeric scalar specifying the maximum raw document
+#'   frequency a token may have within its `(block, column)` to be kept. Tokens
+#'   appearing in more than `max_token_df` records are dropped *before* the
+#'   token-overlap join, so a single hyper-common token (a house number,
+#'   `STRASSE`) can't fan out a block even at `min_rarity = 0`. The blunt
+#'   document-frequency companion to the rarity-metric `min_rarity`; the two
+#'   cut on different axes and compose. Default is `Inf` (off). See
+#'   [rarity_distribution()] to choose a value from the token distribution.
 #' @param threshold Numeric scalar specifying the minimum relative identification
 #'   potential required for two records to be considered matches. Default is `0.9`.
 #' @param smoothing A [Smoothing] object created by one of the
@@ -287,12 +304,14 @@ search_strategy <- function(...,
                             weights    = numeric(),
                             rarity     = "inverse_freq",
                             min_rarity = 0,
+                            max_token_df = Inf,
                             threshold  = 0.9,
                             smoothing  = smooth_rip_identity(),
                             max_candidates = Inf,
                             feedback_strength = 0) {
 
   check_number_decimal(min_rarity, min = 0)
+  check_number_decimal(max_token_df, min = 1, allow_infinite = TRUE)
   check_number_decimal(threshold)
   check_number_decimal(max_candidates, min = 0, allow_infinite = TRUE)
   if (is.finite(max_candidates) && max_candidates <= 0) {
@@ -329,6 +348,7 @@ search_strategy <- function(...,
     rarity     = rarity,
     threshold  = threshold,
     min_rarity = min_rarity,
+    max_token_df = max_token_df,
     smoothing  = smoothing,
     max_candidates = max_candidates,
     feedback_strength = feedback_strength

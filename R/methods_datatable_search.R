@@ -39,9 +39,9 @@ method(
   # --- 2. Compute rarity -----------------------------------------------------
   all_tokens <- rbindlist(list(base_tokens, target_tokens), use.names = TRUE, fill = TRUE)
   all_tokens <- compute_rarity(all_tokens, strategy)
-  if (strategy@min_rarity > 0) {
-    all_tokens <- all_tokens[rarity >= strategy@min_rarity]
-  }
+  # Pre-join cut (rarity floor + document-frequency cap) on the shared token
+  # universe, before .score_token_pairs() does the overlap join.
+  all_tokens <- .rarity_prefilter_dt(all_tokens, strategy)
 
   # split back
   base_tokens   <- all_tokens[side == "base"]

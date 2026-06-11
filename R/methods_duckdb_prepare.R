@@ -6,6 +6,29 @@ if (!requireNamespace("duckdb", quietly = TRUE) ||
 
 Duck_tbl <- new_S3_class("tbl_duckdb_connection")
 
+
+#' Internal helper: SQL predicate for the pre-join rarity / document-frequency cut
+#'
+#' Returns one SQL boolean expression combining the strategy's `min_rarity`
+#' (rarity-metric floor) and `max_token_df` (raw document-frequency cap), or
+#' `NULL` when both are off. Applied to the token table *before* the
+#' `(src_column, token, block)` equi-join — never after scoring. The DuckDB
+#' mirror of [.rarity_prefilter_dt()]; the two predicates must stay identical
+#' so both backends thin the same tokens.
+#' @noRd
+.rarity_prefilter_sql <- function(strategy) {
+  conds <- character()
+  if (strategy@min_rarity > 0) {
+    conds <- c(conds, paste0("rarity >= ", strategy@min_rarity))
+  }
+  if (is.finite(strategy@max_token_df)) {
+    conds <- c(conds, paste0("df <= ", strategy@max_token_df))
+  }
+  if (length(conds) == 0L) return(NULL)
+  paste(conds, collapse = " AND ")
+}
+
+
 # Internal: Score token pairs with optional Phase 3 features
 #------------------------------------------------------------------------------
 # Handles:

@@ -130,10 +130,13 @@ method(
   all_tokens <- compute_rarity(union_lazy, strategy)
   enriched_tbl <- all_tokens$lazy_query$x
   
-  if (strategy@min_rarity > 0) {
+  # Pre-join cut: rarity floor + document-frequency cap, in one predicate,
+  # before .score_pairs_sql() does the (src_column, token, block) cross-join.
+  prefilter <- .rarity_prefilter_sql(strategy)
+  if (!is.null(prefilter)) {
     sql_filter <- paste0(
       "CREATE OR REPLACE TABLE ", enriched_tbl, " AS\n",
-      "SELECT * FROM ", enriched_tbl, " WHERE rarity >= ", strategy@min_rarity, ";\n"
+      "SELECT * FROM ", enriched_tbl, " WHERE ", prefilter, ";\n"
     )
     DBI::dbExecute(con, sql_filter)
   }

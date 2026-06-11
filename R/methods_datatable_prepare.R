@@ -226,6 +226,24 @@ method(
   unique(tokens, by = keys)
 }
 
+#' Internal helper: apply the pre-join rarity / document-frequency cut
+#'
+#' joinery's single biggest cheap lever for a slow/dense linkage is to thin the
+#' token table **before** the `(src_column, token, block)` equi-join — never
+#' after scoring, where it would save nothing. This helper applies both cut
+#' axes in one predicate on a `compute_rarity()` output (which carries `rarity`
+#' and `df`): `min_rarity` floors the rarity metric, `max_token_df` caps raw
+#' document frequency. It is the data.table mirror of [.rarity_prefilter_sql()]
+#' on the DuckDB backend — keep the two predicates identical.
+#' @noRd
+.rarity_prefilter_dt <- function(tokens, strategy) {
+  if (strategy@min_rarity > 0 || is.finite(strategy@max_token_df)) {
+    tokens <- tokens[rarity >= strategy@min_rarity & df <= strategy@max_token_df]
+  }
+  tokens
+}
+
+
 #' Internal helper: compute pairwise scores between two token tables
 #' @noRd
 .score_token_pairs <- function(
