@@ -259,9 +259,7 @@ method(
   list(Duck_tbl, class_character, Search_Strategy)
 ) <- function(data, id, strategy,
               output_table = NULL,
-              target_batch_size = NULL,
-              min_batch_size = NULL,
-              chunk_strategy = "block_consolidated") {
+              control = duckdb_control()) {
 
   lazy  <- data
   con   <- lazy$src$con
@@ -272,21 +270,24 @@ method(
   .check_reserved_names(dplyr::tbl_vars(data), id)
 
   block_by <- strategy@block_by %||% NULL
-  
+
   out_name <- output_table %||%
     paste0("_joinery_tokens_", sample.int(1e9, 1))
-  
+
   cli::cli_inform(
     "Preparing search token table in batches",
     .auto_close = TRUE
   )
-  
+
+  # Preprocess batching is per-row (atomic_blocks = FALSE): token generation is
+  # row-independent, so a block may be sub-split safely. (Scoring chunking, by
+  # contrast, is block-atomic — see search_candidates / duckdb_control.)
   plan <- duckdb_batch_plan(
     db_tbl            = lazy,
     id                = id,
-    target_batch_size = target_batch_size,
-    min_batch_size    = min_batch_size,
-    chunk_strategy    = chunk_strategy,
+    target_batch_size = control@target_batch_size,
+    min_batch_size    = control@min_batch_size,
+    chunk_strategy    = control@chunk_strategy,
     block_by          = block_by
   )
   

@@ -49,9 +49,7 @@ method(
   prepare_auxiliary_registry,
   list(Duck_tbl, class_character, Search_Strategy)
 ) <- function(data, id, strategy,
-              target_batch_size = NULL,
-              min_batch_size = NULL,
-              chunk_strategy = "block_consolidated") {
+              control = duckdb_control()) {
 
   aux_strategy <- strategy
   if (!is.null(aux_strategy@block_by)) {
@@ -60,9 +58,7 @@ method(
 
   tokens_tbl <- prepare_search_data(
     data, id, aux_strategy,
-    target_batch_size = target_batch_size,
-    min_batch_size    = min_batch_size,
-    chunk_strategy    = chunk_strategy
+    control = control
   )
 
   con   <- tokens_tbl$src$con

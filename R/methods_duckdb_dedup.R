@@ -27,7 +27,7 @@ method(
   detect_duplicates,
   list(Duck_tbl, class_character, Search_Strategy)
 ) <- function(base_table, id, strategy, weights = NULL, base_tokens = NULL,
-              debug = FALSE) {
+              debug = FALSE, control = duckdb_control()) {
 
   con <- base_table$src$con
   id_q <- sprintf('"%s"', id)
@@ -51,7 +51,7 @@ method(
   # ----------------------------------------------------------
   tokens <- if (is.null(base_tokens)) {
     base_table |>
-      prepare_search_data(id, strategy)
+      prepare_search_data(id, strategy, control = control)
   } else {
     base_tokens
   }

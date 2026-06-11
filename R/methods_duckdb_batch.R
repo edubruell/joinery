@@ -26,6 +26,14 @@ if (!rlang::is_installed(c("duckdb", "DBI", "dplyr", "dbplyr"))) {
 #'   Default: `"block_consolidated"`.
 #' @param block_by Optional character vector. Column name(s) to use for semantic blocking.
 #'   If specified, batches respect block boundaries. Supports multiple columns (e.g., c("region", "year")).
+#' @param atomic_blocks Logical. When `FALSE` (default) the planner may sub-split
+#'   a block larger than `target_batch_size` into row-number windows — correct
+#'   for *preprocess* batching, where token generation is per-row independent.
+#'   When `TRUE` (the *scoring* path) a block is treated as **indivisible**: small
+#'   blocks are consolidated under the budget but a large block is kept whole as a
+#'   single chunk (flagged `oversized = TRUE`), never sub-split — because a match
+#'   pair only forms *within* a block, so splitting one would silently drop
+#'   cross-pairs. Requires `block_by`; rejects `chunk_strategy = "even"`.
 #'
 #' @return A `data.table` with columns:
 #'   - `batch_id`: integer, sequential batch identifier (1, 2, 3, ...)
@@ -75,7 +83,8 @@ duckdb_batch_plan <- function(db_tbl,
                               target_batch_size = NULL,
                               min_batch_size = NULL,
                               chunk_strategy = "block_consolidated",
-                              block_by = NULL) {
+                              block_by = NULL,
+                              atomic_blocks = FALSE) {
   
   # -----------------------------------------------
   # Validate user input (NULL allowed for tuning)
@@ -97,6 +106,24 @@ duckdb_batch_plan <- function(db_tbl,
     cli::cli_abort('{.arg chunk_strategy} must be one of {.val even}, {.val block_first}, or {.val block_consolidated}')
   }
   if (!is.null(block_by)) check_character(block_by)
+  check_bool(atomic_blocks)
+
+  # Block-atomic mode (scoring path): a block can never be split.
+  if (atomic_blocks) {
+    if (is.null(block_by) || length(block_by) == 0L) {
+      cli::cli_abort(c(
+        "{.arg atomic_blocks = TRUE} requires {.arg block_by}.",
+        i = "Block-atomic chunking packs whole blocks; with no blocks there is nothing to be atomic about."
+      ))
+    }
+    if (chunk_strategy == "even") {
+      cli::cli_abort(c(
+        "{.arg chunk_strategy = \"even\"} is incompatible with {.arg atomic_blocks = TRUE}.",
+        x = "Even row-number windows split blocks; scoring chunks must keep blocks whole.",
+        i = "Use {.val block_consolidated} (the default) for block-atomic chunking."
+      ))
+    }
+  }
   
   # -----------------------------------------------
   # Auto-tune if missing
@@ -180,15 +207,17 @@ duckdb_batch_plan <- function(db_tbl,
         db_tbl            = db_tbl,
         block_by          = block_by,
         target_batch_size = target_batch_size,
-        id_col            = id[1]
+        id_col            = id[1],
+        atomic_blocks     = atomic_blocks
       ),
-    
+
     "block_consolidated" =
       .chunk_block_consolidated(
         db_tbl            = db_tbl,
         block_by          = block_by,
         target_batch_size = target_batch_size,
-        id_col            = id[1]
+        id_col            = id[1],
+        atomic_blocks     = atomic_blocks
       )
   )
 }
@@ -410,13 +439,14 @@ duckdb_batch_plan <- function(db_tbl,
 #' All batches have row-number windows, computed after sorting by block columns and ID.
 #'
 #' @noRd
-.chunk_block_first <- function(db_tbl, block_by, target_batch_size, id_col = "id") {
+.chunk_block_first <- function(db_tbl, block_by, target_batch_size, id_col = "id",
+                               atomic_blocks = FALSE) {
   blocks <- .get_block_metadata(db_tbl, block_by, id_col)
   block_cols <- setdiff(names(blocks), c("n", "min_rn", "max_rn"))
-  
+
   small <- blocks[n <= target_batch_size]
   large <- blocks[n >  target_batch_size]
-  
+
   # small blocks: one batch per block
   small_batches <- NULL
   if (nrow(small)) {
@@ -426,26 +456,41 @@ duckdb_batch_plan <- function(db_tbl,
       row_end    = max_rn,
       block_size = n
     ), by = block_cols]
+    if (atomic_blocks) small_batches[, oversized := FALSE]
   }
-  
-  # large blocks: split into sub-batches
+
   large_batches <- NULL
   if (nrow(large)) {
-    large_batches <- data.table::rbindlist(
-      lapply(seq_len(nrow(large)), function(i) {
-        row <- large[i]
-        subs <- .split_block_into_subbatches(row, block_cols, target_batch_size)
-        subs[, block_size := row$n]
-        subs
-      }),
-      fill = TRUE
-    )
+    if (atomic_blocks) {
+      # Block-atomic: a large block stays whole — one chunk, flagged oversized.
+      # Never sub-split (that would drop cross-pairs within the block).
+      large_batches <- large[, .(
+        row_count  = n,
+        row_start  = min_rn,
+        row_end    = max_rn,
+        block_size = n,
+        oversized  = TRUE
+      ), by = block_cols]
+    } else {
+      # Preprocess: split into row-number sub-batches.
+      large_batches <- data.table::rbindlist(
+        lapply(seq_len(nrow(large)), function(i) {
+          row <- large[i]
+          subs <- .split_block_into_subbatches(row, block_cols, target_batch_size)
+          subs[, block_size := row$n]
+          subs
+        }),
+        fill = TRUE
+      )
+    }
   }
-  
+
   plan <- data.table::rbindlist(list(small_batches, large_batches), fill = TRUE)
   plan[, batch_id := seq_len(.N)]
-  data.table::setcolorder(plan, c("batch_id", "row_count", "row_start", "row_end", block_cols, "block_size"))
-  
+  ordered_cols <- c("batch_id", "row_count", "row_start", "row_end", block_cols, "block_size")
+  if (atomic_blocks) ordered_cols <- c(ordered_cols, "oversized")
+  data.table::setcolorder(plan, ordered_cols)
+
   plan[]
 }
 
@@ -484,14 +529,16 @@ duckdb_batch_plan <- function(db_tbl,
 #' All batches have row-number windows, computed after sorting by block columns and ID.
 #'
 #' @noRd
-.chunk_block_consolidated <- function(db_tbl, block_by, target_batch_size, id_col = "id") {
-  
-  # keep full block-first output including block_size
-  first <- .chunk_block_first(db_tbl, block_by, target_batch_size, id_col)
-  
+.chunk_block_consolidated <- function(db_tbl, block_by, target_batch_size, id_col = "id",
+                                      atomic_blocks = FALSE) {
+
+  # keep full block-first output including block_size (+ oversized when atomic)
+  first <- .chunk_block_first(db_tbl, block_by, target_batch_size, id_col,
+                              atomic_blocks = atomic_blocks)
+
   block_cols <- setdiff(
     names(first),
-    c("batch_id", "row_count", "row_start", "row_end", "block_size")
+    c("batch_id", "row_count", "row_start", "row_end", "block_size", "oversized")
   )
   
   # create a block list-column for all block-first batches
@@ -517,7 +564,8 @@ duckdb_batch_plan <- function(db_tbl,
       row_count = cur_rows,
       row_start = cur_start,
       row_end   = cur_end,
-      blocks = list(cur_blocks)
+      blocks = list(cur_blocks),
+      oversized = FALSE
     )
     cur_rows  <<- 0L
     cur_start <<- NA_integer_
@@ -549,25 +597,33 @@ duckdb_batch_plan <- function(db_tbl,
     NULL
   }
   
-  # large block batches already have: row_count, row_start, row_end, blocks
+  # large block batches already have: row_count, row_start, row_end, blocks.
+  # In atomic mode they are whole oversized blocks; otherwise row-window
+  # sub-batches that fit the budget. Each large-batch `blocks` cell is a single
+  # block tuple (named list); wrap it as a one-element list-of-tuples so the
+  # `blocks` column has the SAME shape (list of tuples) as the consolidated
+  # branch — the scoring chunker relies on that uniform shape.
   large_batches <- large_batches[, .(
-    row_count, row_start, row_end, blocks
+    row_count, row_start, row_end,
+    blocks    = lapply(blocks, function(b) list(b)),
+    oversized = atomic_blocks
   )]
-  
+
   # combine large-block and consolidated batches
   result <- data.table::rbindlist(
     list(large_batches, consolidated_dt),
     fill = TRUE
   )
-  
+
   result[, batch_id := seq_len(.N)]
-  
-  # final ordering without block columns (they do not exist in result)
-  data.table::setcolorder(
-    result,
-    c("batch_id", "row_count", "row_start", "row_end", "blocks")
-  )
-  
+
+  # final ordering without block columns (they do not exist in result).
+  # `oversized` is carried only in block-atomic (scoring) mode; drop it
+  # otherwise so the preprocess plan schema is unchanged.
+  ordered_cols <- c("batch_id", "row_count", "row_start", "row_end", "blocks", "oversized")
+  data.table::setcolorder(result, ordered_cols)
+  if (!atomic_blocks) result[, oversized := NULL]
+
   result[]
 }
 

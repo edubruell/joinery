@@ -39,8 +39,9 @@ method(
               weights = NULL,
               base_tokens = NULL,
               target_tokens = NULL,
-              debug = FALSE) {
-  
+              debug = FALSE,
+              control = duckdb_control()) {
+
 
   con <- base_table$src$con
   base_id_q   <- sprintf('"%s"', base_id)
@@ -52,6 +53,15 @@ method(
 
   block_by <- strategy@block_by %||% NULL
   tmp <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))
+
+  # ==========================================================================
+  # run_core: the scoring core (tokenise -> rarity -> score -> match_id ->
+  # long -> merge -> rank). Run once for the monolithic path, or once per
+  # block-atomic chunk. `match_id_offset` makes match_id globally unique across
+  # chunks; returns the chunk's output table + its max match_id + pair count.
+  # ==========================================================================
+  run_core <- function(base_table, target_table, base_tokens, target_tokens,
+                       match_id_offset = 0L) {
 
   # Allow callers to supply pre-computed data.frame/data.table token tables
   # instead of tbl_duckdb_connection objects. Used in tests to bypass batch
@@ -184,7 +194,7 @@ method(
         "LIMIT 0;"
       )
     )
-    return(dplyr::tbl(con, out_name))
+    return(list(out = out_name, max_id = match_id_offset, n_pairs = 0L))
   }
   
   
@@ -196,7 +206,7 @@ method(
   sql_matched <- paste0(
     "CREATE TEMP TABLE ", matched_tbl, " AS\n",
     "SELECT\n",
-    "  ROW_NUMBER() OVER (ORDER BY id1, id2) AS match_id,\n",
+    "  ROW_NUMBER() OVER (ORDER BY id1, id2) + ", match_id_offset, " AS match_id,\n",
     "  id1 AS base_id,\n",
     "  id2 AS target_id,\n",
     "  score\n",
@@ -357,6 +367,146 @@ method(
       DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", tbl))
     })
   }
-  
-  dplyr::tbl(con, out_name)
+
+  # max match_id for the global re-key; n_pairs already computed above.
+  max_id <- DBI::dbGetQuery(
+    con,
+    paste0("SELECT COALESCE(MAX(match_id), ", match_id_offset, ") AS m FROM ", out_name)
+  )$m
+  list(out = out_name, max_id = max_id, n_pairs = n_pairs)
+  }
+  # ======================= end run_core =====================================
+
+  # --------------------------------------------------------------------------
+  # Decide monolithic vs block-atomic chunked execution.
+  # Chunking re-tokenises per chunk, so it is only available when tokens are not
+  # pre-supplied (the base_tokens/target_tokens test bypass forces monolithic).
+  # --------------------------------------------------------------------------
+  can_chunk <- is.null(base_tokens) && is.null(target_tokens)
+
+  chunk_unit <- if (can_chunk) {
+    n_base <- DBI::dbGetQuery(
+      con, paste0("SELECT COUNT(*) AS n FROM ", base_table$lazy_query$x))$n
+    .resolve_chunk_unit(control@chunk_by, block_by, n_base)
+  } else {
+    if (is.character(control@chunk_by)) {
+      cli::cli_warn(
+        "{.arg chunk_by} is ignored when pre-computed tokens are supplied; running monolithic."
+      )
+    }
+    NULL
+  }
+
+  # ---- Monolithic path (unchanged behaviour) -------------------------------
+  if (is.null(chunk_unit)) {
+    res <- run_core(base_table, target_table, base_tokens, target_tokens, 0L)
+    return(dplyr::tbl(con, res$out))
+  }
+
+  # ---- Block-atomic chunked path -------------------------------------------
+  plan <- duckdb_batch_plan(
+    db_tbl            = base_table,
+    id                = base_id,
+    target_batch_size = control@target_batch_size,
+    min_batch_size    = control@min_batch_size,
+    chunk_strategy    = "block_consolidated",
+    block_by          = chunk_unit,
+    atomic_blocks     = TRUE
+  )
+
+  n_chunks <- nrow(plan)
+  master   <- tmp("_joinery_tmp_candidates")
+  offset   <- 0
+  first    <- TRUE
+  fails    <- .new_chunk_failure_log()
+
+  for (i in seq_len(n_chunks)) {
+    tuples  <- plan$blocks[[i]]
+    where   <- .block_tuples_where(con, tuples)
+    key_lbl <- .block_tuples_label(tuples)
+
+    if (!isFALSE(control@progress)) {
+      cli::cli_inform(
+        "chunk {i}/{n_chunks} (key={key_lbl}, rows={plan$row_count[i]})",
+        .auto_close = TRUE
+      )
+    }
+
+    # Bracket the chunk's table creations so a mid-chunk failure can be cleaned
+    # up completely: run_core (and the prepare_search_data it calls) creates
+    # intermediate temps that are only dropped on its success path. On error we
+    # drop everything that appeared since this snapshot, except the accumulator
+    # `master` ([[feedback_drop_joinery_temp_tables]] — true isolation).
+    before_tbls <- .list_duck_tables(con)
+    run_chunk <- function() {
+      base_slice   <- .slice_duck_tbl(con, base_table,   where, tmp("_joinery_chunk_base"))
+      target_slice <- .slice_duck_tbl(con, target_table, where, tmp("_joinery_chunk_target"))
+      run_core(dplyr::tbl(con, base_slice), dplyr::tbl(con, target_slice),
+               NULL, NULL, offset)
+    }
+    drop_chunk_temps <- function() .drop_tables_since(con, before_tbls, keep = master)
+
+    res <- tryCatch(
+      run_chunk(),
+      error = function(e) {
+        drop_chunk_temps()
+        if (control@on_error == "retry") {
+          # one conservative retry before giving up
+          res2 <- tryCatch(run_chunk(), error = function(e2) {
+            drop_chunk_temps()
+            fails <<- .log_chunk_failure(fails, i, key_lbl, "failed", conditionMessage(e2))
+            NULL
+          })
+          return(res2)
+        }
+        if (control@on_error == "stop") {
+          DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", master))
+          cli::cli_abort(c(
+            "Scoring chunk {i}/{n_chunks} (key={key_lbl}) failed under \\
+             {.code on_error = \"stop\"}.",
+            x = conditionMessage(e)
+          ))
+        }
+        # default skip
+        fails <<- .log_chunk_failure(fails, i, key_lbl, "skipped", conditionMessage(e))
+        NULL
+      }
+    )
+
+    if (!is.null(res) && res$n_pairs > 0) {
+      if (first) {
+        DBI::dbExecute(con, paste0("CREATE TABLE ", master, " AS SELECT * FROM ", res$out))
+        first <- FALSE
+      } else {
+        DBI::dbExecute(con, paste0("INSERT INTO ", master, " SELECT * FROM ", res$out))
+      }
+      offset <- res$max_id
+      DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", res$out))
+    } else if (!is.null(res)) {
+      DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", res$out))
+    }
+    drop_chunk_temps()
+  }
+
+  # No chunk produced rows (all empty / skipped): emit the empty schema.
+  if (first) {
+    DBI::dbExecute(
+      con,
+      paste0(
+        "CREATE TABLE ", master, " AS\n",
+        "SELECT CAST(NULL AS INTEGER) AS match_id,\n",
+        "       CAST(NULL AS DOUBLE) AS score,\n",
+        "       CAST(NULL AS VARCHAR) AS source,\n",
+        "       CAST(NULL AS VARCHAR) AS id,\n",
+        "       CAST(NULL AS INTEGER) AS rank\n",
+        "LIMIT 0;"
+      )
+    )
+  }
+
+  .summarise_chunk_failures(fails, n_chunks)
+
+  result <- dplyr::tbl(con, master)
+  attr(result, "failed_chunks") <- fails
+  result
 }
