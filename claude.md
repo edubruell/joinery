@@ -47,6 +47,7 @@ methods on them.
 - **Add a new backend** → six `methods_<backend>_<stage>.R` files (`prepare`, `resolve`, `dedup`, `search`, `multistage`, `inspect`) plus optionally `embedding_methods_<backend>.R`. Add `Collate:` entries after the existing methods blocks (`resolve` before `dedup`, since `dedup` delegates to it).
 - **Extend calibration** → verb code in `calibration_<verb>.R`; result classes in `calibration_classes.R`; generic declarations in `generics_calibration.R`. Tidymodels-specific code is isolated in `calibration_tidymodels.R` / `calibration_recipe.R` so the `Suggests` dependency boundary is visible.
 - **Change error message style** → `internal_validation.R` carries the `cli::cli_abort()` exemplar; new code should follow that style.
+- **Exact (score-1.0) token-set prefilter** → `R/exact_links.R` holds `exact_token_links()` (both backend methods + the fingerprint/containment helpers). It rides `prepare_search_data()` for tokenization (never a parallel fingerprint) and returns `$links` + the `$residual` complement; self-form links feed `resolve_entities()`, the residual feeds `materialize_records()`.
 
 ## Core S7 Classes
 

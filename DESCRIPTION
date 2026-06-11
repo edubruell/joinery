@@ -54,6 +54,7 @@ Collate:
     'methods_duckdb_inspect.R'
     'preparer_stopwords.R'
     'embedding_methods_duckdb.R'
+    'exact_links.R'
     'calibration_aip.R'
     'generics_diagnostic.R'
     'diagnostic_classes.R'
