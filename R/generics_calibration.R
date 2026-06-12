@@ -145,4 +145,9 @@ calibrate_matches <- new_generic(
 #' @return A [`Filter_Calibration`] object.
 #'
 #' @export
-calibrate <- new_generic("calibrate", "x")
+calibrate <- new_generic(
+  "calibrate", "x",
+  function(x, labels = NULL, bins = 10L, ...) {
+    S7_dispatch()
+  }
+)

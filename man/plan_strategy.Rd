@@ -4,17 +4,24 @@
 \alias{plan_strategy}
 \title{Plan a Search Strategy from Raw Inputs}
 \usage{
-plan_strategy(base, strategy, ...)
+plan_strategy(
+  base,
+  strategy,
+  target = NULL,
+  block_candidates = list(),
+  base_id = NULL,
+  target_id = NULL,
+  n_offenders = 20L,
+  min_rarity_grid = NULL,
+  containment = FALSE,
+  ...
+)
 }
 \arguments{
 \item{base}{A data.frame / tibble / data.table (or backend table).}
 
 \item{strategy}{A `Search_Strategy` supplying the tokenization to plan
 against.}
-
-\item{...}{Backend-specific arguments. Notably `n_offenders`,
-`min_rarity_grid`, `containment` (opt-in §22 read; the only read that
-performs a bounded structural join), and `sample_n` (DuckDB).}
 
 \item{target}{Optional second table. `NULL` (default) plans a dedup;
 non-`NULL` plans a cross-table search.}
@@ -26,34 +33,45 @@ non-`NULL` plans a cross-table search.}
 
 \item{target_id}{Character scalar naming the id column in `target`
 (defaults to `base_id`).}
+
+\item{n_offenders}{Number of top-`df` "offender" tokens (the fan-out drivers)
+to report per column. Defaults to `20`.}
+
+\item{min_rarity_grid}{Optional numeric vector of `min_rarity` cut points for
+the cost curve. `NULL` (default) picks a grid from the rarity distribution.}
+
+\item{containment}{Logical. When `TRUE`, adds the per-column containment
+share, the one read that performs a bounded structural join. Defaults to
+`FALSE`, which keeps `plan_strategy()` scoring-free.}
+
+\item{...}{Backend-specific arguments, such as `sample_n` (DuckDB).}
 }
 \value{
 A `Strategy_Plan` object.
 }
 \description{
-Pre-match, **pre-strategy** diagnostic (Stage 08, plan item A7). Where
-[audit_strategy()] grades a *given* strategy and [rarity_distribution()]
-reads one column distribution, `plan_strategy()` helps you **find** the
-strategy: it surveys a set of candidate blockings and surfaces the
-cost/recall knee *before* the run.
+Helps you choose a blocking before you run anything. Where
+[audit_strategy()] grades a strategy you have already settled on, and
+[rarity_distribution()] reads one column's token distribution,
+`plan_strategy()` compares several candidate blockings side by side and
+shows the trade-off between how many comparisons each one costs and how many
+true matches it would keep together.
 
-It is deliberately **scoring-free** — no token-overlap join, no pair
-scoring. Every probe is `O(rows)` or `O(blocks)`: a `GROUP BY` plus
-arithmetic, never a materialized pair set. It returns a `Strategy_Plan`
-carrying four reads: the blocking-resolution frontier (per candidate:
-`#blocks`, size distribution, `Sum(na*nb)` brute-pair **count**, and the
-share of exact-token-set twins that stay co-blocked), the exact-set
-persister rate, the residual structure (matchable vs one-sided +
-per-column partial-recoverable shares), and per-column discriminativeness
-with a `min_rarity` → intermediate-size cost curve and the empty-column
-score-ceiling warning.
+It never builds the pair set, so it is safe to run on a full corpus. For
+each candidate blocking it reports: how many blocks it makes and how big
+they are, an estimate of how many record comparisons it implies, and the
+share of identical-token records that stay in the same block (the recall it
+would cost you). It also reports how much an [exact_strategy()] front stage
+would absorb, the shape of the leftover records, and how discriminative each
+column is, including a warning when a column that is often empty puts a
+ceiling on achievable scores.
 
-Dispatches on `c("base", "strategy")`; the strategy supplies only the
-preparer pipeline (its own `block_by` is ignored — `block_candidates` is
-the thing being chosen).
+The strategy you pass supplies only the column preparation steps; its own
+`block_by` is ignored, since the blocking is exactly what you are choosing
+here.
 }
 \seealso{
-[audit_strategy()] (grades a chosen strategy — downstream of this),
-  [rarity_distribution()] (the column-distribution read this subsumes),
-  [exact_strategy()] (the front-stage the persister rate sizes).
+[audit_strategy()] to grade a chosen strategy,
+  [rarity_distribution()] for one column's distribution,
+  [exact_strategy()] for the front stage it sizes.
 }

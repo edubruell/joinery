@@ -38,6 +38,17 @@ utils::globalVariables(c(
   "equal", ".block_default",
   # fit_filter.R / calibrate_matches.R
   "tp_prob", "predicted_tp", ".block_default",
+  # internal_chunking.R
+  "oversized",
+  # exact_methods_datatable.R / exact containment
+  "n_match", "n_base", "n_target", "rmass", "lhs_id", "._bid", "._tid",
+  # internal_staging.R (staged resolve / ledger)
+  "from", "to", "id_a", "id_b", "covered_sources", "n_in_entity",
+  "within_source", "source_from", "source_to", ".mid",
+  # plan_strategy.R (blocking-frontier / cost-curve / discriminativeness math)
+  "bin", "block", "brute_pairs", "cand_idx", "df_max", "df_t",
+  "exact_twin_survival", "hi", "lo", "mid", "nb", "nt", "p", "rarity_t",
+  "so", "w", "z_pair",
   # purrr-shim dot
   "."
 ))

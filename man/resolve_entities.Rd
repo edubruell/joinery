@@ -2,17 +2,24 @@
 % Please edit documentation in R/generics_core.R
 \name{resolve_entities}
 \alias{resolve_entities}
-\title{Resolve an Edge List into Entities}
+\title{Group Matched Pairs into Entities}
 \usage{
-resolve_entities(edges, id_a, id_b, ...)
+resolve_entities(
+  edges,
+  id_a,
+  id_b,
+  score = NULL,
+  vertices = NULL,
+  rep_by = NULL,
+  block_by = NULL,
+  ...
+)
 }
 \arguments{
 \item{edges}{A backend table of record-pair edges (one row per edge).}
 
 \item{id_a, id_b}{Character scalars naming the two endpoint columns in
 `edges`.}
-
-\item{...}{Additional arguments passed to backend-specific methods.}
 
 \item{score}{Optional character scalar naming a per-edge score column in
 `edges`. When supplied, within-entity `rank` is ordered by descending
@@ -32,6 +39,8 @@ with the smallest `rep_by` wins, ties broken by smallest `id`.}
 
 \item{block_by}{Optional character vector of columns in `edges` used to
 run connected components per block (DuckDB backend).}
+
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
 One row per resolved vertex:
@@ -45,17 +54,28 @@ One row per resolved vertex:
 }
 }
 \description{
-Group a list of record-pair edges into entities via connected
-components, assign each vertex a within-entity rank, and mark a canonical
-representative. This is the shared entity-resolution kernel underlying
-[detect_duplicates()]; it is exposed so that *any* edge list — not only a
-`detect_duplicates()` self-join — can be resolved into entity ids.
+Take a list of matched record pairs (an edge list) and turn it into
+entities: records that link directly or through a chain of links are
+grouped together, each group gets an `entity` number, and one record in
+each group is marked as its representative.
+
+This is the grouping step [detect_duplicates()] performs internally, exposed
+on its own so you can resolve any pair list into entities, for example the
+output of [search_candidates()] or a set of links you assembled yourself.
 }
 \details{
-Output is deterministic: given identical `edges`, the returned
-`entity` / `rep` / `rank` are byte-identical regardless of edge row order.
-`entity` is a dense integer label assigned in ascending order of each
-component's smallest member id (its *root*). The representative (`rep`,
-the rank-1 member) is chosen by: descending best `score` (when supplied),
-then ascending `rep_by` (when supplied), then ascending `id`.
+The result does not depend on the order of rows in `edges`: the same pairs
+always produce the same `entity`, `rep`, and `rank`. Entity numbers are
+assigned by the smallest member id in each group. The representative (the
+rank-1 member) is chosen by highest best `score` when a score column is
+given, then by smallest `rep_by` when given, then by smallest `id`.
+}
+\examples{
+# r1-r2 and r2-r3 chain into one entity; r4-r5 form another
+edges <- data.table::data.table(
+  a = c("r1", "r2", "r4"),
+  b = c("r2", "r3", "r5")
+)
+resolve_entities(edges, id_a = "a", id_b = "b")
+
 }

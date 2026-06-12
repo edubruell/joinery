@@ -22,8 +22,9 @@ exact_strategy(
 guard. Default `"inverse_freq"`.}
 
 \item{containment}{One of `"off"` (set-equality, default), `"forward"`
-(link `base ⊆ target`), or `"bidirectional"` (either direction). Data-shape
-dependent — over-links on noisy corpora, so never the default.}
+(link when the base record's tokens are a subset of the target's), or
+`"bidirectional"` (either direction). Whether it helps depends on the data;
+it over-links on noisy corpora, so it is never the default.}
 
 \item{min_base_rarity}{Numeric containment guard: drop links whose base
 record carries summed rarity mass below this floor. Default `0`.}
@@ -32,22 +33,23 @@ record carries summed rarity mass below this floor. Default `0`.}
 An [Exact_Strategy] object.
 }
 \description{
-Creates an [Exact_Strategy] for exact (score-1.0) token-set matching. Hand
-it to the standard apply verbs — [detect_duplicates()] for the dedup face,
-[search_candidates()] for the cross-table face — exactly like a
-[search_strategy()]; exactness permeates by dispatch. Both return the
-standard schema with `score == 1.0`.
+Creates an [Exact_Strategy] for exact, score-1.0 token-set matching. Hand it
+to the same verbs you would hand a [search_strategy()]: [detect_duplicates()]
+to group identical records within a table, [search_candidates()] to match
+them across tables. Both return the usual result with `score == 1.0`.
 
-Two records link iff **every column's token set is equal** within the same
-block. This is the same object as a fuzzy score of exactly 1.0, but reached
-by one hash join instead of a scored pass, and it is **empty-column robust**:
-two records with identical names and both-empty streets link, which a
-weighted threshold silently rejects (the `1 - weight(col)` ceiling).
+Two records link only when **every column's token set is equal** within the
+same block. This is the same as a fuzzy score of exactly 1.0, reached without
+any scoring or threshold, and it is **robust to empty columns**: two records
+with identical names and both streets blank will link, where a weighted
+threshold would silently reject them. (A blank column drags a weighted score
+below its threshold, since its weight stays in the denominator; exact
+matching has no such ceiling.)
 
-Use it as the cheap front stage of a staged workflow
-(`exact -> fuzzy(residual)`): the residual comes from [extract_unmatched()],
-and `multi_stage_dedup()` / `multi_stage_search()` thread it automatically
-when you pass `list(exact_strategy(...), search_strategy(...))`.
+Use it as the cheap first stage of a staged workflow (exact first, then fuzzy
+on whatever is left): the leftover records come from [extract_unmatched()],
+and [multi_stage_dedup()] / [multi_stage_search()] thread them through for
+you when you pass `list(exact_strategy(...), search_strategy(...))`.
 }
 \seealso{
 [search_strategy()], [detect_duplicates()], [search_candidates()],

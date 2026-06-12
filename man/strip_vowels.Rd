@@ -2,19 +2,26 @@
 % Please edit documentation in R/preparer_word.R
 \name{strip_vowels}
 \alias{strip_vowels}
-\title{Strip vowels from text}
+\title{Strip vowels from text (consonant skeleton)}
 \usage{
 strip_vowels(text)
 }
 \arguments{
-\item{text}{Character vector.}
+\item{text}{A character vector.}
 }
 \value{
-Character vector with vowels removed.
+A character vector with vowels removed, upper-cased and ASCII-folded.
 }
 \description{
-Removes vowels (A, E, I, O, U) including accented and umlaut variants.
-Useful for fuzzy matching (e.g. "MUELLER" -> "MLLR", "JOSE" -> "JS").
+Reduces text to its consonant skeleton by removing vowels (A, E, I, O, U,
+including accented variants). Two spellings that differ only in their vowels,
+such as `"MEYER"` and `"MAYER"` or `"MUELLER"` and `"MULLER"`, collapse to the
+same skeleton, so they match despite the difference. It is a lighter-weight
+alternative to the phonetic encoders ([as_soundex()], [as_metaphone()]) when
+you only want to ignore vowel variation.
+}
+\details{
+Returns text, so it goes ahead of a token generator in a pipeline.
 }
 \examples{
 strip_vowels("Mueller")   # "MLLR"
@@ -22,3 +29,11 @@ strip_vowels("Cafe Noir") # "CF NR"
 strip_vowels(c("Anna", "Peter"))
 
 }
+\seealso{
+[as_soundex()] and [as_metaphone()] for full phonetic encoding.
+
+Other text normalizers: 
+\code{\link{normalize_street}()},
+\code{\link{normalize_text}()}
+}
+\concept{text normalizers}

@@ -6,21 +6,34 @@
 # Used as the first stages of a preparer pipeline before tokenization.
 # ============================================================
 
-#' Normalize text string
+#' Normalize text for matching
 #'
-#' This function converts a text string to upper case, transliterates it based on the specified
-#' transliteration scheme, retains only alphanumeric characters and spaces, and removes extra spaces.
+#' The usual first step in a preparer pipeline. Folds text to upper case,
+#' transliterates accented and non-Latin characters to ASCII, drops anything
+#' that is not a letter, digit, or space, and collapses runs of whitespace. The
+#' point is to make superficial differences in case, accents, and punctuation
+#' disappear so that `"Cafe-Conac"` and `"cafe conac"` reduce to the same text
+#' before it is split into tokens.
 #'
-#' @param text A character string or vector to be normalized.
-#' @param transliteration A character string specifying the transliteration scheme to be used,
-#'        defaulting to "De-ASCII".
+#' Returns text, so it goes ahead of a token generator such as [word_tokens()]
+#' in a strategy: `name ~ normalize_text() + word_tokens()`.
 #'
-#' @return Returns a normalized, upper-case version of the input text, with non-alphanumeric characters
-#'         and extra spaces removed.
+#' @param text A character string or vector to normalize.
+#' @param transliteration A transliteration scheme passed to
+#'   [stringi::stri_trans_general()], defaulting to `"De-ASCII"` (German-aware
+#'   folding, which expands umlauts to digraphs such as `ue` and `oe`). Use
+#'   `"Latin-ASCII"` for plain accent stripping, which drops the diacritic
+#'   instead of expanding it.
+#'
+#' @return A character vector the same length as `text`: upper-cased, ASCII,
+#'   alphanumeric-and-space only, with surrounding and repeated spaces removed.
 #'
 #' @examples
 #' normalize_text("Cafe Conac")
 #' normalize_text("Strasse", transliteration = "Latin-ASCII")
+#'
+#' @family text normalizers
+#' @seealso [word_tokens()], the token generator that usually follows.
 #' @export
 #' @import stringi
 normalize_text <- function(text, transliteration = "De-ASCII") {
@@ -39,17 +52,22 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
   return(text)
 }
 
-#' Normalize Street Names Across Languages
+#' Normalize street names across languages
 #'
-#' `normalize_street()` standardizes street-type tokens in free-text addresses
-#' using a multilingual dictionary of canonical forms. The function performs
-#' Unicode normalization, ASCII folding, uppercasing, and whitespace cleanup
-#' before replacing known street-type variants.
+#' Street names are written many ways for the same place: `"Hauptstr."`,
+#' `"Hauptstrasse"`, `"Haupt Strasse"`. `normalize_street()` collapses those
+#' variants to one canonical spelling so an address column matches on the street
+#' name rather than on its abbreviation. It normalizes Unicode, folds to ASCII,
+#' upper-cases, and cleans whitespace, then rewrites known street-type tokens
+#' from a multilingual dictionary.
+#'
+#' Returns text, so it sits where [normalize_text()] would in a pipeline, ahead
+#' of a token generator: `street ~ normalize_street(lang = "de") + word_tokens()`.
 #'
 #' Exact matches (e.g., `"st"`, `"rd."`, `"via"`) are always replaced.
 #' Suffix matches (e.g., German `"strasse"` endings or Dutch `"straat"`)
-#' are applied **only when `lang` is explicitly specified**, preventing unsafe
-#' substitutions such as `"LINCOLANE"` -> `"LINCOLANE"`.
+#' are applied **only when `lang` is explicitly specified**, which prevents
+#' unsafe substitutions such as rewriting the ending of `"LINCOLN LANE"`.
 #'
 #' @param x A character vector containing street names or address fragments.
 #' @param lang Optional language code (e.g., `"de"`, `"en"`, `"fr"`).
@@ -67,10 +85,10 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
 #'   whole `stopwords` set is used.
 #' @param dict A dictionary of street-type definitions, typically
 #'   [joinery::street_types], containing the columns:
-#'   * `canonical` -- canonical uppercase form
-#'   * `variant`   -- lowercased normalized variant form
-#'   * `type`      -- `"exact"` or `"suffix"`
-#'   * `lang`      -- ISO language code
+#'   * `canonical`: canonical uppercase form
+#'   * `variant`: lowercased normalized variant form
+#'   * `type`: `"exact"` or `"suffix"`
+#'   * `lang`: ISO language code
 #' @param stopwords A street-stopword table, typically
 #'   [joinery::street_stopwords], with columns `stopword` (uppercase ASCII) and
 #'   `lang`. Only consulted when `drop_stopwords = TRUE`.
@@ -108,6 +126,7 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
 #'                  drop_house_numbers = TRUE, drop_stopwords = TRUE)
 #' # "ALSTER"
 #'
+#' @family text normalizers
 #' @export
 normalize_street <- function(x, lang = NULL,
                              drop_house_numbers = FALSE,
@@ -219,10 +238,15 @@ normalize_street <- function(x, lang = NULL,
 
 #' Normalize dates to ISO 8601 format (YYYY-MM-DD)
 #'
-#' `normalize_date()` parses dates from various formats and standardizes them to
-#' ISO 8601 format (YYYY-MM-DD) as a character string. Handles common date
-#' formats across locales including European (DD.MM.YYYY), American (MM/DD/YYYY),
-#' and ISO-style formats.
+#' The same day is written `"31.12.2023"`, `"12/31/2023"`, or `"2023-12-31"`
+#' depending on who typed it. `normalize_date()` parses these mixed formats and
+#' rewrites them to one ISO 8601 string (`YYYY-MM-DD`), so a date column matches
+#' on the day it names rather than on how it was formatted. It recognizes
+#' European (DD.MM.YYYY), American (MM/DD/YYYY), and ISO-style inputs.
+#'
+#' Returns text. For matching on individual date parts (year only, year and
+#' month) use [date_tokens()]; to deliberately blur near-dates together use
+#' [approximate_date()].
 #'
 #' @param x A character or Date vector containing dates to normalize.
 #' @param format Optional format string for parsing (passed to `as.Date()`).
@@ -252,6 +276,7 @@ normalize_street <- function(x, lang = NULL,
 #' normalize_date("31-12-2023", format = "%d-%m-%Y")
 #' # "2023-12-31"
 #'
+#' @family date preparers
 #' @export
 normalize_date <- function(x, format = NULL, orders = c("ymd", "dmy", "mdy")) {
 
@@ -293,20 +318,28 @@ normalize_date <- function(x, format = NULL, orders = c("ymd", "dmy", "mdy")) {
 }
 
 
-#' Strip vowels from text
+#' Strip vowels from text (consonant skeleton)
 #'
-#' Removes vowels (A, E, I, O, U) including accented and umlaut variants.
-#' Useful for fuzzy matching (e.g. "MUELLER" -> "MLLR", "JOSE" -> "JS").
+#' Reduces text to its consonant skeleton by removing vowels (A, E, I, O, U,
+#' including accented variants). Two spellings that differ only in their vowels,
+#' such as `"MEYER"` and `"MAYER"` or `"MUELLER"` and `"MULLER"`, collapse to the
+#' same skeleton, so they match despite the difference. It is a lighter-weight
+#' alternative to the phonetic encoders ([as_soundex()], [as_metaphone()]) when
+#' you only want to ignore vowel variation.
 #'
-#' @param text Character vector.
+#' Returns text, so it goes ahead of a token generator in a pipeline.
 #'
-#' @return Character vector with vowels removed.
+#' @param text A character vector.
+#'
+#' @return A character vector with vowels removed, upper-cased and ASCII-folded.
 #'
 #' @examples
 #' strip_vowels("Mueller")   # "MLLR"
 #' strip_vowels("Cafe Noir") # "CF NR"
 #' strip_vowels(c("Anna", "Peter"))
 #'
+#' @family text normalizers
+#' @seealso [as_soundex()] and [as_metaphone()] for full phonetic encoding.
 #' @export
 strip_vowels <- function(text) {
   check_character(text)
@@ -334,88 +367,131 @@ strip_vowels <- function(text) {
 }
 
 
-#' Convert Text to Metaphone Encoding
+#' Encode text phonetically with Metaphone
 #'
-#' This function converts a text string to its Metaphone encoding. The Metaphone algorithm is used to
-#' encode words phonetically by reducing them to a simplified representation based on their pronunciation.
+#' Names that sound alike are often spelled differently: `"Smith"` and
+#' `"Smyth"`, `"Meyer"` and `"Maier"`. Metaphone encodes text by how it sounds,
+#' so those variants share one key and match even though the letters differ.
+#' Best on single-word fields such as surnames or company names; it is tuned for
+#' English pronunciation (for German, see [as_cologne()]).
 #'
-#' @param text A character string or vector to be converted to Metaphone encoding.
+#' Returns text, so it slots ahead of a token generator, or use it directly on a
+#' one-word column. Phonetic keys are deliberately coarse, so they trade
+#' precision for recall: pair them with a sharper field rather than matching on a
+#' phonetic key alone.
 #'
-#' @return Returns the Metaphone encoded version of the input text.
+#' @param text A character string or vector to encode.
+#'
+#' @return A character vector of Metaphone keys, one per input element.
+#'
 #' @examples
-#' as_metaphone("Cafe")
-#' as_metaphone("Strasse")
+#' as_metaphone("Smith")
+#' as_metaphone(c("Meyer", "Maier"))  # same key
+#'
+#' @family phonetic encoders
 #' @export
 #' @import phonics
 as_metaphone <- function(text) {
-  # Normalize accents: Café -> Cafe
+  # Normalize accents: Cafe (accented) -> Cafe
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
 
-  # Handle ß separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
-  x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
+  # Handle the German sharp-s (eszett, U+00DF) separately: ASCII//TRANSLIT turns
+  # it into "ss" on some locales, but not reliably. Escaped to keep R source ASCII.
+  x_norm <- gsub(intToUtf8(0x00DF), "ss", x_norm, ignore.case = TRUE)
 
   phonics::metaphone(x_norm,clean = FALSE)
 }
 
 
-#' Convert Text to Soundex Encoding
+#' Encode text phonetically with Soundex
 #'
-#' This function converts a text string to its Soundex encoding. The Soundex algorithm is used to
-#' encode words phonetically by reducing them to a simplified representation based on their pronunciation.
+#' Soundex is the classic phonetic code: it keeps the first letter and reduces
+#' the rest to a short digit string (for example `"Robert"` and `"Rupert"` both
+#' become `"R163"`), so spellings that sound alike share one key. It is coarser
+#' and older than Metaphone but widely understood and a good default for English
+#' surnames.
 #'
-#' @param text A character string or vector to be converted to Soundex encoding.
+#' Returns text, so it slots ahead of a token generator, or use it directly on a
+#' one-word column. As with any phonetic key it favours recall over precision;
+#' pair it with a sharper field rather than matching on the key alone.
 #'
-#' @return Returns the Soundex encoded version of the input text.
+#' @param text A character string or vector to encode.
+#'
+#' @return A character vector of Soundex keys (letter followed by digits), one
+#'   per input element.
+#'
 #' @examples
-#' as_soundex("Cafe")
-#' as_soundex("Strasse")
+#' as_soundex("Robert")
+#' as_soundex(c("Robert", "Rupert"))  # same key
+#'
+#' @family phonetic encoders
 #' @export
 #' @import phonics
 as_soundex <- function(text){
   check_character(text)
 
-  # Normalize accents: Café -> Cafe
+  # Normalize accents: Cafe (accented) -> Cafe
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
 
-  # Handle ß separately (ASCII//TRANSLIT turns it into "ss" on some locales, but not reliably)
-  x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
+  # Handle the German sharp-s (eszett, U+00DF) separately: ASCII//TRANSLIT turns
+  # it into "ss" on some locales, but not reliably. Escaped to keep R source ASCII.
+  x_norm <- gsub(intToUtf8(0x00DF), "ss", x_norm, ignore.case = TRUE)
 
   phonics::soundex(x_norm,clean = FALSE)
 }
 
 
-#' Convert Text to Cologne Phonetic Encoding
+#' Encode text phonetically with the Cologne procedure
 #'
-#' This function converts a text string to its Cologne Phonetic encoding. The Cologne Phonetic algorithm
-#' is used to encode words phonetically by reducing them to a simplified representation based on their
-#' pronunciation, particularly suited for German language.
+#' The Cologne phonetic procedure (Koelner Phonetik) is the German-language
+#' counterpart to Soundex. It maps text to a digit string by German
+#' pronunciation rules, so variants like `"Meier"`, `"Maier"`, and `"Mayer"`
+#' share one key. Reach for this over [as_soundex()] or [as_metaphone()] when the
+#' data is German.
 #'
-#' @param text A character string or vector to be converted to Cologne Phonetic encoding.
+#' Returns text, so it slots ahead of a token generator, or use it directly on a
+#' one-word column. Like any phonetic key it favours recall over precision; pair
+#' it with a sharper field rather than matching on the key alone.
 #'
-#' @return Returns the Cologne Phonetic encoded version of the input text.
+#' @param text A character string or vector to encode.
+#'
+#' @return A character vector of Cologne phonetic keys (digit strings), one per
+#'   input element.
+#'
 #' @examples
-#' as_cologne("Cafe")
-#' as_cologne("Strasse")
+#' as_cologne(c("Meier", "Maier", "Mayer"))  # same key
+#'
+#' @family phonetic encoders
 #' @export
 #' @import phonics
 as_cologne <- function(text){
   check_character(text)
 
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
-  x_norm <- gsub("ß", "ss", x_norm, ignore.case = TRUE)
+  x_norm <- gsub(intToUtf8(0x00DF), "ss", x_norm, ignore.case = TRUE)
 
   phonics::cologne(x_norm, clean = FALSE)
 }
 
 
-#' Use similarity dictionary to group similar tokens together
+#' Map tokens to canonical groups with a lookup table
 #'
-#' This function looks up a token in the similarity dictionary and returns the corresponding token group for a token.
+#' When you already know which tokens mean the same thing (a curated synonym
+#' list, brand-name variants, a code-to-label table), `use_dictionary()` rewrites
+#' each token to its group label so the variants collapse to one token and match.
+#' Use it when the mapping is known in advance; when you instead want joinery to
+#' discover near-duplicates from the data, use [fuzzy_tokens()].
 #'
-#' @param text A character string or vector representing the token to be looked up.
-#' @param dict A data table containing the similarity dictionary with tokens and their respective groups.
+#' Tokens absent from the dictionary return no group, so chain this after a token
+#' generator and keep a sharper field alongside it.
 #'
-#' @return Returns the token group corresponding to the input token.
+#' @param text A character vector of tokens to look up.
+#' @param dict A [data.table::data.table] with a `tokens` column and a
+#'   `token_group` column. Rows whose `tokens` value matches an input token
+#'   supply that token's group label.
+#'
+#' @return A list of character vectors, one per input element, holding the
+#'   matched group labels (empty when the token is not in `dict`).
 #'
 #' @examples
 #' dict <- data.table::data.table(
@@ -424,6 +500,9 @@ as_cologne <- function(text){
 #' )
 #' use_dictionary("example", dict)
 #' use_dictionary("nonexistent", dict)
+#'
+#' @family token transformers
+#' @seealso [fuzzy_tokens()] to discover groups from the data instead.
 #' @export
 use_dictionary <- function(text, dict) {
   if (!data.table::is.data.table(dict)) {

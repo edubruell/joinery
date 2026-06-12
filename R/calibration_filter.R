@@ -31,7 +31,7 @@
 #' commonly arrives without a `score` column (it is hand-built from a CSV or an
 #' agent, and `.collapse_pair_labels()` never reads `score` anyway). The general
 #' `.detect_match_type()` requires `score`, so use a relaxed detector here that
-#' keys only on the structural pair columns (§B2).
+#' keys only on the structural pair columns.
 #'
 #' @noRd
 .detect_label_type <- function(labels) {
@@ -119,12 +119,12 @@
 
 #' Reduce a predictor set to a maximal full-rank (linearly independent) subset.
 #'
-#' The full `match_features` schema is collinear on a given match set — the
+#' The full `match_features` schema is collinear on a given match set, the
 #' symmetric `sim_sf_<col>`/`sim_fs_<col>` pair is identical for dedup, and
 #' several count predictors are exact linear combinations when a block's records
 #' share structure. `glm` silently aliases such columns (NA coefficients) and
 #' then warns `prediction from rank-deficient fit` at every `predict()`. Pruning
-#' them *before* the fit yields an identical model with no warning (§B3).
+#' them *before* the fit yields an identical model with no warning.
 #'
 #' Uses a column-pivoted QR of `[intercept | predictors]`: the first `rank`
 #' pivots index the independent columns; the rest are redundant. Original
@@ -182,9 +182,8 @@
 #' Recall is monotone-decreasing in the threshold, so we may drop at most
 #' `floor((1 - target_recall) * P)` of the `P` positives. Sorting the positive
 #' probabilities ascending, the threshold is the smallest *kept* positive's
-#' probability — guaranteeing `recall >= target_recall` exactly (ties only ever
-#' raise recall). Recall-favouring operating point for a firm panel (§B4,
-#' [[feedback_recall_favouring_threshold]]).
+#' probability, guaranteeing `recall >= target_recall` exactly (ties only ever
+#' raise recall). Recall-favouring operating point for a firm panel.
 #'
 #' @noRd
 .target_recall_threshold <- function(prob, equal, target_recall = 0.95) {
@@ -201,9 +200,9 @@
 #'
 #' `cost_ratio = cost(FN) / cost(FP)`; total cost at a cut keeping the top-`i`
 #' scoring pairs is `cost_ratio * FN + FP`. A higher `cost_ratio` makes false
-#' negatives dearer and shifts the optimum to a lower threshold (more recall) —
+#' negatives dearer and shifts the optimum to a lower threshold (more recall),
 #' monotonically. Walks scores descending; on ties takes the highest (most
-#' stringent) probability (§B4).
+#' stringent) probability.
 #'
 #' @noRd
 .cost_weighted_threshold <- function(prob, equal, cost_ratio = 1) {
@@ -310,7 +309,7 @@
 
   if (length(unique(y)) < 2L) {
     cli::cli_abort(c(
-      "Labels contain only one class — cannot fit a binary classifier",
+      "Labels contain only one class, cannot fit a binary classifier",
       "i" = "Need both {.field equal} == 0L and {.field equal} == 1L rows"
     ))
   }
@@ -325,13 +324,13 @@
   })
   fit_predictors <- predictors[keep]
   if (length(fit_predictors) == 0L) {
-    cli::cli_abort("All predictors are constant — cannot fit a model")
+    cli::cli_abort("All predictors are constant, cannot fit a model")
   }
 
   # Then drop perfectly-aliased predictors (linear combinations) so glm is
   # full-rank and never warns `prediction from rank-deficient fit`. The dropped
   # columns stay in @predictors (a superset is harmless for newdata) but leave
-  # the formula, so the fit and every predict() align (§B3).
+  # the formula, so the fit and every predict() align (B3).
   fit_predictors <- .full_rank_predictors(X, fit_predictors)
 
   weights <- NULL
@@ -482,7 +481,7 @@
   prob <- .predict_filter(ft, filter_model)
 
   # A user-supplied `threshold` always wins; otherwise the operating point is
-  # the declared `threshold_rule` evaluated on the training labels (§B4).
+  # the declared `threshold_rule` evaluated on the training labels (B4).
   thr_method <- "user"
   thr <- threshold
   if (is.null(thr)) {
@@ -634,10 +633,10 @@ fit_filter <- function(features, labels,
 #'   used verbatim and overrides `threshold_rule`. When `NULL`, the threshold is
 #'   chosen on the training labels per `threshold_rule`. Decision 13.7 default.
 #' @param threshold_rule The operating-point rule used when `threshold` is
-#'   `NULL`: `"youden"` (default — maximise Youden's J, symmetric error costs),
+#'   `NULL`: `"youden"` (default, maximise Youden's J, symmetric error costs),
 #'   `"target_recall"` (the highest threshold still achieving `target_recall`),
 #'   or `"cost_weighted"` (minimise `cost_ratio * FN + FP`). For a firm panel the
-#'   recall-favouring rules are usually the right operating point — splitting one
+#'   recall-favouring rules are usually the right operating point, splitting one
 #'   business across years is worse than admitting a few co-located firms a later
 #'   collapse can still catch ([`feedback_recall_favouring_threshold`]).
 #' @param target_recall Target recall in (0, 1] for

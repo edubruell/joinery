@@ -4,7 +4,7 @@
 \alias{materialize_records}
 \title{Materialize Records by ID}
 \usage{
-materialize_records(data, id, ...)
+materialize_records(data, id, ids, ...)
 }
 \arguments{
 \item{data}{A data.frame / tibble / data.table (or db table in other
@@ -12,10 +12,10 @@ backends) — the corpus to pull records from.}
 
 \item{id}{Character scalar naming the ID column in `data`.}
 
-\item{...}{Additional arguments passed to backend-specific methods.}
-
 \item{ids}{Either an atomic vector of ID values, or a table carrying them
 (read from an `id` column, else a column named `id`'s value).}
+
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
 The rows of `data` whose ID is in `ids`, all columns intact, one

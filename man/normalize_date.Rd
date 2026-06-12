@@ -21,12 +21,18 @@ A character vector of dates in ISO 8601 format (YYYY-MM-DD).
   Unparseable dates return `NA_character_` with a warning.
 }
 \description{
-`normalize_date()` parses dates from various formats and standardizes them to
-ISO 8601 format (YYYY-MM-DD) as a character string. Handles common date
-formats across locales including European (DD.MM.YYYY), American (MM/DD/YYYY),
-and ISO-style formats.
+The same day is written `"31.12.2023"`, `"12/31/2023"`, or `"2023-12-31"`
+depending on who typed it. `normalize_date()` parses these mixed formats and
+rewrites them to one ISO 8601 string (`YYYY-MM-DD`), so a date column matches
+on the day it names rather than on how it was formatted. It recognizes
+European (DD.MM.YYYY), American (MM/DD/YYYY), and ISO-style inputs.
 }
 \details{
+Returns text. For matching on individual date parts (year only, year and
+month) use [date_tokens()]; to deliberately blur near-dates together use
+[approximate_date()].
+
+
 When `format` is provided, uses `as.Date(x, format)` directly.
 When `format = NULL`, tries `lubridate::parse_date_time()` with the
 specified `orders` to handle mixed formats flexibly.
@@ -45,3 +51,9 @@ normalize_date("31-12-2023", format = "\%d-\%m-\%Y")
 # "2023-12-31"
 
 }
+\seealso{
+Other date preparers: 
+\code{\link{approximate_date}()},
+\code{\link{date_tokens}()}
+}
+\concept{date preparers}

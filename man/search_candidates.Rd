@@ -7,22 +7,63 @@
 search_candidates(base_table, target_table, base_id, target_id, strategy, ...)
 }
 \arguments{
-\item{base_table}{A data.frame / tibble / data.table (or db table in other backends).}
+\item{base_table}{A data.frame, tibble, data.table, or backend table.}
 
-\item{target_table}{A data.frame / tibble / data.table (or db table in other backends) to search against.}
+\item{target_table}{The table to search against.}
 
 \item{base_id}{Character scalar naming the ID column in `base_table`.}
 
 \item{target_id}{Character scalar naming the ID column in `target_table`.}
 
-\item{strategy}{A `Search_Strategy` object defining matching criteria.}
+\item{strategy}{A `Search_Strategy` (or `Exact_Strategy`) describing how to
+tokenize each column, how to block, and the matching threshold.}
 
-\item{...}{Additional arguments passed to backend-specific methods.}
+\item{...}{Additional arguments passed to backend-specific methods, such as
+`threshold` and `weights`.}
 }
 \value{
-Data with candidate matches
+A table with two rows per matched pair (one for the base record, one
+  for the target record), sharing a `match_id`:
+\describe{
+  \item{match_id}{Identifier shared by the two rows of a matched pair.}
+  \item{score}{The pair's match score.}
+  \item{source}{`"base"` or `"target"`.}
+  \item{id}{The record ID.}
+  \item{<original columns>}{Every other column from the source table.}
+  \item{rank}{Rank of this candidate among a record's matches.}
+}
 }
 \description{
-Generic function that finds candidate record matches between two tables
-based on token-based similarity scoring defined in a `Search_Strategy`.
+Find candidate matches between two tables: for each record on one side, the
+records on the other side that share enough rare, informative token content
+to score at or above the threshold. This is the cross-table counterpart of
+[detect_duplicates()].
+
+Pass a [search_strategy()] for fuzzy, scored matching, or an
+[exact_strategy()] to keep only pairs whose token sets are identical.
+}
+\examples{
+data(base_example)
+data(target_example)
+
+strat <- search_strategy(
+  Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+  Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),
+  Ort      ~ normalize_text(),
+  block_by = "Kreis",
+  threshold = 0.8
+)
+
+matches <- search_candidates(
+  base_example, target_example,
+  base_id = "id_base", target_id = "id_target",
+  strategy = strat
+)
+head(matches)
+
+}
+\seealso{
+[detect_duplicates()] for the within-table version,
+  [extract_unmatched()] for the residual, [multi_stage_search()] for staged
+  passes.
 }

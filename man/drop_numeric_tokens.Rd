@@ -34,3 +34,15 @@ drop_numeric_tokens(list(c("MAIN", "12A")), keep_letters = FALSE)
 # list("MAIN")
 
 }
+\seealso{
+[numeric_tokens()], its inverse; [filter_stopwords()] for the same
+  idea with a named word list.
+
+Other token transformers: 
+\code{\link{extract_initials}()},
+\code{\link{filter_stopwords}()},
+\code{\link{fuzzy_tokens}()},
+\code{\link{token_shapes}()},
+\code{\link{use_dictionary}()}
+}
+\concept{token transformers}

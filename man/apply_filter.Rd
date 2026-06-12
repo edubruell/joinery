@@ -25,10 +25,10 @@ used verbatim and overrides `threshold_rule`. When `NULL`, the threshold is
 chosen on the training labels per `threshold_rule`. Decision 13.7 default.}
 
 \item{threshold_rule}{The operating-point rule used when `threshold` is
-`NULL`: `"youden"` (default — maximise Youden's J, symmetric error costs),
+`NULL`: `"youden"` (default, maximise Youden's J, symmetric error costs),
 `"target_recall"` (the highest threshold still achieving `target_recall`),
 or `"cost_weighted"` (minimise `cost_ratio * FN + FP`). For a firm panel the
-recall-favouring rules are usually the right operating point — splitting one
+recall-favouring rules are usually the right operating point, splitting one
 business across years is worse than admitting a few co-located firms a later
 collapse can still catch ([`feedback_recall_favouring_threshold`]).}
 

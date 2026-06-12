@@ -2,22 +2,67 @@
 % Please edit documentation in R/preparer_tokens.R
 \name{fuzzy_tokens}
 \alias{fuzzy_tokens}
-\title{Fuzzy tokens using igraph components (fast, sparse)}
+\title{Collapse near-duplicate tokens to a canonical form}
 \usage{
 fuzzy_tokens(x, max_dist = 2, method = "osa", min_nchar = 1)
 }
 \arguments{
-\item{x}{Character vector}
+\item{x}{A character vector to tokenize and canonicalize.}
 
-\item{max_dist}{Maximum string distance to consider an edge}
+\item{max_dist}{Maximum string distance for two tokens to be treated as the
+same. For `method = "jw"` this is a Jaro-Winkler distance in `[0, 1]`
+(smaller is stricter); for edit-distance methods it is a count of edits.}
 
-\item{method}{stringdist method ("osa", "lv", "jw", ...)}
+\item{method}{A [stringdist::stringdist()] method, e.g. `"osa"` (default),
+`"lv"`, or `"jw"`.}
 
-\item{min_nchar}{Minimum token size}
+\item{min_nchar}{Minimum token length to consider; shorter tokens are dropped
+before grouping.}
 }
 \value{
-List of fuzzy tokens (list-column)
+A list of character vectors, one per input element, with each token
+  replaced by its group's canonical form.
 }
 \description{
-Fuzzy tokens using igraph components (fast, sparse)
+Typos and minor spelling differences split one real token into many
+(`"Neumann"`, `"Neumann"` with a slip, `"Neuman"`). `fuzzy_tokens()` finds
+tokens within a string distance of each other, groups them, and rewrites
+every member of a group to one canonical spelling, so the variants match.
+Unlike [use_dictionary()], which needs a known synonym list, this discovers
+the groups from the data.
 }
+\details{
+Use it when a field has organic spelling noise and you do not have a
+dictionary. The canonical form per group is the longest token, breaking ties
+by the most central token, then alphabetically.
+
+When not to use it:
+* **High-cardinality columns.** It compares every distinct token against
+  every other in one dense distance matrix, so cost and memory grow with the
+  square of the number of distinct tokens. On a large vocabulary (tens of
+  thousands of distinct tokens and up) it is slow and memory-hungry.
+  Normalize aggressively first, and prefer [use_dictionary()] when the groups
+  are already known.
+* **When over-merging is costly.** Grouping is by connected components, so
+  matches chain transitively: if `A` is close to `B` and `B` to `C`, all
+  three collapse even when `A` and `C` are far apart. A loose `max_dist` or
+  short tokens can fuse genuinely distinct values. Keep `max_dist` tight,
+  raise `min_nchar` to drop noise-prone short tokens, and check the groups on
+  a sample before trusting them.
+}
+\examples{
+fuzzy_tokens(c("Neumann", "Neumaxn", "Neuman"), max_dist = 2)
+# every row's token becomes "NEUMANN"
+
+}
+\seealso{
+[use_dictionary()] when the groups are known in advance.
+
+Other token transformers: 
+\code{\link{drop_numeric_tokens}()},
+\code{\link{extract_initials}()},
+\code{\link{filter_stopwords}()},
+\code{\link{token_shapes}()},
+\code{\link{use_dictionary}()}
+}
+\concept{token transformers}

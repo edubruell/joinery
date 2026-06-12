@@ -2,7 +2,7 @@
 % Please edit documentation in R/generics_core.R
 \name{multi_stage_search}
 \alias{multi_stage_search}
-\title{Multi-source staged entity resolution (the search face)}
+\title{Staged Search Across Tables or Sources}
 \usage{
 multi_stage_search(
   base_table,
@@ -16,63 +16,66 @@ multi_stage_search(
 \arguments{
 \item{base_table}{The left table in the linkage.}
 
-\item{target_table}{The right table (pass `base_table` with `self = TRUE`
-for a pooled-corpus self-search).}
+\item{target_table}{The right table. Pass `base_table` again with
+`self = TRUE` to search a single pooled table against itself.}
 
 \item{base_id}{Character scalar naming the ID column in `base_table`.}
 
 \item{target_id}{Character scalar naming the ID column in `target_table`.}
 
-\item{strategies}{Named, ordered list; each element is an `Exact_Strategy`,
-`Search_Strategy`, or `Embedding_Strategy` (S7 dispatch picks the method).}
+\item{strategies}{Named, ordered list of strategies to apply in turn. Each
+element is an [exact_strategy()], [search_strategy()], or
+[embedding_strategy()].}
 
-\item{...}{Additional backend-specific arguments.}
+\item{...}{Further arguments controlling the staged run:
+  * `self`: logical; `TRUE` searches `base_table` against itself (for
+    example, pooling several years into one table and linking across them).
+  * `source_by`: optional character vector naming the column(s) that record
+    where each row came from (for example `"year"` or `"register"`). When
+    set, every link is tagged as within-source or cross-source, and the
+    result reports each entity's `source` and `covered_sources`.
+  * `collapse`: what happens between stages. `"none"` only carries the
+    still-unmatched records forward, while `"rep"` also collapses each group
+    found so far to a single representative, shrinking the search space for
+    the looser passes that follow.
+  * `rep_rule`: rule for choosing each group's representative.
+  * `rebind`: how the next stage's two sides are formed from the
+    representatives and the residual: `"explicit"`, `"self"`, or
+    `"accumulate"` (the path for incremental panel updates).
+  * `direction`: which way each pass searches: `"forward"`, `"backward"`, or
+    `"bidirectional"`.
+  * `edge_filter`: optional callback `function(edges, stage_name)` applied to
+    each pass's links before they are accumulated (for example a domain rule
+    that drops implausible matches).
+  * `rep_by`: optional priority column for choosing representatives (passed
+    to [resolve_entities()]).
 
-\item{self}{Logical; `TRUE` pools `base_table` as both sides (staged
-self-search). Edges stay directed and carry the source-pair.}
-
-\item{source_by}{Optional character vector naming the generic provenance
-column(s) (e.g. `"year"`, `"register"`, or a composite). When set, each
-ledger edge is tagged `within_source`/`cross_source` with the source-pair,
-and the grouping carries `source` / `covered_sources`.}
-
-\item{collapse}{Between-stage policy: `"none"` (residual only), `"rep"`
-(collapse each found group to one representative — collapse-and-continue).}
-
-\item{rep_rule}{Representative-selection rule for collapse / canonicalisation.}
-
-\item{rebind}{How the next stage's sides form from {reps, residual}:
-`"explicit"`, `"self"`, or `"accumulate"` (incremental panel update).}
-
-\item{direction}{Per-stage scoring orientation: `"forward"`, `"backward"`,
-or `"bidirectional"`.}
-
-\item{edge_filter}{Optional `function(edges, stage_name) -> edges` per-stage
-callback on the directed edges.}
-
-\item{rep_by}{Optional priority column for representative selection
-(passed to [resolve_entities()]).}
+  Backend methods may accept additional arguments.}
 }
 \value{
-The cross-source **entity grouping**, one row per pooled record:
-  `entity | id | rep | rank | score | source | covered_sources | n_in_entity
-  | stage`. The directed edge ledger (`from | to | score | stage |
-  source_from | source_to | within_source | direction`) rides as the
-  `"ledger"` attribute.
+One row per pooled record describing its entity:
+  `entity | id | rep | rank | score | source | covered_sources |
+  n_in_entity | stage`. The full list of links found, with the stage and
+  direction of each, is attached as the `ledger` attribute and read with
+  `attr(result, "ledger")`.
 }
 \description{
-Link the same real-world entity across a **source** axis (multiple datasets,
-or multiple vintages of one dataset) by running an ordered list of strategies
-as successive directed-search passes, accumulating a directed edge **ledger**,
-and resolving it into a single cross-source **entity grouping** (each record's
-trajectory) via [resolve_entities()] — the shared output tail.
+Link the same real-world entity across two tables, or across several
+datasets or vintages of one dataset, by running an ordered list of
+strategies as successive search passes. Each pass adds the links it finds to
+a running record of every match (the `ledger`), and at the end all the links
+are grouped into entities, one row per record showing which entity it
+belongs to.
 
-This is the search face of the staged layer; [multi_stage_dedup()] is the
-dedup face. Both wrap the shared staged engine (`R/internal_staging.R`). The
-search stays a *directed* search (base/target distinct) because completeness
-differs across sources (§22 containment asymmetry), which a dedup self-join
-would discard.
+A typical run starts with a cheap [exact_strategy()] pass to catch the clean
+matches, then applies one or more looser [search_strategy()] passes to the
+records still unmatched. Use this when the two sides are not interchangeable:
+for example one record may carry only part of another's information, so it
+matters which side is searched against which. For finding duplicates within
+a single table, use [multi_stage_dedup()] instead.
 }
 \seealso{
-[multi_stage_dedup()] (dedup face), [resolve_entities()].
+[multi_stage_dedup()] for the within-one-table version,
+  [resolve_entities()] for the grouping step, [exact_strategy()] for the
+  usual front stage.
 }

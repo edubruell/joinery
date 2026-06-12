@@ -139,7 +139,7 @@
 }
 
 
-#' Short human label for a chunk's block tuples (for §33 progress)
+#' Short human label for a chunk's block tuples
 #' @noRd
 .block_tuples_label <- function(tuples) {
   tp  <- tuples[[1]]
@@ -167,8 +167,8 @@
 #' Snapshot the connection's table names
 #'
 #' Used to bracket a chunk's execution so any tables it leaves behind on the
-#' error path can be dropped (true isolation — a failed chunk must not leak its
-#' intermediate temps, [[feedback_drop_joinery_temp_tables]]). `duckdb_tables()`
+#' error path can be dropped (true isolation: a failed chunk must not leak its
+#' intermediate temps). `duckdb_tables()`
 #' lists both `TEMP` and regular tables.
 #'
 #' @noRd

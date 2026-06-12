@@ -21,18 +21,14 @@ rarity_distribution(data, id, strategy, ...)
 A `Rarity_Distribution` object.
 }
 \description{
-Pre-match read-side helper. Runs `prepare_search_data()` +
-`compute_rarity()` and reports, per `(column[, block])`, the token
-document-frequency / rarity distribution plus an **offender list** — the
-top document-frequency tokens that drive fan-out in the overlap join.
-Use it to *set* `min_rarity` / `max_token_df` from the actual token
-distribution instead of guessing.
+A pre-match read of how token rarity is distributed in your data. For each
+column (and block, when the strategy blocks) it reports the spread of token
+document frequency and rarity, plus an offender list: the most common tokens,
+the ones that drive a match to balloon. Use it to set `min_rarity` and
+`max_token_df` from what is actually in the data instead of guessing.
 
-It is deliberately **scoring-free**: no token-overlap join, no pair
-scoring — only tokenization and the per-token rarity computation. It is the
-cheap distribution lookup that the future strategy-planning verb
-([plan_strategy()], Stage 08) will subsume with a full `min_rarity` cost
-curve.
+It never builds the pair set: it only tokenizes and measures rarity, so it
+is cheap enough to run on a full corpus before committing to a strategy.
 }
 \seealso{
 [search_strategy()] for the `min_rarity` / `max_token_df` levers

@@ -2,50 +2,50 @@
 % Please edit documentation in R/generics_core.R
 \name{multi_stage_dedup}
 \alias{multi_stage_dedup}
-\title{Staged duplicate detection (within one table)}
+\title{Staged Duplicate Detection (within one table)}
 \usage{
 multi_stage_dedup(table, id, strategies, ...)
 }
 \arguments{
-\item{table}{A data.frame / tibble / data.table (or backend table) to
+\item{table}{A data.frame, tibble, data.table, or backend table to
 deduplicate.}
 
 \item{id}{Character scalar naming the ID column in `table`.}
 
-\item{strategies}{Named, ordered list. Each element is an `Exact_Strategy`,
-`Search_Strategy`, or `Embedding_Strategy`; the loop calls one apply verb
-and S7 dispatch picks the method — there is no exact/fuzzy branch.}
+\item{strategies}{Named, ordered list of strategies to apply in turn. Each
+element is an [exact_strategy()], [search_strategy()], or
+[embedding_strategy()].}
 
-\item{...}{Additional backend-specific arguments.}
+\item{...}{Further arguments to the staged run:
+  * `rep_by`: optional character scalar naming a priority column on `table`
+    used to choose each group's representative (passed to
+    [resolve_entities()]: smallest `rep_by` wins, ties broken by smallest
+    id).
+  * `edge_filter`: optional callback `function(edges, stage_name)` applied to
+    each pass's links before they are accumulated (for example a domain rule
+    that drops implausible matches). The links carry `from`, `to`, `score`,
+    and `stage`.
 
-\item{rep_by}{Optional character scalar naming a priority column on `table`
-used to pick each entity's canonical representative (passed straight to
-[resolve_entities()]: smallest `rep_by` wins, ties by smallest id).}
-
-\item{edge_filter}{Optional `function(edges, stage_name) -> edges` callback
-applied to each stage's edges before accumulation (e.g. a domain-specific
-mover guard). `edges` carries `from`, `to`, `score`, `stage`.}
+  Backend methods may accept additional arguments.}
 }
 \value{
-Standard dedup schema: `duplicate_group | id | score | rank` plus the
-  original columns of `table`, and a `stage` column recording which stage
-  first linked each record.
+The standard dedup result: `duplicate_group | id | score | rank`
+  plus the original columns of `table`, and a `stage` column recording which
+  pass first linked each record.
 }
 \description{
-Run an ordered list of strategies as successive dedup passes over a single
-table, accumulating the links each stage finds and resolving connected
-components **once at the end**. The headline use is the §29 architecture:
-an exact collapse front stage, then progressively **looser-blocked** fuzzy
-passes over the still-unmatched residual, so a record linked `A~B` in an
-early stage and `B~C` in a later one closes into a single entity `{A,B,C}`.
+Deduplicate a single table in increasingly tolerant passes. A typical run
+starts with a cheap [exact_strategy()] pass that catches the clean
+duplicates, then applies looser [search_strategy()] passes (often with
+wider blocking) to the records still unmatched. All the links found across
+the passes are grouped into duplicate groups at the end, so a record linked
+to `B` in an early pass and `B` linked to `C` in a later one all land in the
+same group.
 
-This is the dedup face of the staged layer; [multi_stage_search()] is the
-search face. Both wrap the shared staged engine (`R/internal_staging.R`) and
-resolve to entities via [resolve_entities()]. `multi_stage_dedup()` takes a
-single `table` (never `base`/`target`) — cross-source staged linkage is a
-directed search, which is [multi_stage_search()].
+For linking across two tables or several sources, use [multi_stage_search()].
 }
 \seealso{
-[multi_stage_search()] (search face), [resolve_entities()] (the
-  shared entity-resolution tail).
+[multi_stage_search()] for the cross-table version,
+  [detect_duplicates()] for a single pass, [resolve_entities()] for the
+  grouping step.
 }

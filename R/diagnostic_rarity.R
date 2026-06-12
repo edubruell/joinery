@@ -1,5 +1,5 @@
 # ============================================================
-# rarity_distribution() — all backends
+# rarity_distribution(), all backends
 # ============================================================
 #
 # Read-side pre-match helper (v0.8 Stage 04, plan item A4). Runs
@@ -11,7 +11,7 @@
 # Deliberately scoring-free: no token-overlap join, no .score_token_pairs
 # / .score_pairs_sql. This is the cheap distribution lookup that
 # plan_strategy() (Stage 08, A7) will subsume with a full min_rarity
-# cost curve — keep the surface small so the two don't duplicate.
+# cost curve, keep the surface small so the two don't duplicate.
 #
 # Backends: data.table (reference), DuckDB (collect then delegate, like
 #   audit_strategy), tibble/data.frame (as_DT wrappers).
@@ -28,7 +28,7 @@
 #' @slot distribution `data.table`. One row per `(src_column[, block])`:
 #'   `n_tokens` (distinct token types), `df_max` (worst fan-out), `top_token`
 #'   (the highest-df token), `rarity_min` / `rarity_p50` / `rarity_max`, and
-#'   `suggested_min_rarity` — the rarity of `top_token`; setting `min_rarity`
+#'   `suggested_min_rarity`, the rarity of `top_token`; setting `min_rarity`
 #'   just above it drops that column/block's worst fan-out driver.
 #' @slot offenders `data.table`. The top `n_offenders` tokens by document
 #'   frequency across all `(column[, block])`: `src_column`, `block` (when
@@ -214,7 +214,7 @@ method(print.Rarity_Distribution, Rarity_Distribution) <- function(x, ...) {
     for (i in seq_len(nrow(d))) {
       blk <- if (x@blocked) sprintf(" [block %s]", d$block[i]) else ""
       cli::cli_bullets(sprintf(
-        "{.field %s}%s: %d tokens, df_max=%d (%s), rarity p50=%.4g, suggested min_rarity ≳ %.4g",
+        "{.field %s}%s: %d tokens, df_max=%d (%s), rarity p50=%.4g, suggested min_rarity >~ %.4g",
         d$src_column[i], blk, d$n_tokens[i], d$df_max[i],
         d$top_token[i], d$rarity_p50[i], d$suggested_min_rarity[i]
       ))
@@ -227,7 +227,7 @@ method(print.Rarity_Distribution, Rarity_Distribution) <- function(x, ...) {
     for (i in seq_len(min(nrow(o), 10L))) {
       blk <- if (x@blocked) sprintf(" [%s]", o$block[i]) else ""
       cli::cli_bullets(sprintf(
-        "{.field %s}%s: “%s” df=%d, rarity=%.4g",
+        "{.field %s}%s: '%s' df=%d, rarity=%.4g",
         o$src_column[i], blk, o$token[i], o$df[i], o$rarity[i]
       ))
     }

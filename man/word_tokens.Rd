@@ -2,24 +2,41 @@
 % Please edit documentation in R/preparer_tokens.R
 \name{word_tokens}
 \alias{word_tokens}
-\title{Return a list of word tokens for the .text separated by spaces.}
+\title{Split text into word tokens}
 \usage{
 word_tokens(text, min_nchar = 0)
 }
 \arguments{
-\item{text}{A character string from which words will be extracted.}
+\item{text}{A character vector to split into words.}
 
-\item{min_nchar}{An integer specifying the minimum length of words to keep. Defaults to 0.}
+\item{min_nchar}{Minimum token length to keep. Tokens shorter than this are
+dropped. Defaults to `0` (keep everything).}
 }
 \value{
-Returns a vector of words extracted from the input text.
+A list of character vectors, one per input element, each holding that
+  element's word tokens.
 }
 \description{
-This function splits the input text into words based on spaces. It returns a vector of the words
-found in the text. This function is useful for natural language processing tasks where word-level
-manipulation of text is required.
+The workhorse tokenizer. It splits each string on whitespace into a vector of
+words, the tokens joinery matches on. It almost always follows
+[normalize_text()], which strips punctuation and case first so the split is
+clean: `name ~ normalize_text() + word_tokens()`.
+}
+\details{
+Set `min_nchar` to drop very short tokens (single initials, stray letters)
+that match too easily and add noise.
 }
 \examples{
-word_tokens("This is an example.")
-word_tokens("Another, test; string.")
+word_tokens("this is an example")
+word_tokens("this is an example", min_nchar = 3)  # drops "is", "an"
+
 }
+\seealso{
+[normalize_text()], the usual preceding step;
+  [filter_stopwords()] to drop common words by name.
+
+Other token generators: 
+\code{\link{generate_ngrams}()},
+\code{\link{numeric_tokens}()}
+}
+\concept{token generators}

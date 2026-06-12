@@ -2,20 +2,31 @@
 % Please edit documentation in R/preparer_word.R
 \name{use_dictionary}
 \alias{use_dictionary}
-\title{Use similarity dictionary to group similar tokens together}
+\title{Map tokens to canonical groups with a lookup table}
 \usage{
 use_dictionary(text, dict)
 }
 \arguments{
-\item{text}{A character string or vector representing the token to be looked up.}
+\item{text}{A character vector of tokens to look up.}
 
-\item{dict}{A data table containing the similarity dictionary with tokens and their respective groups.}
+\item{dict}{A [data.table::data.table] with a `tokens` column and a
+`token_group` column. Rows whose `tokens` value matches an input token
+supply that token's group label.}
 }
 \value{
-Returns the token group corresponding to the input token.
+A list of character vectors, one per input element, holding the
+  matched group labels (empty when the token is not in `dict`).
 }
 \description{
-This function looks up a token in the similarity dictionary and returns the corresponding token group for a token.
+When you already know which tokens mean the same thing (a curated synonym
+list, brand-name variants, a code-to-label table), `use_dictionary()` rewrites
+each token to its group label so the variants collapse to one token and match.
+Use it when the mapping is known in advance; when you instead want joinery to
+discover near-duplicates from the data, use [fuzzy_tokens()].
+}
+\details{
+Tokens absent from the dictionary return no group, so chain this after a token
+generator and keep a sharper field alongside it.
 }
 \examples{
 dict <- data.table::data.table(
@@ -24,4 +35,16 @@ dict <- data.table::data.table(
 )
 use_dictionary("example", dict)
 use_dictionary("nonexistent", dict)
+
 }
+\seealso{
+[fuzzy_tokens()] to discover groups from the data instead.
+
+Other token transformers: 
+\code{\link{drop_numeric_tokens}()},
+\code{\link{extract_initials}()},
+\code{\link{filter_stopwords}()},
+\code{\link{fuzzy_tokens}()},
+\code{\link{token_shapes}()}
+}
+\concept{token transformers}

@@ -202,7 +202,7 @@
            ceil = signals[["max_empty_column_ceiling"]])
     },
     message_fn = function(v, ctx) sprintf(
-      "%.1f%% of records have empty `%s`; their score ceiling is %.3f (1 - weight) — they cannot match above it. Consider an `exact_strategy()` front stage.",
+      "%.1f%% of records have empty `%s`; their score ceiling is %.3f (1 - weight), they cannot match above it. Consider an `exact_strategy()` front stage.",
       100 * v, ctx$col, ctx$ceil
     )
   ),

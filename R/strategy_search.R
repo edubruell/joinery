@@ -302,16 +302,17 @@ expr_to_step <- function(expr) {
 #'   Default is `0` (disabled). Positive values adjust scores based on the
 #'   proportion of matched tokens.
 #' @param on_missing How to score a pair when a weighted column is **empty on
-#'   both records**. `"penalise"` (default) leaves the column's weight in the
-#'   denominator, so a record missing column *c* has a hard score ceiling of
-#'   `1 - weight(c)` and can never reach a threshold above it. `"renormalise"`
-#'   redistributes the weight of any column empty on *both* sides across the
-#'   columns present on at least one side (a column present on one side only
-#'   stays a genuine penalty). `"renormalise"` is powerful but aggressive — it
-#'   turns an empty-street record into a name-only matcher — so it is opt-in and
-#'   never the default. The empty-column-robust alternative is to front the run
-#'   with an [exact_strategy()] stage, whose set-equality links are
-#'   weight/threshold independent.
+#'   both records**. With `"penalise"` (default) the column still counts against
+#'   the score. For example, if `Strasse` has weight 0.3 and a record's street
+#'   is blank, that record's score can never rise above 0.7, so a threshold of
+#'   0.8 will never match it even on a perfect name. `"renormalise"` removes
+#'   that ceiling: it spreads the weight of any column blank on *both* sides
+#'   across the columns that are present (a column present on only one side
+#'   still counts as a genuine mismatch). This is powerful but aggressive, since
+#'   it turns a record with no street into a name-only matcher, so it is opt-in
+#'   and never the default. If you mainly want to handle empty columns, the
+#'   safer route is to run an [exact_strategy()] stage first, whose matches do
+#'   not depend on weights or thresholds.
 #'
 #' @return A [Search_Strategy] object.
 #'

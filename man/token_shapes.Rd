@@ -2,7 +2,7 @@
 % Please edit documentation in R/preparer_tokens.R
 \name{token_shapes}
 \alias{token_shapes}
-\title{Convert tokens to shape signatures (letter/digit patterns)}
+\title{Convert tokens to shape signatures}
 \usage{
 token_shapes(tokens)
 }
@@ -10,9 +10,31 @@ token_shapes(tokens)
 \item{tokens}{A list of character vectors.}
 }
 \value{
-A list of shape tokens.
+A list of character vectors of shape signatures, one signature per
+  input token.
 }
 \description{
-"MULLER" -> "AAAAAA"
-"A12B"   -> "ANNA"
+Reduces each token to its letter/digit pattern: every letter becomes `"A"`,
+every digit `"N"`, anything else `"X"`. The signature ignores the actual
+characters and keeps only the layout, which is useful for matching on the
+format of a code or identifier (postal codes, licence plates, product codes)
+rather than its exact value, or as a coarse blocking key.
 }
+\details{
+It transforms a token column, so it runs after a token generator such as
+[word_tokens()].
+}
+\examples{
+token_shapes(list(c("MUELLER", "A12B")))
+# list(c("AAAAAAA", "ANNA"))
+
+}
+\seealso{
+Other token transformers: 
+\code{\link{drop_numeric_tokens}()},
+\code{\link{extract_initials}()},
+\code{\link{filter_stopwords}()},
+\code{\link{fuzzy_tokens}()},
+\code{\link{use_dictionary}()}
+}
+\concept{token transformers}

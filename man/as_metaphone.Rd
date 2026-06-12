@@ -2,21 +2,37 @@
 % Please edit documentation in R/preparer_word.R
 \name{as_metaphone}
 \alias{as_metaphone}
-\title{Convert Text to Metaphone Encoding}
+\title{Encode text phonetically with Metaphone}
 \usage{
 as_metaphone(text)
 }
 \arguments{
-\item{text}{A character string or vector to be converted to Metaphone encoding.}
+\item{text}{A character string or vector to encode.}
 }
 \value{
-Returns the Metaphone encoded version of the input text.
+A character vector of Metaphone keys, one per input element.
 }
 \description{
-This function converts a text string to its Metaphone encoding. The Metaphone algorithm is used to
-encode words phonetically by reducing them to a simplified representation based on their pronunciation.
+Names that sound alike are often spelled differently: `"Smith"` and
+`"Smyth"`, `"Meyer"` and `"Maier"`. Metaphone encodes text by how it sounds,
+so those variants share one key and match even though the letters differ.
+Best on single-word fields such as surnames or company names; it is tuned for
+English pronunciation (for German, see [as_cologne()]).
+}
+\details{
+Returns text, so it slots ahead of a token generator, or use it directly on a
+one-word column. Phonetic keys are deliberately coarse, so they trade
+precision for recall: pair them with a sharper field rather than matching on a
+phonetic key alone.
 }
 \examples{
-as_metaphone("Cafe")
-as_metaphone("Strasse")
+as_metaphone("Smith")
+as_metaphone(c("Meyer", "Maier"))  # same key
+
 }
+\seealso{
+Other phonetic encoders: 
+\code{\link{as_cologne}()},
+\code{\link{as_soundex}()}
+}
+\concept{phonetic encoders}

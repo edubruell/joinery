@@ -4,19 +4,19 @@
 \alias{calibrate}
 \title{Evaluate a fitted filter on labelled pairs}
 \usage{
-calibrate(x, ...)
+calibrate(x, labels = NULL, bins = 10L, ...)
 }
 \arguments{
 \item{x}{A [`Calibrated_Matches`] object from [apply_filter()] /
 [calibrate_matches()].}
-
-\item{...}{Reserved for future expansion.}
 
 \item{labels}{Optional labels `data.table` (typically from
 [import_labels()]) for held-out evaluation.}
 
 \item{bins}{Integer. Number of equal-width probability bins for the
 reliability table. Default `10`.}
+
+\item{...}{Reserved for future expansion.}
 }
 \value{
 A [`Filter_Calibration`] object.

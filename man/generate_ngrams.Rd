@@ -2,24 +2,42 @@
 % Please edit documentation in R/preparer_tokens.R
 \name{generate_ngrams}
 \alias{generate_ngrams}
-\title{Generate n-grams from text}
+\title{Generate character n-grams from text}
 \usage{
 generate_ngrams(text, n)
 }
 \arguments{
-\item{text}{A character string or vector from which to generate n-grams.}
+\item{text}{A character vector to break into n-grams.}
 
-\item{n}{An integer specifying the length of each n-gram.}
+\item{n}{The window length (number of characters per n-gram).}
 }
 \value{
-Returns a list of n-grams generated from the input text. If the text length is less than n, returns
-        an empty character vector.
+A list of character vectors, one per input element. Strings shorter
+  than `n` yield an empty vector.
 }
 \description{
-This function generates n-grams from a given text string. An n-gram is a contiguous sequence of n items
-from a given sample of text or speech. This function will return a list of all possible n-grams of length n.
+An n-gram is a sliding window of `n` consecutive characters. Matching on
+character n-grams instead of whole words tolerates typos, truncations, and
+joined-up spellings, because two strings that differ by a letter still share
+most of their windows (`"meier"` and `"maier"` share `"ei"`, `"er"`, and so
+on). Reach for it on short, noisy fields where word tokens are too brittle.
+}
+\details{
+It tokenizes text directly, so it replaces [word_tokens()] rather than
+following it. The trade-off is fan-out: every string yields many overlapping
+tokens, so n-grams cost more to match than words. Larger `n` is sharper and
+cheaper, smaller `n` is fuzzier and denser.
 }
 \examples{
 generate_ngrams("hello", 2)
 generate_ngrams("an example", 3)
+
 }
+\seealso{
+[word_tokens()] for whole-word tokens.
+
+Other token generators: 
+\code{\link{numeric_tokens}()},
+\code{\link{word_tokens}()}
+}
+\concept{token generators}

@@ -98,7 +98,7 @@ export_for_labelling <- function(sample, file, default_label = 1L) {
 
   rows <- .labelling_extract_rows(sample)
   if (nrow(rows) == 0L) {
-    cli::cli_abort("Cannot export an empty sample for labelling — at least one match row required")
+    cli::cli_abort("Cannot export an empty sample for labelling, at least one match row required")
   }
   match_type <- .detect_match_type(rows)
 

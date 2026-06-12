@@ -2,7 +2,7 @@
 % Please edit documentation in R/preparer_word.R
 \name{normalize_street}
 \alias{normalize_street}
-\title{Normalize Street Names Across Languages}
+\title{Normalize street names across languages}
 \usage{
 normalize_street(
   x,
@@ -34,10 +34,10 @@ whole `stopwords` set is used.}
 
 \item{dict}{A dictionary of street-type definitions, typically
 [joinery::street_types], containing the columns:
-* `canonical` -- canonical uppercase form
-* `variant`   -- lowercased normalized variant form
-* `type`      -- `"exact"` or `"suffix"`
-* `lang`      -- ISO language code}
+* `canonical`: canonical uppercase form
+* `variant`: lowercased normalized variant form
+* `type`: `"exact"` or `"suffix"`
+* `lang`: ISO language code}
 
 \item{stopwords}{A street-stopword table, typically
 [joinery::street_stopwords], with columns `stopword` (uppercase ASCII) and
@@ -49,16 +49,21 @@ A character vector of normalized street names. `NA` inputs are
   `drop_house_numbers = TRUE`) become `""`.
 }
 \description{
-`normalize_street()` standardizes street-type tokens in free-text addresses
-using a multilingual dictionary of canonical forms. The function performs
-Unicode normalization, ASCII folding, uppercasing, and whitespace cleanup
-before replacing known street-type variants.
+Street names are written many ways for the same place: `"Hauptstr."`,
+`"Hauptstrasse"`, `"Haupt Strasse"`. `normalize_street()` collapses those
+variants to one canonical spelling so an address column matches on the street
+name rather than on its abbreviation. It normalizes Unicode, folds to ASCII,
+upper-cases, and cleans whitespace, then rewrites known street-type tokens
+from a multilingual dictionary.
 }
 \details{
+Returns text, so it sits where [normalize_text()] would in a pipeline, ahead
+of a token generator: `street ~ normalize_street(lang = "de") + word_tokens()`.
+
 Exact matches (e.g., `"st"`, `"rd."`, `"via"`) are always replaced.
 Suffix matches (e.g., German `"strasse"` endings or Dutch `"straat"`)
-are applied **only when `lang` is explicitly specified**, preventing unsafe
-substitutions such as `"LINCOLANE"` -> `"LINCOLANE"`.
+are applied **only when `lang` is explicitly specified**, which prevents
+unsafe substitutions such as rewriting the ending of `"LINCOLN LANE"`.
 
 
 Normalization steps include:
@@ -90,3 +95,9 @@ normalize_street("An der Alster 5", lang = "de",
 # "ALSTER"
 
 }
+\seealso{
+Other text normalizers: 
+\code{\link{normalize_text}()},
+\code{\link{strip_vowels}()}
+}
+\concept{text normalizers}

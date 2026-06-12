@@ -9,10 +9,23 @@
 
 #' Prepare Data for Record Linkage Search
 #'
+#' @description
+#' Turn a table into the long-format token table the matching verbs work on:
+#' it applies each column's preparation steps, splits the text into tokens, and
+#' attaches the id and any blocking columns. The other verbs
+#' ([detect_duplicates()], [search_candidates()]) call this for you, so you
+#' rarely need it directly; reach for it when you want to see or post-process
+#' the tokens yourself.
+#'
 #' @param data A data.frame / tibble / data.table (or db table in other backends).
 #' @param id   Character scalar naming the ID column in `data`.
 #' @param strategy A `Search_Strategy` object.
 #' @param ... Additional arguments passed to backend-specific methods.
+#'
+#' @return A long-format token table with one row per token, carrying the id,
+#'   the source `column`, the `token`, a `row_id`, and any blocking columns.
+#'
+#' @seealso [inspect_tokens()] for a quick per-column look at the tokens.
 #'
 #' @export
 prepare_search_data <- new_generic(
@@ -23,34 +36,52 @@ prepare_search_data <- new_generic(
 #' Detect Duplicate Records
 #'
 #' @description
-#' Identify likely duplicate records within a single table using
-#' token-based similarity scoring defined in a `Search_Strategy`.
+#' Find likely duplicate records inside a single table and group them.
+#' Records are compared by how much of their rare, informative token content
+#' they share (not by character-level edit distance), every pair is scored,
+#' and any pair scoring at or above the threshold is linked. Records that link
+#' directly or transitively form one duplicate group.
 #'
-#' Backends must:
-#' - preprocess data using `prepare_search_data()`,
-#' - compute token rarity using the strategy's rarity method,
-#' - join records on shared tokens (respecting `block_by`),
-#' - aggregate rarity × column-weight contributions into a similarity score,
-#' - return only pairs with `score >= threshold`,
-#' - group connected pairs into duplicate clusters.
+#' Pass a [search_strategy()] for fuzzy, scored matching, or an
+#' [exact_strategy()] to group only records whose token sets are identical.
 #'
-#' @param base_table A data.frame, tibble, data.table, or backend-specific
-#'   table to deduplicate.
+#' @param base_table A data.frame, tibble, data.table, or backend table to
+#'   deduplicate.
 #' @param id Character scalar naming the ID column in `base_table`.
-#' @param strategy A `Search_Strategy` object defining preprocessing steps,
-#'   blocking variables, rarity metric, and optional column weights.
-#' @param ... Additional arguments passed to backend-specific methods,
-#'   including `threshold` (minimum similarity score) and `weights`
-#'   (named numeric vector overriding strategy weights).
+#' @param strategy A `Search_Strategy` (or `Exact_Strategy`) describing how to
+#'   tokenize each column, how to block, and the matching threshold.
+#' @param ... Additional arguments passed to backend-specific methods. The
+#'   most useful are `threshold` (override the strategy's threshold) and
+#'   `weights` (a named numeric vector overriding the strategy's column
+#'   weights).
 #'
-#' @return A backend-specific table containing at least:
+#' @return A table with one row per record that belongs to a duplicate group:
 #' \describe{
-#'   \item{duplicate_group}{Integer cluster label.}
-#'   \item{id}{Record ID.}
-#'   \item{score}{Similarity score for the record within its cluster.}
-#'   \item{rank}{Rank of the record within its duplicate group.}
-#'   \item{<original columns>}{All additional columns from `base_table`.}
+#'   \item{duplicate_group}{Group label shared by all records that are
+#'     duplicates of one another.}
+#'   \item{id}{The record ID.}
+#'   \item{score}{The record's match score within its group.}
+#'   \item{rank}{Rank within the group; rank 1 is the representative kept by
+#'     [deduplicate_table()].}
+#'   \item{<original columns>}{Every other column from `base_table`.}
 #' }
+#'
+#' @seealso [deduplicate_table()] to collapse the groups, [search_candidates()]
+#'   for the cross-table version, [multi_stage_dedup()] for staged passes.
+#'
+#' @examples
+#' data(base_example)
+#'
+#' strat <- search_strategy(
+#'   Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   Ort      ~ normalize_text(),
+#'   block_by = "Kreis",
+#'   threshold = 0.8
+#' )
+#'
+#' dups <- detect_duplicates(base_example, id = "id_base", strategy = strat)
+#' head(dups)
 #'
 #' @export
 detect_duplicates <- new_generic(
@@ -58,22 +89,24 @@ detect_duplicates <- new_generic(
   c("base_table", "id", "strategy")
 )
 
-#' Resolve an Edge List into Entities
+#' Group Matched Pairs into Entities
 #'
 #' @description
-#' Group a list of record-pair edges into entities via connected
-#' components, assign each vertex a within-entity rank, and mark a canonical
-#' representative. This is the shared entity-resolution kernel underlying
-#' [detect_duplicates()]; it is exposed so that *any* edge list — not only a
-#' `detect_duplicates()` self-join — can be resolved into entity ids.
+#' Take a list of matched record pairs (an edge list) and turn it into
+#' entities: records that link directly or through a chain of links are
+#' grouped together, each group gets an `entity` number, and one record in
+#' each group is marked as its representative.
+#'
+#' This is the grouping step [detect_duplicates()] performs internally, exposed
+#' on its own so you can resolve any pair list into entities, for example the
+#' output of [search_candidates()] or a set of links you assembled yourself.
 #'
 #' @details
-#' Output is deterministic: given identical `edges`, the returned
-#' `entity` / `rep` / `rank` are byte-identical regardless of edge row order.
-#' `entity` is a dense integer label assigned in ascending order of each
-#' component's smallest member id (its *root*). The representative (`rep`,
-#' the rank-1 member) is chosen by: descending best `score` (when supplied),
-#' then ascending `rep_by` (when supplied), then ascending `id`.
+#' The result does not depend on the order of rows in `edges`: the same pairs
+#' always produce the same `entity`, `rep`, and `rank`. Entity numbers are
+#' assigned by the smallest member id in each group. The representative (the
+#' rank-1 member) is chosen by highest best `score` when a score column is
+#' given, then by smallest `rep_by` when given, then by smallest `id`.
 #'
 #' @param edges A backend table of record-pair edges (one row per edge).
 #' @param id_a,id_b Character scalars naming the two endpoint columns in
@@ -105,10 +138,22 @@ detect_duplicates <- new_generic(
 #'     supplied).}
 #' }
 #'
+#' @examples
+#' # r1-r2 and r2-r3 chain into one entity; r4-r5 form another
+#' edges <- data.table::data.table(
+#'   a = c("r1", "r2", "r4"),
+#'   b = c("r2", "r3", "r5")
+#' )
+#' resolve_entities(edges, id_a = "a", id_b = "b")
+#'
 #' @export
 resolve_entities <- new_generic(
   "resolve_entities",
-  c("edges", "id_a", "id_b")
+  c("edges", "id_a", "id_b"),
+  function(edges, id_a, id_b, score = NULL, vertices = NULL,
+           rep_by = NULL, block_by = NULL, ...) {
+    S7_dispatch()
+  }
 )
 
 #' Deduplicate a Table
@@ -131,17 +176,56 @@ deduplicate_table <- new_generic("deduplicate_table",
 #' Search for Candidate Matches Between Tables
 #'
 #' @description
-#' Generic function that finds candidate record matches between two tables
-#' based on token-based similarity scoring defined in a `Search_Strategy`.
+#' Find candidate matches between two tables: for each record on one side, the
+#' records on the other side that share enough rare, informative token content
+#' to score at or above the threshold. This is the cross-table counterpart of
+#' [detect_duplicates()].
 #'
-#' @param base_table A data.frame / tibble / data.table (or db table in other backends).
-#' @param target_table A data.frame / tibble / data.table (or db table in other backends) to search against.
+#' Pass a [search_strategy()] for fuzzy, scored matching, or an
+#' [exact_strategy()] to keep only pairs whose token sets are identical.
+#'
+#' @param base_table A data.frame, tibble, data.table, or backend table.
+#' @param target_table The table to search against.
 #' @param base_id Character scalar naming the ID column in `base_table`.
 #' @param target_id Character scalar naming the ID column in `target_table`.
-#' @param strategy A `Search_Strategy` object defining matching criteria.
-#' @param ... Additional arguments passed to backend-specific methods.
+#' @param strategy A `Search_Strategy` (or `Exact_Strategy`) describing how to
+#'   tokenize each column, how to block, and the matching threshold.
+#' @param ... Additional arguments passed to backend-specific methods, such as
+#'   `threshold` and `weights`.
 #'
-#' @return Data with candidate matches
+#' @return A table with two rows per matched pair (one for the base record, one
+#'   for the target record), sharing a `match_id`:
+#' \describe{
+#'   \item{match_id}{Identifier shared by the two rows of a matched pair.}
+#'   \item{score}{The pair's match score.}
+#'   \item{source}{`"base"` or `"target"`.}
+#'   \item{id}{The record ID.}
+#'   \item{<original columns>}{Every other column from the source table.}
+#'   \item{rank}{Rank of this candidate among a record's matches.}
+#' }
+#'
+#' @seealso [detect_duplicates()] for the within-table version,
+#'   [extract_unmatched()] for the residual, [multi_stage_search()] for staged
+#'   passes.
+#'
+#' @examples
+#' data(base_example)
+#' data(target_example)
+#'
+#' strat <- search_strategy(
+#'   Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   Ort      ~ normalize_text(),
+#'   block_by = "Kreis",
+#'   threshold = 0.8
+#' )
+#'
+#' matches <- search_candidates(
+#'   base_example, target_example,
+#'   base_id = "id_base", target_id = "id_target",
+#'   strategy = strat
+#' )
+#' head(matches)
 #'
 #' @export
 search_candidates <- new_generic("search_candidates",
@@ -254,58 +338,72 @@ extract_unmatched <- new_generic(
 #' @export
 materialize_records <- new_generic(
   "materialize_records",
-  c("data", "id")
+  c("data", "id"),
+  function(data, id, ids, ...) {
+    S7_dispatch()
+  }
 )
 
 
-#' Multi-source staged entity resolution (the search face)
+#' Staged Search Across Tables or Sources
 #'
 #' @description
-#' Link the same real-world entity across a **source** axis (multiple datasets,
-#' or multiple vintages of one dataset) by running an ordered list of strategies
-#' as successive directed-search passes, accumulating a directed edge **ledger**,
-#' and resolving it into a single cross-source **entity grouping** (each record's
-#' trajectory) via [resolve_entities()] — the shared output tail.
+#' Link the same real-world entity across two tables, or across several
+#' datasets or vintages of one dataset, by running an ordered list of
+#' strategies as successive search passes. Each pass adds the links it finds to
+#' a running record of every match (the `ledger`), and at the end all the links
+#' are grouped into entities, one row per record showing which entity it
+#' belongs to.
 #'
-#' This is the search face of the staged layer; [multi_stage_dedup()] is the
-#' dedup face. Both wrap the shared staged engine (`R/internal_staging.R`). The
-#' search stays a *directed* search (base/target distinct) because completeness
-#' differs across sources (§22 containment asymmetry), which a dedup self-join
-#' would discard.
+#' A typical run starts with a cheap [exact_strategy()] pass to catch the clean
+#' matches, then applies one or more looser [search_strategy()] passes to the
+#' records still unmatched. Use this when the two sides are not interchangeable:
+#' for example one record may carry only part of another's information, so it
+#' matters which side is searched against which. For finding duplicates within
+#' a single table, use [multi_stage_dedup()] instead.
 #'
 #' @param base_table The left table in the linkage.
-#' @param target_table The right table (pass `base_table` with `self = TRUE`
-#'   for a pooled-corpus self-search).
+#' @param target_table The right table. Pass `base_table` again with
+#'   `self = TRUE` to search a single pooled table against itself.
 #' @param base_id Character scalar naming the ID column in `base_table`.
 #' @param target_id Character scalar naming the ID column in `target_table`.
-#' @param strategies Named, ordered list; each element is an `Exact_Strategy`,
-#'   `Search_Strategy`, or `Embedding_Strategy` (S7 dispatch picks the method).
-#' @param self Logical; `TRUE` pools `base_table` as both sides (staged
-#'   self-search). Edges stay directed and carry the source-pair.
-#' @param source_by Optional character vector naming the generic provenance
-#'   column(s) (e.g. `"year"`, `"register"`, or a composite). When set, each
-#'   ledger edge is tagged `within_source`/`cross_source` with the source-pair,
-#'   and the grouping carries `source` / `covered_sources`.
-#' @param collapse Between-stage policy: `"none"` (residual only), `"rep"`
-#'   (collapse each found group to one representative — collapse-and-continue).
-#' @param rep_rule Representative-selection rule for collapse / canonicalisation.
-#' @param rebind How the next stage's sides form from {reps, residual}:
-#'   `"explicit"`, `"self"`, or `"accumulate"` (incremental panel update).
-#' @param direction Per-stage scoring orientation: `"forward"`, `"backward"`,
-#'   or `"bidirectional"`.
-#' @param edge_filter Optional `function(edges, stage_name) -> edges` per-stage
-#'   callback on the directed edges.
-#' @param rep_by Optional priority column for representative selection
-#'   (passed to [resolve_entities()]).
-#' @param ... Additional backend-specific arguments.
+#' @param strategies Named, ordered list of strategies to apply in turn. Each
+#'   element is an [exact_strategy()], [search_strategy()], or
+#'   [embedding_strategy()].
+#' @param ... Further arguments controlling the staged run:
+#'   * `self`: logical; `TRUE` searches `base_table` against itself (for
+#'     example, pooling several years into one table and linking across them).
+#'   * `source_by`: optional character vector naming the column(s) that record
+#'     where each row came from (for example `"year"` or `"register"`). When
+#'     set, every link is tagged as within-source or cross-source, and the
+#'     result reports each entity's `source` and `covered_sources`.
+#'   * `collapse`: what happens between stages. `"none"` only carries the
+#'     still-unmatched records forward, while `"rep"` also collapses each group
+#'     found so far to a single representative, shrinking the search space for
+#'     the looser passes that follow.
+#'   * `rep_rule`: rule for choosing each group's representative.
+#'   * `rebind`: how the next stage's two sides are formed from the
+#'     representatives and the residual: `"explicit"`, `"self"`, or
+#'     `"accumulate"` (the path for incremental panel updates).
+#'   * `direction`: which way each pass searches: `"forward"`, `"backward"`, or
+#'     `"bidirectional"`.
+#'   * `edge_filter`: optional callback `function(edges, stage_name)` applied to
+#'     each pass's links before they are accumulated (for example a domain rule
+#'     that drops implausible matches).
+#'   * `rep_by`: optional priority column for choosing representatives (passed
+#'     to [resolve_entities()]).
 #'
-#' @return The cross-source **entity grouping**, one row per pooled record:
-#'   `entity | id | rep | rank | score | source | covered_sources | n_in_entity
-#'   | stage`. The directed edge ledger (`from | to | score | stage |
-#'   source_from | source_to | within_source | direction`) rides as the
-#'   `"ledger"` attribute.
+#'   Backend methods may accept additional arguments.
 #'
-#' @seealso [multi_stage_dedup()] (dedup face), [resolve_entities()].
+#' @return One row per pooled record describing its entity:
+#'   `entity | id | rep | rank | score | source | covered_sources |
+#'   n_in_entity | stage`. The full list of links found, with the stage and
+#'   direction of each, is attached as the `ledger` attribute and read with
+#'   `attr(result, "ledger")`.
+#'
+#' @seealso [multi_stage_dedup()] for the within-one-table version,
+#'   [resolve_entities()] for the grouping step, [exact_strategy()] for the
+#'   usual front stage.
 #'
 #' @export
 multi_stage_search <- new_generic(
@@ -314,42 +412,44 @@ multi_stage_search <- new_generic(
 )
 
 
-#' Staged duplicate detection (within one table)
+#' Staged Duplicate Detection (within one table)
 #'
 #' @description
-#' Run an ordered list of strategies as successive dedup passes over a single
-#' table, accumulating the links each stage finds and resolving connected
-#' components **once at the end**. The headline use is the §29 architecture:
-#' an exact collapse front stage, then progressively **looser-blocked** fuzzy
-#' passes over the still-unmatched residual, so a record linked `A~B` in an
-#' early stage and `B~C` in a later one closes into a single entity `{A,B,C}`.
+#' Deduplicate a single table in increasingly tolerant passes. A typical run
+#' starts with a cheap [exact_strategy()] pass that catches the clean
+#' duplicates, then applies looser [search_strategy()] passes (often with
+#' wider blocking) to the records still unmatched. All the links found across
+#' the passes are grouped into duplicate groups at the end, so a record linked
+#' to `B` in an early pass and `B` linked to `C` in a later one all land in the
+#' same group.
 #'
-#' This is the dedup face of the staged layer; [multi_stage_search()] is the
-#' search face. Both wrap the shared staged engine (`R/internal_staging.R`) and
-#' resolve to entities via [resolve_entities()]. `multi_stage_dedup()` takes a
-#' single `table` (never `base`/`target`) — cross-source staged linkage is a
-#' directed search, which is [multi_stage_search()].
+#' For linking across two tables or several sources, use [multi_stage_search()].
 #'
-#' @param table A data.frame / tibble / data.table (or backend table) to
+#' @param table A data.frame, tibble, data.table, or backend table to
 #'   deduplicate.
 #' @param id Character scalar naming the ID column in `table`.
-#' @param strategies Named, ordered list. Each element is an `Exact_Strategy`,
-#'   `Search_Strategy`, or `Embedding_Strategy`; the loop calls one apply verb
-#'   and S7 dispatch picks the method — there is no exact/fuzzy branch.
-#' @param rep_by Optional character scalar naming a priority column on `table`
-#'   used to pick each entity's canonical representative (passed straight to
-#'   [resolve_entities()]: smallest `rep_by` wins, ties by smallest id).
-#' @param edge_filter Optional `function(edges, stage_name) -> edges` callback
-#'   applied to each stage's edges before accumulation (e.g. a domain-specific
-#'   mover guard). `edges` carries `from`, `to`, `score`, `stage`.
-#' @param ... Additional backend-specific arguments.
+#' @param strategies Named, ordered list of strategies to apply in turn. Each
+#'   element is an [exact_strategy()], [search_strategy()], or
+#'   [embedding_strategy()].
+#' @param ... Further arguments to the staged run:
+#'   * `rep_by`: optional character scalar naming a priority column on `table`
+#'     used to choose each group's representative (passed to
+#'     [resolve_entities()]: smallest `rep_by` wins, ties broken by smallest
+#'     id).
+#'   * `edge_filter`: optional callback `function(edges, stage_name)` applied to
+#'     each pass's links before they are accumulated (for example a domain rule
+#'     that drops implausible matches). The links carry `from`, `to`, `score`,
+#'     and `stage`.
 #'
-#' @return Standard dedup schema: `duplicate_group | id | score | rank` plus the
-#'   original columns of `table`, and a `stage` column recording which stage
-#'   first linked each record.
+#'   Backend methods may accept additional arguments.
 #'
-#' @seealso [multi_stage_search()] (search face), [resolve_entities()] (the
-#'   shared entity-resolution tail).
+#' @return The standard dedup result: `duplicate_group | id | score | rank`
+#'   plus the original columns of `table`, and a `stage` column recording which
+#'   pass first linked each record.
+#'
+#' @seealso [multi_stage_search()] for the cross-table version,
+#'   [detect_duplicates()] for a single pass, [resolve_entities()] for the
+#'   grouping step.
 #'
 #' @export
 multi_stage_dedup <- new_generic(

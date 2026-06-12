@@ -66,3 +66,12 @@ approximate_date(c("2023-01-15", "2023-04-20", "2023-09-10"), unit = "quarter")
 # c("2023-01-01", "2023-04-01", "2023-07-01")
 
 }
+\seealso{
+[normalize_date()] for exact dates, [date_tokens()] to split a date
+  into part tokens.
+
+Other date preparers: 
+\code{\link{date_tokens}()},
+\code{\link{normalize_date}()}
+}
+\concept{date preparers}

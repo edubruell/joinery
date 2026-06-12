@@ -7,37 +7,57 @@
 detect_duplicates(base_table, id, strategy, ...)
 }
 \arguments{
-\item{base_table}{A data.frame, tibble, data.table, or backend-specific
-table to deduplicate.}
+\item{base_table}{A data.frame, tibble, data.table, or backend table to
+deduplicate.}
 
 \item{id}{Character scalar naming the ID column in `base_table`.}
 
-\item{strategy}{A `Search_Strategy` object defining preprocessing steps,
-blocking variables, rarity metric, and optional column weights.}
+\item{strategy}{A `Search_Strategy` (or `Exact_Strategy`) describing how to
+tokenize each column, how to block, and the matching threshold.}
 
-\item{...}{Additional arguments passed to backend-specific methods,
-including `threshold` (minimum similarity score) and `weights`
-(named numeric vector overriding strategy weights).}
+\item{...}{Additional arguments passed to backend-specific methods. The
+most useful are `threshold` (override the strategy's threshold) and
+`weights` (a named numeric vector overriding the strategy's column
+weights).}
 }
 \value{
-A backend-specific table containing at least:
+A table with one row per record that belongs to a duplicate group:
 \describe{
-  \item{duplicate_group}{Integer cluster label.}
-  \item{id}{Record ID.}
-  \item{score}{Similarity score for the record within its cluster.}
-  \item{rank}{Rank of the record within its duplicate group.}
-  \item{<original columns>}{All additional columns from `base_table`.}
+  \item{duplicate_group}{Group label shared by all records that are
+    duplicates of one another.}
+  \item{id}{The record ID.}
+  \item{score}{The record's match score within its group.}
+  \item{rank}{Rank within the group; rank 1 is the representative kept by
+    [deduplicate_table()].}
+  \item{<original columns>}{Every other column from `base_table`.}
 }
 }
 \description{
-Identify likely duplicate records within a single table using
-token-based similarity scoring defined in a `Search_Strategy`.
+Find likely duplicate records inside a single table and group them.
+Records are compared by how much of their rare, informative token content
+they share (not by character-level edit distance), every pair is scored,
+and any pair scoring at or above the threshold is linked. Records that link
+directly or transitively form one duplicate group.
 
-Backends must:
-- preprocess data using `prepare_search_data()`,
-- compute token rarity using the strategy's rarity method,
-- join records on shared tokens (respecting `block_by`),
-- aggregate rarity × column-weight contributions into a similarity score,
-- return only pairs with `score >= threshold`,
-- group connected pairs into duplicate clusters.
+Pass a [search_strategy()] for fuzzy, scored matching, or an
+[exact_strategy()] to group only records whose token sets are identical.
+}
+\examples{
+data(base_example)
+
+strat <- search_strategy(
+  Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+  Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),
+  Ort      ~ normalize_text(),
+  block_by = "Kreis",
+  threshold = 0.8
+)
+
+dups <- detect_duplicates(base_example, id = "id_base", strategy = strat)
+head(dups)
+
+}
+\seealso{
+[deduplicate_table()] to collapse the groups, [search_candidates()]
+  for the cross-table version, [multi_stage_dedup()] for staged passes.
 }

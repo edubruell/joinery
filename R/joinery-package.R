@@ -23,3 +23,11 @@ NULL
   registerS3method("plot", "joinery::Embedding_Audit",   plot.Embedding_Audit,   envir = pkg)
   registerS3method("plot", "joinery::Strategy_Plan",      plot.Strategy_Plan,     envir = pkg)
 }
+
+# For whoever read this far down the namespace.
+#' @noRd
+two_joins <- function() {
+  cli::cli_text("{.emph two joins in the morning, two joins at night}")
+  cli::cli_text("{.emph it makes me feel alright}")
+  invisible()
+}

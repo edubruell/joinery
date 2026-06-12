@@ -48,6 +48,9 @@
 #' date_tokens(c("2023-01-15", "15.06.2023"))
 #' # list(c("2023", "01", "15"), c("2023", "06", "15"))
 #'
+#' @family date preparers
+#' @seealso [normalize_date()] to match whole dates, [approximate_date()] to
+#'   match on coarser periods.
 #' @export
 date_tokens <- function(x,
                         components = c("year", "month", "day"),
@@ -152,6 +155,9 @@ date_tokens <- function(x,
 #' approximate_date(c("2023-01-15", "2023-04-20", "2023-09-10"), unit = "quarter")
 #' # c("2023-01-01", "2023-04-01", "2023-07-01")
 #'
+#' @family date preparers
+#' @seealso [normalize_date()] for exact dates, [date_tokens()] to split a date
+#'   into part tokens.
 #' @export
 approximate_date <- function(x,
                              unit = c("month", "quarter", "half", "year", "decade"),
@@ -217,20 +223,30 @@ approximate_date <- function(x,
 }
 
 
-#' Return a list of word tokens for the .text separated by spaces.
+#' Split text into word tokens
 #'
-#' This function splits the input text into words based on spaces. It returns a vector of the words
-#' found in the text. This function is useful for natural language processing tasks where word-level
-#' manipulation of text is required.
+#' The workhorse tokenizer. It splits each string on whitespace into a vector of
+#' words, the tokens joinery matches on. It almost always follows
+#' [normalize_text()], which strips punctuation and case first so the split is
+#' clean: `name ~ normalize_text() + word_tokens()`.
 #'
-#' @param text A character string from which words will be extracted.
-#' @param min_nchar An integer specifying the minimum length of words to keep. Defaults to 0.
+#' Set `min_nchar` to drop very short tokens (single initials, stray letters)
+#' that match too easily and add noise.
 #'
-#' @return Returns a vector of words extracted from the input text.
+#' @param text A character vector to split into words.
+#' @param min_nchar Minimum token length to keep. Tokens shorter than this are
+#'   dropped. Defaults to `0` (keep everything).
+#'
+#' @return A list of character vectors, one per input element, each holding that
+#'   element's word tokens.
 #'
 #' @examples
-#' word_tokens("This is an example.")
-#' word_tokens("Another, test; string.")
+#' word_tokens("this is an example")
+#' word_tokens("this is an example", min_nchar = 3)  # drops "is", "an"
+#'
+#' @family token generators
+#' @seealso [normalize_text()], the usual preceding step;
+#'   [filter_stopwords()] to drop common words by name.
 #' @export
 word_tokens <- function(text,min_nchar=0){
   check_character(text)
@@ -241,7 +257,7 @@ word_tokens <- function(text,min_nchar=0){
   # Remove empty elements if any (this can happen with multiple spaces)
   words <- map(words, function(x) x[nzchar(x)])
 
-  # Filter out words shorter than .min_length
+  # Filter out words shorter than min_nchar
   if (min_nchar > 0) {
     words <- map(words,function(x){
       filter <- nchar(x)>=min_nchar
@@ -252,20 +268,31 @@ word_tokens <- function(text,min_nchar=0){
 }
 
 
-#' Generate n-grams from text
+#' Generate character n-grams from text
 #'
-#' This function generates n-grams from a given text string. An n-gram is a contiguous sequence of n items
-#' from a given sample of text or speech. This function will return a list of all possible n-grams of length n.
+#' An n-gram is a sliding window of `n` consecutive characters. Matching on
+#' character n-grams instead of whole words tolerates typos, truncations, and
+#' joined-up spellings, because two strings that differ by a letter still share
+#' most of their windows (`"meier"` and `"maier"` share `"ei"`, `"er"`, and so
+#' on). Reach for it on short, noisy fields where word tokens are too brittle.
 #'
-#' @param text A character string or vector from which to generate n-grams.
-#' @param n An integer specifying the length of each n-gram.
+#' It tokenizes text directly, so it replaces [word_tokens()] rather than
+#' following it. The trade-off is fan-out: every string yields many overlapping
+#' tokens, so n-grams cost more to match than words. Larger `n` is sharper and
+#' cheaper, smaller `n` is fuzzier and denser.
 #'
-#' @return Returns a list of n-grams generated from the input text. If the text length is less than n, returns
-#'         an empty character vector.
+#' @param text A character vector to break into n-grams.
+#' @param n The window length (number of characters per n-gram).
+#'
+#' @return A list of character vectors, one per input element. Strings shorter
+#'   than `n` yield an empty vector.
 #'
 #' @examples
 #' generate_ngrams("hello", 2)
 #' generate_ngrams("an example", 3)
+#'
+#' @family token generators
+#' @seealso [word_tokens()] for whole-word tokens.
 #' @export
 #' @import data.table
 #' @import stringi
@@ -321,6 +348,9 @@ generate_ngrams <- function(text, n) {
 #' numeric_tokens("House 5", destructive = TRUE)
 #' # list("5")
 #'
+#' @family token generators
+#' @seealso [drop_numeric_tokens()], its inverse, to discard numbers from a
+#'   token column instead.
 #' @export
 numeric_tokens <- function(text,
                            keep_letters = TRUE,
@@ -392,13 +422,26 @@ numeric_tokens <- function(text,
 
 #' Filter out stopwords from token lists
 #'
-#' Removes tokens that appear in a stopword list. Works on list-of-character
-#' token vectors produced by earlier steps such as `word_tokens()`.
+#' Some tokens carry no matching signal but appear everywhere: legal forms like
+#' `GMBH` or `LTD`, articles, generic words. Because they are common they create
+#' many spurious matches and fan out blocks. `filter_stopwords()` removes named
+#' tokens so matching rests on the distinctive ones. The comparison is
+#' case-insensitive.
 #'
-#' @param tokens A list of character vectors.
-#' @param stopwords A character vector of stopwords (case-insensitive).
+#' It transforms a token column, so it runs after a token generator such as
+#' [word_tokens()].
 #'
-#' @return A list of character vectors with stopwords removed.
+#' @param tokens A list of character vectors, as produced by [word_tokens()].
+#' @param stopwords A character vector of tokens to remove (case-insensitive).
+#'
+#' @return A list of character vectors with the stopwords removed.
+#'
+#' @examples
+#' filter_stopwords(list(c("MUELLER", "GMBH")), stopwords = c("gmbh"))
+#' # list("MUELLER")
+#'
+#' @family token transformers
+#' @seealso [drop_numeric_tokens()] to remove house numbers the same way.
 #' @export
 filter_stopwords <- function(tokens, stopwords) {
   if (!is.list(tokens)) {
@@ -440,6 +483,9 @@ filter_stopwords <- function(tokens, stopwords) {
 #' drop_numeric_tokens(list(c("MAIN", "12A")), keep_letters = FALSE)
 #' # list("MAIN")
 #'
+#' @family token transformers
+#' @seealso [numeric_tokens()], its inverse; [filter_stopwords()] for the same
+#'   idea with a named word list.
 #' @export
 drop_numeric_tokens <- function(tokens, keep_letters = TRUE) {
   if (!is.list(tokens)) {
@@ -456,14 +502,27 @@ drop_numeric_tokens <- function(tokens, keep_letters = TRUE) {
   })
 }
 
-#' Convert tokens to shape signatures (letter/digit patterns)
+#' Convert tokens to shape signatures
 #'
-#' "MULLER" -> "AAAAAA"
-#' "A12B"   -> "ANNA"
+#' Reduces each token to its letter/digit pattern: every letter becomes `"A"`,
+#' every digit `"N"`, anything else `"X"`. The signature ignores the actual
+#' characters and keeps only the layout, which is useful for matching on the
+#' format of a code or identifier (postal codes, licence plates, product codes)
+#' rather than its exact value, or as a coarse blocking key.
+#'
+#' It transforms a token column, so it runs after a token generator such as
+#' [word_tokens()].
 #'
 #' @param tokens A list of character vectors.
 #'
-#' @return A list of shape tokens.
+#' @return A list of character vectors of shape signatures, one signature per
+#'   input token.
+#'
+#' @examples
+#' token_shapes(list(c("MUELLER", "A12B")))
+#' # list(c("AAAAAAA", "ANNA"))
+#'
+#' @family token transformers
 #' @export
 token_shapes <- function(tokens) {
   if (!is.list(tokens)) {
@@ -482,11 +541,23 @@ token_shapes <- function(tokens) {
 
 #' Extract initials from tokens
 #'
-#' Converts tokens to their first-letter initial ("ANNA" -> "A").
+#' Keeps only the first character of each token (`"ANNA"` becomes `"A"`). Use it
+#' to match on initials when full first names are recorded inconsistently, for
+#' example when one source has `"Anna Berta Schmidt"` and another `"A. B.
+#' Schmidt"`.
+#'
+#' It transforms a token column, so it runs after a token generator such as
+#' [word_tokens()].
 #'
 #' @param tokens A list of character vectors.
 #'
-#' @return A list of character vectors of initials.
+#' @return A list of character vectors of single-character initials.
+#'
+#' @examples
+#' extract_initials(list(c("Anna", "Berta")))
+#' # list(c("A", "B"))
+#'
+#' @family token transformers
 #' @export
 extract_initials <- function(tokens) {
   if (!is.list(tokens)) {
@@ -498,14 +569,51 @@ extract_initials <- function(tokens) {
   })
 }
 
-#' Fuzzy tokens using igraph components (fast, sparse)
+#' Collapse near-duplicate tokens to a canonical form
 #'
-#' @param x Character vector
-#' @param min_nchar Minimum token size
-#' @param max_dist Maximum string distance to consider an edge
-#' @param method stringdist method ("osa", "lv", "jw", ...)
+#' Typos and minor spelling differences split one real token into many
+#' (`"Neumann"`, `"Neumann"` with a slip, `"Neuman"`). `fuzzy_tokens()` finds
+#' tokens within a string distance of each other, groups them, and rewrites
+#' every member of a group to one canonical spelling, so the variants match.
+#' Unlike [use_dictionary()], which needs a known synonym list, this discovers
+#' the groups from the data.
 #'
-#' @return List of fuzzy tokens (list-column)
+#' Use it when a field has organic spelling noise and you do not have a
+#' dictionary. The canonical form per group is the longest token, breaking ties
+#' by the most central token, then alphabetically.
+#'
+#' When not to use it:
+#' * **High-cardinality columns.** It compares every distinct token against
+#'   every other in one dense distance matrix, so cost and memory grow with the
+#'   square of the number of distinct tokens. On a large vocabulary (tens of
+#'   thousands of distinct tokens and up) it is slow and memory-hungry.
+#'   Normalize aggressively first, and prefer [use_dictionary()] when the groups
+#'   are already known.
+#' * **When over-merging is costly.** Grouping is by connected components, so
+#'   matches chain transitively: if `A` is close to `B` and `B` to `C`, all
+#'   three collapse even when `A` and `C` are far apart. A loose `max_dist` or
+#'   short tokens can fuse genuinely distinct values. Keep `max_dist` tight,
+#'   raise `min_nchar` to drop noise-prone short tokens, and check the groups on
+#'   a sample before trusting them.
+#'
+#' @param x A character vector to tokenize and canonicalize.
+#' @param max_dist Maximum string distance for two tokens to be treated as the
+#'   same. For `method = "jw"` this is a Jaro-Winkler distance in `[0, 1]`
+#'   (smaller is stricter); for edit-distance methods it is a count of edits.
+#' @param method A [stringdist::stringdist()] method, e.g. `"osa"` (default),
+#'   `"lv"`, or `"jw"`.
+#' @param min_nchar Minimum token length to consider; shorter tokens are dropped
+#'   before grouping.
+#'
+#' @return A list of character vectors, one per input element, with each token
+#'   replaced by its group's canonical form.
+#'
+#' @examples
+#' fuzzy_tokens(c("Neumann", "Neumaxn", "Neuman"), max_dist = 2)
+#' # every row's token becomes "NEUMANN"
+#'
+#' @family token transformers
+#' @seealso [use_dictionary()] when the groups are known in advance.
 #' @importFrom stats setNames
 #' @export
 fuzzy_tokens <- function(x,

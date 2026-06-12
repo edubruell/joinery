@@ -2,22 +2,36 @@
 % Please edit documentation in R/preparer_word.R
 \name{as_cologne}
 \alias{as_cologne}
-\title{Convert Text to Cologne Phonetic Encoding}
+\title{Encode text phonetically with the Cologne procedure}
 \usage{
 as_cologne(text)
 }
 \arguments{
-\item{text}{A character string or vector to be converted to Cologne Phonetic encoding.}
+\item{text}{A character string or vector to encode.}
 }
 \value{
-Returns the Cologne Phonetic encoded version of the input text.
+A character vector of Cologne phonetic keys (digit strings), one per
+  input element.
 }
 \description{
-This function converts a text string to its Cologne Phonetic encoding. The Cologne Phonetic algorithm
-is used to encode words phonetically by reducing them to a simplified representation based on their
-pronunciation, particularly suited for German language.
+The Cologne phonetic procedure (Koelner Phonetik) is the German-language
+counterpart to Soundex. It maps text to a digit string by German
+pronunciation rules, so variants like `"Meier"`, `"Maier"`, and `"Mayer"`
+share one key. Reach for this over [as_soundex()] or [as_metaphone()] when the
+data is German.
+}
+\details{
+Returns text, so it slots ahead of a token generator, or use it directly on a
+one-word column. Like any phonetic key it favours recall over precision; pair
+it with a sharper field rather than matching on the key alone.
 }
 \examples{
-as_cologne("Cafe")
-as_cologne("Strasse")
+as_cologne(c("Meier", "Maier", "Mayer"))  # same key
+
 }
+\seealso{
+Other phonetic encoders: 
+\code{\link{as_metaphone}()},
+\code{\link{as_soundex}()}
+}
+\concept{phonetic encoders}

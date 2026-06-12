@@ -56,3 +56,12 @@ date_tokens(c("2023-01-15", "15.06.2023"))
 # list(c("2023", "01", "15"), c("2023", "06", "15"))
 
 }
+\seealso{
+[normalize_date()] to match whole dates, [approximate_date()] to
+  match on coarser periods.
+
+Other date preparers: 
+\code{\link{approximate_date}()},
+\code{\link{normalize_date}()}
+}
+\concept{date preparers}

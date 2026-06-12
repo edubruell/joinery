@@ -2,25 +2,45 @@
 % Please edit documentation in R/preparer_word.R
 \name{normalize_text}
 \alias{normalize_text}
-\title{Normalize text string}
+\title{Normalize text for matching}
 \usage{
 normalize_text(text, transliteration = "De-ASCII")
 }
 \arguments{
-\item{text}{A character string or vector to be normalized.}
+\item{text}{A character string or vector to normalize.}
 
-\item{transliteration}{A character string specifying the transliteration scheme to be used,
-defaulting to "De-ASCII".}
+\item{transliteration}{A transliteration scheme passed to
+[stringi::stri_trans_general()], defaulting to `"De-ASCII"` (German-aware
+folding, which expands umlauts to digraphs such as `ue` and `oe`). Use
+`"Latin-ASCII"` for plain accent stripping, which drops the diacritic
+instead of expanding it.}
 }
 \value{
-Returns a normalized, upper-case version of the input text, with non-alphanumeric characters
-        and extra spaces removed.
+A character vector the same length as `text`: upper-cased, ASCII,
+  alphanumeric-and-space only, with surrounding and repeated spaces removed.
 }
 \description{
-This function converts a text string to upper case, transliterates it based on the specified
-transliteration scheme, retains only alphanumeric characters and spaces, and removes extra spaces.
+The usual first step in a preparer pipeline. Folds text to upper case,
+transliterates accented and non-Latin characters to ASCII, drops anything
+that is not a letter, digit, or space, and collapses runs of whitespace. The
+point is to make superficial differences in case, accents, and punctuation
+disappear so that `"Cafe-Conac"` and `"cafe conac"` reduce to the same text
+before it is split into tokens.
+}
+\details{
+Returns text, so it goes ahead of a token generator such as [word_tokens()]
+in a strategy: `name ~ normalize_text() + word_tokens()`.
 }
 \examples{
 normalize_text("Cafe Conac")
 normalize_text("Strasse", transliteration = "Latin-ASCII")
+
 }
+\seealso{
+[word_tokens()], the token generator that usually follows.
+
+Other text normalizers: 
+\code{\link{normalize_street}()},
+\code{\link{strip_vowels}()}
+}
+\concept{text normalizers}

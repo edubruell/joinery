@@ -148,18 +148,14 @@ compare_stages <- new_generic(
 #' Read the Token Rarity Distribution
 #'
 #' @description
-#' Pre-match read-side helper. Runs `prepare_search_data()` +
-#' `compute_rarity()` and reports, per `(column[, block])`, the token
-#' document-frequency / rarity distribution plus an **offender list** — the
-#' top document-frequency tokens that drive fan-out in the overlap join.
-#' Use it to *set* `min_rarity` / `max_token_df` from the actual token
-#' distribution instead of guessing.
+#' A pre-match read of how token rarity is distributed in your data. For each
+#' column (and block, when the strategy blocks) it reports the spread of token
+#' document frequency and rarity, plus an offender list: the most common tokens,
+#' the ones that drive a match to balloon. Use it to set `min_rarity` and
+#' `max_token_df` from what is actually in the data instead of guessing.
 #'
-#' It is deliberately **scoring-free**: no token-overlap join, no pair
-#' scoring — only tokenization and the per-token rarity computation. It is the
-#' cheap distribution lookup that the future strategy-planning verb
-#' ([plan_strategy()], Stage 08) will subsume with a full `min_rarity` cost
-#' curve.
+#' It never builds the pair set: it only tokenizes and measures rarity, so it
+#' is cheap enough to run on a full corpus before committing to a strategy.
 #'
 #' @param data A data.frame / tibble / data.table (or backend-specific table).
 #' @param id Character scalar naming the ID column in `data`.
@@ -183,26 +179,25 @@ rarity_distribution <- new_generic(
 #' Plan a Search Strategy from Raw Inputs
 #'
 #' @description
-#' Pre-match, **pre-strategy** diagnostic (Stage 08, plan item A7). Where
-#' [audit_strategy()] grades a *given* strategy and [rarity_distribution()]
-#' reads one column distribution, `plan_strategy()` helps you **find** the
-#' strategy: it surveys a set of candidate blockings and surfaces the
-#' cost/recall knee *before* the run.
+#' Helps you choose a blocking before you run anything. Where
+#' [audit_strategy()] grades a strategy you have already settled on, and
+#' [rarity_distribution()] reads one column's token distribution,
+#' `plan_strategy()` compares several candidate blockings side by side and
+#' shows the trade-off between how many comparisons each one costs and how many
+#' true matches it would keep together.
 #'
-#' It is deliberately **scoring-free** — no token-overlap join, no pair
-#' scoring. Every probe is `O(rows)` or `O(blocks)`: a `GROUP BY` plus
-#' arithmetic, never a materialized pair set. It returns a `Strategy_Plan`
-#' carrying four reads: the blocking-resolution frontier (per candidate:
-#' `#blocks`, size distribution, `Sum(na*nb)` brute-pair **count**, and the
-#' share of exact-token-set twins that stay co-blocked), the exact-set
-#' persister rate, the residual structure (matchable vs one-sided +
-#' per-column partial-recoverable shares), and per-column discriminativeness
-#' with a `min_rarity` → intermediate-size cost curve and the empty-column
-#' score-ceiling warning.
+#' It never builds the pair set, so it is safe to run on a full corpus. For
+#' each candidate blocking it reports: how many blocks it makes and how big
+#' they are, an estimate of how many record comparisons it implies, and the
+#' share of identical-token records that stay in the same block (the recall it
+#' would cost you). It also reports how much an [exact_strategy()] front stage
+#' would absorb, the shape of the leftover records, and how discriminative each
+#' column is, including a warning when a column that is often empty puts a
+#' ceiling on achievable scores.
 #'
-#' Dispatches on `c("base", "strategy")`; the strategy supplies only the
-#' preparer pipeline (its own `block_by` is ignored — `block_candidates` is
-#' the thing being chosen).
+#' The strategy you pass supplies only the column preparation steps; its own
+#' `block_by` is ignored, since the blocking is exactly what you are choosing
+#' here.
 #'
 #' @param base A data.frame / tibble / data.table (or backend table).
 #' @param strategy A `Search_Strategy` supplying the tokenization to plan
@@ -214,20 +209,30 @@ rarity_distribution <- new_generic(
 #' @param base_id Character scalar naming the id column in `base` (required).
 #' @param target_id Character scalar naming the id column in `target`
 #'   (defaults to `base_id`).
-#' @param ... Backend-specific arguments. Notably `n_offenders`,
-#'   `min_rarity_grid`, `containment` (opt-in §22 read; the only read that
-#'   performs a bounded structural join), and `sample_n` (DuckDB).
+#' @param n_offenders Number of top-`df` "offender" tokens (the fan-out drivers)
+#'   to report per column. Defaults to `20`.
+#' @param min_rarity_grid Optional numeric vector of `min_rarity` cut points for
+#'   the cost curve. `NULL` (default) picks a grid from the rarity distribution.
+#' @param containment Logical. When `TRUE`, adds the per-column containment
+#'   share, the one read that performs a bounded structural join. Defaults to
+#'   `FALSE`, which keeps `plan_strategy()` scoring-free.
+#' @param ... Backend-specific arguments, such as `sample_n` (DuckDB).
 #'
 #' @return A `Strategy_Plan` object.
 #'
-#' @seealso [audit_strategy()] (grades a chosen strategy — downstream of this),
-#'   [rarity_distribution()] (the column-distribution read this subsumes),
-#'   [exact_strategy()] (the front-stage the persister rate sizes).
+#' @seealso [audit_strategy()] to grade a chosen strategy,
+#'   [rarity_distribution()] for one column's distribution,
+#'   [exact_strategy()] for the front stage it sizes.
 #'
 #' @export
 plan_strategy <- new_generic(
   "plan_strategy",
-  c("base", "strategy")
+  c("base", "strategy"),
+  function(base, strategy, target = NULL, block_candidates = list(),
+           base_id = NULL, target_id = NULL, n_offenders = 20L,
+           min_rarity_grid = NULL, containment = FALSE, ...) {
+    S7_dispatch()
+  }
 )
 
 

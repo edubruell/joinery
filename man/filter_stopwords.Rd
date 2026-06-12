@@ -7,14 +7,37 @@
 filter_stopwords(tokens, stopwords)
 }
 \arguments{
-\item{tokens}{A list of character vectors.}
+\item{tokens}{A list of character vectors, as produced by [word_tokens()].}
 
-\item{stopwords}{A character vector of stopwords (case-insensitive).}
+\item{stopwords}{A character vector of tokens to remove (case-insensitive).}
 }
 \value{
-A list of character vectors with stopwords removed.
+A list of character vectors with the stopwords removed.
 }
 \description{
-Removes tokens that appear in a stopword list. Works on list-of-character
-token vectors produced by earlier steps such as `word_tokens()`.
+Some tokens carry no matching signal but appear everywhere: legal forms like
+`GMBH` or `LTD`, articles, generic words. Because they are common they create
+many spurious matches and fan out blocks. `filter_stopwords()` removes named
+tokens so matching rests on the distinctive ones. The comparison is
+case-insensitive.
 }
+\details{
+It transforms a token column, so it runs after a token generator such as
+[word_tokens()].
+}
+\examples{
+filter_stopwords(list(c("MUELLER", "GMBH")), stopwords = c("gmbh"))
+# list("MUELLER")
+
+}
+\seealso{
+[drop_numeric_tokens()] to remove house numbers the same way.
+
+Other token transformers: 
+\code{\link{drop_numeric_tokens}()},
+\code{\link{extract_initials}()},
+\code{\link{fuzzy_tokens}()},
+\code{\link{token_shapes}()},
+\code{\link{use_dictionary}()}
+}
+\concept{token transformers}

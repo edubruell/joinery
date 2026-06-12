@@ -2,21 +2,37 @@
 % Please edit documentation in R/preparer_word.R
 \name{as_soundex}
 \alias{as_soundex}
-\title{Convert Text to Soundex Encoding}
+\title{Encode text phonetically with Soundex}
 \usage{
 as_soundex(text)
 }
 \arguments{
-\item{text}{A character string or vector to be converted to Soundex encoding.}
+\item{text}{A character string or vector to encode.}
 }
 \value{
-Returns the Soundex encoded version of the input text.
+A character vector of Soundex keys (letter followed by digits), one
+  per input element.
 }
 \description{
-This function converts a text string to its Soundex encoding. The Soundex algorithm is used to
-encode words phonetically by reducing them to a simplified representation based on their pronunciation.
+Soundex is the classic phonetic code: it keeps the first letter and reduces
+the rest to a short digit string (for example `"Robert"` and `"Rupert"` both
+become `"R163"`), so spellings that sound alike share one key. It is coarser
+and older than Metaphone but widely understood and a good default for English
+surnames.
+}
+\details{
+Returns text, so it slots ahead of a token generator, or use it directly on a
+one-word column. As with any phonetic key it favours recall over precision;
+pair it with a sharper field rather than matching on the key alone.
 }
 \examples{
-as_soundex("Cafe")
-as_soundex("Strasse")
+as_soundex("Robert")
+as_soundex(c("Robert", "Rupert"))  # same key
+
 }
+\seealso{
+Other phonetic encoders: 
+\code{\link{as_cologne}()},
+\code{\link{as_metaphone}()}
+}
+\concept{phonetic encoders}

@@ -169,71 +169,71 @@ method(find_stopwords, new_S3_class("data.table")) <- function(
 
 # Method: find_stopwords for a DuckDB token table
 #------------------------------------------------------------------------------
-if (requireNamespace("duckdb", quietly = TRUE) &&
-    requireNamespace("DBI", quietly = TRUE) &&
-    requireNamespace("dplyr", quietly = TRUE)) {
+# Registered unconditionally so S7::methods_register() picks it up on a real
+# install. A conditional registration only survives under load_all, which is
+# why an installed package failed to dispatch on DuckDB tables. The body uses
+# duckdb / DBI / dplyr, but any tbl_duckdb_connection input already implies
+# those Suggests packages are loaded.
+method(find_stopwords, new_S3_class("tbl_duckdb_connection")) <- function(
+    tokens, max_prop = 0.3, top_n = NULL, by_block = FALSE, block_by = NULL) {
 
-  method(find_stopwords, new_S3_class("tbl_duckdb_connection")) <- function(
-      tokens, max_prop = 0.3, top_n = NULL, by_block = FALSE, block_by = NULL) {
-
-    .find_stopwords_validate(max_prop, top_n)
-    con   <- tokens$src$con
-    table <- tokens$lazy_query$x
-    cols  <- dplyr::tbl_vars(tokens)
-    required <- c("src_column", "token", "row_id")
-    missing  <- setdiff(required, cols)
-    if (length(missing)) {
-      cli::cli_abort(c(
-        "{.arg tokens} is not a prepared token table.",
-        "x" = "Missing column{?s}: {.field {missing}}.",
-        "i" = "Pass the output of {.fn prepare_search_data}."
-      ))
-    }
-
-    grp_cols <- "src_column"
-    if (by_block) {
-      block_by <- .find_stopwords_block_by(block_by, cols)
-      grp_cols <- c("src_column", block_by)
-    }
-    grp_sql <- paste(grp_cols, collapse = ", ")
-
-    # Aggregate df / n via GROUP BY (not windows): one pass each, join on the
-    # group key. QUALIFY handles the optional top_n. Filtering happens in SQL so
-    # only the flagged rows cross back into R.
-    top_clause <- if (!is.null(top_n)) {
-      paste0(
-        "\n  QUALIFY ROW_NUMBER() OVER (PARTITION BY ", grp_sql,
-        " ORDER BY prop DESC) <= ", as.integer(top_n),
-        " OR prop >= ", max_prop
-      )
-    } else {
-      paste0("\n  WHERE prop >= ", max_prop)
-    }
-
-    sql <- paste0(
-      "WITH _df AS (\n",
-      "  SELECT ", grp_sql, ", token, COUNT(DISTINCT row_id) AS df\n",
-      "  FROM ", table, " GROUP BY ", grp_sql, ", token\n",
-      "),\n",
-      "_n AS (\n",
-      "  SELECT ", grp_sql, ", COUNT(DISTINCT row_id) AS n_records\n",
-      "  FROM ", table, " GROUP BY ", grp_sql, "\n",
-      ")\n",
-      "SELECT _df.src_column, _df.token, _df.df, _n.n_records,\n",
-      "       _df.df::DOUBLE / _n.n_records AS prop\n",
-      "FROM _df JOIN _n USING (", grp_sql, ")",
-      top_clause,
-      "\n  ORDER BY _df.src_column, prop DESC"
-    )
-
-    out <- data.table::as.data.table(DBI::dbGetQuery(con, sql))
-
-    if (by_block && nrow(out)) {
-      data.table::setorder(out, src_column, token, -prop)
-      out <- unique(out, by = c("src_column", "token"))
-      out <- out[, .(src_column, token, df, n_records, prop)]
-      data.table::setorder(out, src_column, -prop)
-    }
-    out[]
+  .find_stopwords_validate(max_prop, top_n)
+  con   <- tokens$src$con
+  table <- tokens$lazy_query$x
+  cols  <- dplyr::tbl_vars(tokens)
+  required <- c("src_column", "token", "row_id")
+  missing  <- setdiff(required, cols)
+  if (length(missing)) {
+    cli::cli_abort(c(
+      "{.arg tokens} is not a prepared token table.",
+      "x" = "Missing column{?s}: {.field {missing}}.",
+      "i" = "Pass the output of {.fn prepare_search_data}."
+    ))
   }
+
+  grp_cols <- "src_column"
+  if (by_block) {
+    block_by <- .find_stopwords_block_by(block_by, cols)
+    grp_cols <- c("src_column", block_by)
+  }
+  grp_sql <- paste(grp_cols, collapse = ", ")
+
+  # Aggregate df / n via GROUP BY (not windows): one pass each, join on the
+  # group key. QUALIFY handles the optional top_n. Filtering happens in SQL so
+  # only the flagged rows cross back into R.
+  top_clause <- if (!is.null(top_n)) {
+    paste0(
+      "\n  QUALIFY ROW_NUMBER() OVER (PARTITION BY ", grp_sql,
+      " ORDER BY prop DESC) <= ", as.integer(top_n),
+      " OR prop >= ", max_prop
+    )
+  } else {
+    paste0("\n  WHERE prop >= ", max_prop)
+  }
+
+  sql <- paste0(
+    "WITH _df AS (\n",
+    "  SELECT ", grp_sql, ", token, COUNT(DISTINCT row_id) AS df\n",
+    "  FROM ", table, " GROUP BY ", grp_sql, ", token\n",
+    "),\n",
+    "_n AS (\n",
+    "  SELECT ", grp_sql, ", COUNT(DISTINCT row_id) AS n_records\n",
+    "  FROM ", table, " GROUP BY ", grp_sql, "\n",
+    ")\n",
+    "SELECT _df.src_column, _df.token, _df.df, _n.n_records,\n",
+    "       _df.df::DOUBLE / _n.n_records AS prop\n",
+    "FROM _df JOIN _n USING (", grp_sql, ")",
+    top_clause,
+    "\n  ORDER BY _df.src_column, prop DESC"
+  )
+
+  out <- data.table::as.data.table(DBI::dbGetQuery(con, sql))
+
+  if (by_block && nrow(out)) {
+    data.table::setorder(out, src_column, token, -prop)
+    out <- unique(out, by = c("src_column", "token"))
+    out <- out[, .(src_column, token, df, n_records, prop)]
+    data.table::setorder(out, src_column, -prop)
+  }
+  out[]
 }

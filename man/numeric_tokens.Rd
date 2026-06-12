@@ -36,3 +36,12 @@ numeric_tokens("House 5", destructive = TRUE)
 # list("5")
 
 }
+\seealso{
+[drop_numeric_tokens()], its inverse, to discard numbers from a
+  token column instead.
+
+Other token generators: 
+\code{\link{generate_ngrams}()},
+\code{\link{word_tokens}()}
+}
+\concept{token generators}

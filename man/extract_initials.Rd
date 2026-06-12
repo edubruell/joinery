@@ -10,8 +10,29 @@ extract_initials(tokens)
 \item{tokens}{A list of character vectors.}
 }
 \value{
-A list of character vectors of initials.
+A list of character vectors of single-character initials.
 }
 \description{
-Converts tokens to their first-letter initial ("ANNA" -> "A").
+Keeps only the first character of each token (`"ANNA"` becomes `"A"`). Use it
+to match on initials when full first names are recorded inconsistently, for
+example when one source has `"Anna Berta Schmidt"` and another `"A. B.
+Schmidt"`.
 }
+\details{
+It transforms a token column, so it runs after a token generator such as
+[word_tokens()].
+}
+\examples{
+extract_initials(list(c("Anna", "Berta")))
+# list(c("A", "B"))
+
+}
+\seealso{
+Other token transformers: 
+\code{\link{drop_numeric_tokens}()},
+\code{\link{filter_stopwords}()},
+\code{\link{fuzzy_tokens}()},
+\code{\link{token_shapes}()},
+\code{\link{use_dictionary}()}
+}
+\concept{token transformers}
