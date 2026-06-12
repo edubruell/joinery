@@ -25,6 +25,28 @@
 
 # ---------- label / feature plumbing --------------------------------
 
+#' Detect the match type of a *labels* table, score-agnostically.
+#'
+#' A labels table carries the pair-identifying columns plus `equal`, but
+#' commonly arrives without a `score` column (it is hand-built from a CSV or an
+#' agent, and `.collapse_pair_labels()` never reads `score` anyway). The general
+#' `.detect_match_type()` requires `score`, so use a relaxed detector here that
+#' keys only on the structural pair columns (§B2).
+#'
+#' @noRd
+.detect_label_type <- function(labels) {
+  cols <- names(labels)
+  if (all(c("duplicate_group", "id", "rank") %in% cols)) return("duplicates")
+  if (all(c("match_id", "source", "id") %in% cols))       return("candidates")
+  cli::cli_abort(c(
+    "{.arg labels} does not look like a joinery labels table.",
+    "i" = "Expected either:",
+    "*" = "duplicate labels: {.field duplicate_group}, {.field id}, {.field rank}, {.field equal}",
+    "*" = "candidate labels: {.field match_id}, {.field source}, {.field id}, {.field equal}",
+    "i" = "A {.field score} column is not required (it is never read for labels)."
+  ))
+}
+
 #' Identify the pair-side row of a labels table and reduce to
 #' one row per pair carrying `(match_id, found, equal)`.
 #'
@@ -38,7 +60,7 @@
   if (!"equal" %in% names(dt)) {
     cli::cli_abort("{.arg labels} must contain an {.field equal} column (0L/1L)")
   }
-  mt <- .detect_match_type(dt)
+  mt <- .detect_label_type(dt)
   if (mt == "candidates") {
     if (!"source" %in% names(dt)) {
       cli::cli_abort("Candidate labels must have a {.field source} column")
@@ -95,6 +117,31 @@
 }
 
 
+#' Reduce a predictor set to a maximal full-rank (linearly independent) subset.
+#'
+#' The full `match_features` schema is collinear on a given match set — the
+#' symmetric `sim_sf_<col>`/`sim_fs_<col>` pair is identical for dedup, and
+#' several count predictors are exact linear combinations when a block's records
+#' share structure. `glm` silently aliases such columns (NA coefficients) and
+#' then warns `prediction from rank-deficient fit` at every `predict()`. Pruning
+#' them *before* the fit yields an identical model with no warning (§B3).
+#'
+#' Uses a column-pivoted QR of `[intercept | predictors]`: the first `rank`
+#' pivots index the independent columns; the rest are redundant. Original
+#' predictor order is preserved.
+#'
+#' @noRd
+.full_rank_predictors <- function(design_dt, predictors) {
+  if (length(predictors) <= 1L) return(predictors)
+  mm  <- as.matrix(design_dt[, predictors, with = FALSE])
+  mm  <- cbind(`(Intercept)` = 1, mm)
+  qrd <- qr(mm)                      # LINPACK column pivoting, tol = 1e-7
+  if (qrd$rank == ncol(mm)) return(predictors)   # already full rank
+  kept <- colnames(mm)[qrd$pivot[seq_len(qrd$rank)]]
+  intersect(predictors, kept)        # preserve order, drops the intercept name
+}
+
+
 # ---------- Youden's J on a probability vector ----------------------
 
 #' Pick a threshold that maximises Youden's J (TPR - FPR).
@@ -127,6 +174,66 @@
   # equality goes to "kept" rather than dropped at the boundary.
   thr <- p[best]
   thr
+}
+
+
+#' Pick the highest threshold that still achieves a target recall.
+#'
+#' Recall is monotone-decreasing in the threshold, so we may drop at most
+#' `floor((1 - target_recall) * P)` of the `P` positives. Sorting the positive
+#' probabilities ascending, the threshold is the smallest *kept* positive's
+#' probability — guaranteeing `recall >= target_recall` exactly (ties only ever
+#' raise recall). Recall-favouring operating point for a firm panel (§B4,
+#' [[feedback_recall_favouring_threshold]]).
+#'
+#' @noRd
+.target_recall_threshold <- function(prob, equal, target_recall = 0.95) {
+  pos <- sort(prob[as.integer(equal) == 1L])
+  n   <- length(pos)
+  if (n == 0L) return(0.5)
+  target_recall <- max(0, min(1, target_recall))
+  drop_max <- floor((1 - target_recall) * n)        # positives we may lose
+  k        <- min(drop_max + 1L, n)                  # smallest positive we keep
+  pos[k]
+}
+
+#' Pick the cost-minimising threshold for an asymmetric error cost.
+#'
+#' `cost_ratio = cost(FN) / cost(FP)`; total cost at a cut keeping the top-`i`
+#' scoring pairs is `cost_ratio * FN + FP`. A higher `cost_ratio` makes false
+#' negatives dearer and shifts the optimum to a lower threshold (more recall) —
+#' monotonically. Walks scores descending; on ties takes the highest (most
+#' stringent) probability (§B4).
+#'
+#' @noRd
+.cost_weighted_threshold <- function(prob, equal, cost_ratio = 1) {
+  if (length(prob) == 0L) return(0.5)
+  if (length(unique(as.integer(equal))) < 2L) return(0.5)
+  ord <- order(prob, decreasing = TRUE)
+  p   <- prob[ord]
+  y   <- as.integer(equal[ord])
+  P   <- sum(y == 1L)
+  tp  <- cumsum(y == 1L)
+  fp  <- cumsum(y == 0L)
+  fn  <- P - tp
+  cost <- cost_ratio * fn + fp
+  p[which.min(cost)]                                 # first min = highest prob
+}
+
+#' Dispatch threshold selection over the declared operating-point rule.
+#' @noRd
+.select_threshold <- function(prob, equal, rule = "youden",
+                              target_recall = 0.95, cost_ratio = 1) {
+  switch(
+    rule,
+    youden        = .youden_j_threshold(prob, equal),
+    target_recall = .target_recall_threshold(prob, equal, target_recall),
+    cost_weighted = .cost_weighted_threshold(prob, equal, cost_ratio),
+    cli::cli_abort(c(
+      "Unknown {.arg threshold_rule}: {.val {rule}}",
+      "i" = "Use one of {.val youden}, {.val target_recall}, {.val cost_weighted}."
+    ))
+  )
 }
 
 
@@ -220,6 +327,12 @@
   if (length(fit_predictors) == 0L) {
     cli::cli_abort("All predictors are constant — cannot fit a model")
   }
+
+  # Then drop perfectly-aliased predictors (linear combinations) so glm is
+  # full-rank and never warns `prediction from rank-deficient fit`. The dropped
+  # columns stay in @predictors (a superset is harmless for newdata) but leave
+  # the formula, so the fit and every predict() align (§B3).
+  fit_predictors <- .full_rank_predictors(X, fit_predictors)
 
   weights <- NULL
   if (isTRUE(class_weighted)) {
@@ -336,9 +449,15 @@
 
 #' @noRd
 .apply_filter_impl <- function(features, filter_model,
-                               threshold = NULL,
+                               threshold     = NULL,
+                               threshold_rule = "youden",
+                               target_recall = 0.95,
+                               cost_ratio    = 1,
                                matches   = NULL,
                                ...) {
+  threshold_rule <- match.arg(
+    threshold_rule, c("youden", "target_recall", "cost_weighted")
+  )
 
   if (!S7::S7_inherits(features, Match_Features)) {
     cli::cli_abort("{.arg features} must be a {.cls Match_Features} object")
@@ -353,20 +472,29 @@
       matches          = out,
       filter_model     = filter_model,
       threshold        = if (is.null(threshold)) NA_real_ else as.numeric(threshold),
-      threshold_method = if (is.null(threshold)) "youden_j" else "user",
+      threshold_method = if (!is.null(threshold)) "user"
+                         else if (threshold_rule == "youden") "youden_j"
+                         else threshold_rule,
       recommendations  = character()
     ))
   }
 
   prob <- .predict_filter(ft, filter_model)
 
+  # A user-supplied `threshold` always wins; otherwise the operating point is
+  # the declared `threshold_rule` evaluated on the training labels (§B4).
   thr_method <- "user"
   thr <- threshold
   if (is.null(thr)) {
-    thr_method <- "youden_j"
-    thr <- .youden_j_threshold(
+    # Back-compat: the default rule's method label stays "youden_j"; the new
+    # rules report their own name.
+    thr_method <- if (threshold_rule == "youden") "youden_j" else threshold_rule
+    thr <- .select_threshold(
       filter_model@training_prob,
-      filter_model@training_equal
+      filter_model@training_equal,
+      rule          = threshold_rule,
+      target_recall = target_recall,
+      cost_ratio    = cost_ratio
     )
   }
   thr <- as.numeric(thr)
@@ -502,9 +630,20 @@ fit_filter <- function(features, labels,
 #'
 #' @param features A [`Match_Features`] object.
 #' @param filter_model A [`Filter_Model`] produced by [fit_filter()].
-#' @param threshold Numeric scalar in [0, 1] or `NULL`. When `NULL`,
-#'   the threshold is chosen by Youden's J on the training labels
-#'   stored on the [`Filter_Model`]. Decision 13.7 default.
+#' @param threshold Numeric scalar in [0, 1] or `NULL`. When non-`NULL` it is
+#'   used verbatim and overrides `threshold_rule`. When `NULL`, the threshold is
+#'   chosen on the training labels per `threshold_rule`. Decision 13.7 default.
+#' @param threshold_rule The operating-point rule used when `threshold` is
+#'   `NULL`: `"youden"` (default — maximise Youden's J, symmetric error costs),
+#'   `"target_recall"` (the highest threshold still achieving `target_recall`),
+#'   or `"cost_weighted"` (minimise `cost_ratio * FN + FP`). For a firm panel the
+#'   recall-favouring rules are usually the right operating point — splitting one
+#'   business across years is worse than admitting a few co-located firms a later
+#'   collapse can still catch ([`feedback_recall_favouring_threshold`]).
+#' @param target_recall Target recall in (0, 1] for
+#'   `threshold_rule = "target_recall"`. Default `0.95`.
+#' @param cost_ratio `cost(FN) / cost(FP)` for `threshold_rule =
+#'   "cost_weighted"`; `> 1` favours recall. Default `1` (symmetric).
 #' @param matches Optional raw matches table to enrich. When supplied,
 #'   `tp_prob` / `predicted_tp` are broadcast onto every row of the
 #'   pair (candidates: both `source == "base"` and `source == "target"`
@@ -515,14 +654,22 @@ fit_filter <- function(features, labels,
 #'
 #' @export
 apply_filter <- function(features, filter_model,
-                         threshold = NULL,
+                         threshold      = NULL,
+                         threshold_rule = c("youden", "target_recall",
+                                            "cost_weighted"),
+                         target_recall  = 0.95,
+                         cost_ratio     = 1,
                          matches   = NULL,
                          ...) {
+  threshold_rule <- match.arg(threshold_rule)
   .apply_filter_impl(
-    features      = features,
-    filter_model  = filter_model,
-    threshold     = threshold,
-    matches       = matches,
+    features       = features,
+    filter_model   = filter_model,
+    threshold      = threshold,
+    threshold_rule = threshold_rule,
+    target_recall  = target_recall,
+    cost_ratio     = cost_ratio,
+    matches        = matches,
     ...
   )
 }

@@ -60,6 +60,10 @@
     .SDcols = c(id_col, "src_column", "token")
   ]
   data.table::setnames(dt, id_col, "_rid_")
+  # The internal key is character; coerce so a numeric/integer64 token id keys
+  # the same way the pair ids do (see .pairs_from_matches). Avoids a bmerge
+  # "Incompatible join types" when matches carry a non-character id (§B2).
+  dt[, `_rid_` := .as_id_chr(`_rid_`)]
   unique(dt[!is.na(token) & nzchar(token)])
 }
 
@@ -136,6 +140,12 @@
   }
 
   if (!has_stage) pairs[, stage := NA_character_]
+  # Coerce the pair ids to the internal character key so a numeric/integer64
+  # match id (e.g. a BIGINT surrogate `rid`) merges cleanly against the token
+  # table's `_rid_` instead of aborting bmerge with "Incompatible join types"
+  # (§B2). .as_id_chr renders integer-valued doubles in plain decimal.
+  pairs[, searched := .as_id_chr(searched)]
+  pairs[, found    := .as_id_chr(found)]
   list(match_type = mt, pairs = pairs)
 }
 

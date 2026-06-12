@@ -414,6 +414,48 @@ filter_stopwords <- function(tokens, stopwords) {
   })
 }
 
+#' Drop numeric (house-number) tokens from token lists
+#'
+#' @description
+#' Symmetric inverse of [numeric_tokens()]: removes pure-digit tokens
+#' (typically house numbers) from a token column. Operates on the
+#' list-of-character token vectors produced by earlier steps such as
+#' `word_tokens()`, mirroring [filter_stopwords()].
+#'
+#' Useful in address pipelines where the street name carries the matching
+#' signal but the house number is noise (and fans out blocks): tokenize the
+#' street, then `drop_numeric_tokens()` to keep only the name tokens.
+#'
+#' @param tokens A list of character vectors.
+#' @param keep_letters Logical. If TRUE (default), number-letter tokens such
+#'   as "12A" are retained; only pure-digit tokens like "12" are dropped. If
+#'   FALSE, any token containing a digit is dropped.
+#'
+#' @return A list of character vectors with numeric tokens removed.
+#'
+#' @examples
+#' drop_numeric_tokens(list(c("MAIN", "12", "ST")))
+#' # list(c("MAIN", "ST"))
+#'
+#' drop_numeric_tokens(list(c("MAIN", "12A")), keep_letters = FALSE)
+#' # list("MAIN")
+#'
+#' @export
+drop_numeric_tokens <- function(tokens, keep_letters = TRUE) {
+  if (!is.list(tokens)) {
+    cli::cli_abort("{.arg tokens} must be a list")
+  }
+
+  # Pure-digit tokens are always dropped. With keep_letters = FALSE, any token
+  # containing a digit (e.g. "12A") is dropped too. Vectorized grepl over the
+  # flat token vector per element, mirroring filter_stopwords().
+  pattern <- if (keep_letters) "^[0-9]+$" else "[0-9]"
+
+  map(tokens, function(x) {
+    x[!grepl(pattern, x)]
+  })
+}
+
 #' Convert tokens to shape signatures (letter/digit patterns)
 #'
 #' "MULLER" -> "AAAAAA"

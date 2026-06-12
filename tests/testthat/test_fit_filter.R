@@ -394,3 +394,156 @@ test_that("apply_filter on an empty Match_Features returns an empty result", {
   expect_equal(nrow(cal@matches), 0L)
   expect_true(all(c("tp_prob", "predicted_tp") %in% names(cal@matches)))
 })
+
+
+# ============================================================
+# B2 — calibration entry robustness: numeric id + score-less labels
+# ============================================================
+
+test_that("match_features() + fit_filter() round-trip on a BIGINT-style numeric id", {
+  # ids arrive as integer-valued doubles (as a DuckDB BIGINT collects to R)
+  base <- data.table(
+    id   = c(5e5, 5e5 + 1, 5e5 + 2, 5e5 + 3, 5e5 + 4, 5e5 + 5),
+    name = c("john smith", "jon smith", "jane doe",
+             "john doe", "alice cooper", "alyce cooper")
+  )
+  s    <- simple_strategy()
+  dups <- detect_duplicates(base, "id", s)
+  # no manual casts: numeric ids must just work
+  mf   <- match_features(dups, s, base = base, id = "id")
+  expect_true(S7::S7_inherits(mf, joinery:::Match_Features))
+  expect_true(nrow(mf@features) > 0L)
+  # internal key is plain-decimal character, never scientific ("5e+05")
+  expect_false(any(grepl("e\\+", mf@features$searched)))
+
+  labels <- data.table::copy(dups)
+  labels[, equal := 1L]
+  labels[seq_len(.N) == .N, equal := 0L]   # keep both classes for the fit
+  fm <- fit_filter(mf, labels)
+  expect_true(S7::S7_inherits(fm, joinery:::Filter_Model))
+})
+
+test_that("fit_filter() accepts dedup labels that lack a score column", {
+  bits <- make_dedup_features_and_labels()
+  # a hand-built (duplicate_group, id, rank, equal) labels table — no score
+  labels_no_score <- bits$labels[, .(duplicate_group, id, rank, equal)]
+  expect_false("score" %in% names(labels_no_score))
+
+  expect_no_error(fm <- fit_filter(bits$mf, labels_no_score))
+  expect_true(S7::S7_inherits(fm, joinery:::Filter_Model))
+})
+
+test_that(".detect_label_type is score-agnostic and rejects junk", {
+  expect_equal(
+    joinery:::.detect_label_type(
+      data.table(duplicate_group = 1L, id = "a", rank = 1L, equal = 1L)),
+    "duplicates"
+  )
+  expect_equal(
+    joinery:::.detect_label_type(
+      data.table(match_id = 1L, source = "target", id = "a", equal = 1L)),
+    "candidates"
+  )
+  expect_error(
+    joinery:::.detect_label_type(data.table(foo = 1L, equal = 1L)),
+    "labels table"
+  )
+})
+
+
+# ============================================================
+# B3 — rank-deficient glm: drop perfectly-aliased predictors
+# ============================================================
+
+test_that(".full_rank_predictors drops exact linear combinations", {
+  X <- data.table(
+    a = c(1, 2, 3, 4),
+    b = c(2, 4, 6, 8),    # = 2*a, perfectly aliased
+    c = c(0, 1, 0, 1)
+  )
+  keep <- joinery:::.full_rank_predictors(X, c("a", "b", "c"))
+  # one of the collinear pair drops; order preserved; c survives
+  expect_length(keep, 2L)
+  expect_true("c" %in% keep)
+  expect_true(xor("a" %in% keep, "b" %in% keep))
+})
+
+test_that("fit_filter() fits a collinear feature table without a rank-deficient warning", {
+  bits <- make_dedup_features_and_labels()
+  mf   <- bits$mf
+  ft   <- data.table::copy(mf@features)
+  # inject a perfectly-aliased duplicate of an existing predictor
+  ft[, scnt_dup := scnt * 2 + 0]
+  mf2 <- joinery:::Match_Features(
+    features       = ft,
+    schema         = mf@schema,
+    strategy_class = mf@strategy_class,
+    top_n          = mf@top_n,
+    columns        = mf@columns,
+    aip_summary    = mf@aip_summary
+  )
+
+  expect_no_warning(fm <- fit_filter(mf2, bits$labels))
+  # predicting also must not warn (the un-suppressed predict path)
+  expect_no_warning(apply_filter(mf2, fm, threshold = 0.5))
+})
+
+
+# ============================================================
+# B4 — recall-favouring / cost-weighted threshold
+# ============================================================
+
+test_that(".target_recall_threshold achieves at least the target recall", {
+  set.seed(1)
+  prob  <- c(runif(50, 0.3, 1.0), runif(50, 0.0, 0.7))
+  equal <- c(rep(1L, 50), rep(0L, 50))
+  for (tr in c(0.80, 0.90, 0.95, 0.99)) {
+    thr    <- joinery:::.target_recall_threshold(prob, equal, target_recall = tr)
+    recall <- mean(prob[equal == 1L] >= thr)
+    expect_gte(recall, tr)
+  }
+})
+
+test_that(".target_recall_threshold is monotone: higher target -> lower threshold", {
+  set.seed(2)
+  prob  <- c(runif(40, 0.4, 1.0), runif(40, 0.0, 0.6))
+  equal <- c(rep(1L, 40), rep(0L, 40))
+  t80 <- joinery:::.target_recall_threshold(prob, equal, 0.80)
+  t95 <- joinery:::.target_recall_threshold(prob, equal, 0.95)
+  expect_lte(t95, t80)
+})
+
+test_that(".cost_weighted_threshold shifts monotonically with cost_ratio", {
+  set.seed(3)
+  prob  <- c(runif(40, 0.3, 1.0), runif(40, 0.0, 0.7))
+  equal <- c(rep(1L, 40), rep(0L, 40))
+  thr <- vapply(c(1, 2, 5, 10),
+                function(cr) joinery:::.cost_weighted_threshold(prob, equal, cr),
+                numeric(1))
+  # non-increasing: dearer false negatives -> lower (more permissive) threshold
+  expect_true(all(diff(thr) <= 1e-9))
+})
+
+test_that("apply_filter(threshold_rule=) selects via the declared rule", {
+  bits <- make_dedup_features_and_labels()
+  fm   <- fit_filter(bits$mf, bits$labels)
+
+  cal_y <- apply_filter(bits$mf, fm, threshold_rule = "youden")
+  cal_r <- apply_filter(bits$mf, fm, threshold_rule = "target_recall",
+                        target_recall = 0.95)
+  cal_c <- apply_filter(bits$mf, fm, threshold_rule = "cost_weighted",
+                        cost_ratio = 5)
+
+  expect_equal(cal_y@threshold_method, "youden_j")
+  expect_equal(cal_r@threshold_method, "target_recall")
+  expect_equal(cal_c@threshold_method, "cost_weighted")
+
+  # explicit threshold overrides the rule
+  cal_u <- apply_filter(bits$mf, fm, threshold = 0.42,
+                        threshold_rule = "target_recall")
+  expect_equal(cal_u@threshold_method, "user")
+  expect_equal(cal_u@threshold, 0.42)
+
+  # unknown rule is rejected at the public arg
+  expect_error(apply_filter(bits$mf, fm, threshold_rule = "nope"))
+})

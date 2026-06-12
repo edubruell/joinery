@@ -4,16 +4,39 @@
 \alias{apply_filter}
 \title{Apply a fitted filter to match features}
 \usage{
-apply_filter(features, filter_model, threshold = NULL, matches = NULL, ...)
+apply_filter(
+  features,
+  filter_model,
+  threshold = NULL,
+  threshold_rule = c("youden", "target_recall", "cost_weighted"),
+  target_recall = 0.95,
+  cost_ratio = 1,
+  matches = NULL,
+  ...
+)
 }
 \arguments{
 \item{features}{A [`Match_Features`] object.}
 
 \item{filter_model}{A [`Filter_Model`] produced by [fit_filter()].}
 
-\item{threshold}{Numeric scalar in [0, 1] or `NULL`. When `NULL`,
-the threshold is chosen by Youden's J on the training labels
-stored on the [`Filter_Model`]. Decision 13.7 default.}
+\item{threshold}{Numeric scalar in [0, 1] or `NULL`. When non-`NULL` it is
+used verbatim and overrides `threshold_rule`. When `NULL`, the threshold is
+chosen on the training labels per `threshold_rule`. Decision 13.7 default.}
+
+\item{threshold_rule}{The operating-point rule used when `threshold` is
+`NULL`: `"youden"` (default — maximise Youden's J, symmetric error costs),
+`"target_recall"` (the highest threshold still achieving `target_recall`),
+or `"cost_weighted"` (minimise `cost_ratio * FN + FP`). For a firm panel the
+recall-favouring rules are usually the right operating point — splitting one
+business across years is worse than admitting a few co-located firms a later
+collapse can still catch ([`feedback_recall_favouring_threshold`]).}
+
+\item{target_recall}{Target recall in (0, 1] for
+`threshold_rule = "target_recall"`. Default `0.95`.}
+
+\item{cost_ratio}{`cost(FN) / cost(FP)` for `threshold_rule =
+"cost_weighted"`; `> 1` favours recall. Default `1` (symmetric).}
 
 \item{matches}{Optional raw matches table to enrich. When supplied,
 `tp_prob` / `predicted_tp` are broadcast onto every row of the

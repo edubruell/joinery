@@ -1006,6 +1006,53 @@ test_that("approximate_date() rounds dates correctly", {
   expect_equal(numeric_tokens("4—6"), list(c("4","5","6")))
 })
 
+test_that("drop_numeric_tokens() removes house-number tokens", {
+
+  # keep_letters = TRUE (default): only pure-digit tokens dropped
+  expect_equal(
+    drop_numeric_tokens(list(c("MAIN", "12", "ST"))),
+    list(c("MAIN", "ST"))
+  )
+  expect_equal(
+    drop_numeric_tokens(list(c("MAIN", "12A"))),
+    list(c("MAIN", "12A"))           # number-letter token retained
+  )
+
+  # keep_letters = FALSE: any token containing a digit dropped
+  expect_equal(
+    drop_numeric_tokens(list(c("MAIN", "12A")), keep_letters = FALSE),
+    list("MAIN")
+  )
+
+  # vectorized over the list; empty + all-numeric vectors handled
+  out <- drop_numeric_tokens(list(c("A", "1"), character(0), c("7", "9")))
+  expect_equal(out[[1]], "A")
+  expect_equal(out[[2]], character(0))
+  expect_equal(out[[3]], character(0))
+
+  # symmetric inverse of numeric_tokens(): the two partition a token set
+  toks <- c("HAUPTSTRASSE", "12", "B")
+  kept <- drop_numeric_tokens(list(toks))[[1]]
+  expect_false(any(grepl("^[0-9]+$", kept)))
+
+  # validation: list input required
+  expect_error(drop_numeric_tokens(c("a", "1")), "must be a list")
+})
+
+test_that("drop_numeric_tokens() works inside a search_strategy pipeline", {
+  dt <- data.table::data.table(
+    id     = c("a", "b"),
+    street = c("Hauptstrasse 12", "Hauptstrasse 99")
+  )
+  strat <- search_strategy(
+    street ~ normalize_text() + word_tokens() + drop_numeric_tokens(),
+    threshold = 0.5
+  )
+  dups <- detect_duplicates(dt, id = "id", strategy = strat)
+  # house numbers stripped -> the two share only the street name and match
+  expect_true(nrow(dups) >= 1L)
+})
+
 test_that("filter_stopwords() removes stopwords correctly", {
   
   # Basic removal

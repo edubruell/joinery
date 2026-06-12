@@ -46,6 +46,9 @@
                                     class_weighted  = FALSE,
                                     na_fill         = 0,
                                     threshold       = NULL,
+                                    threshold_rule  = "youden",
+                                    target_recall   = 0.95,
+                                    cost_ratio      = 1,
                                     ...) {
 
   if (missing(labels) || is.null(labels)) {
@@ -71,10 +74,13 @@
   )
 
   apply_filter(
-    features     = features,
-    filter_model = fm,
-    threshold    = threshold,
-    matches      = matches
+    features       = features,
+    filter_model   = fm,
+    threshold      = threshold,
+    threshold_rule = threshold_rule,
+    target_recall  = target_recall,
+    cost_ratio     = cost_ratio,
+    matches        = matches
   )
 }
 
