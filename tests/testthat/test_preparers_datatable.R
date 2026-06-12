@@ -250,6 +250,59 @@ test_that("normalize_street() correctly normalizes street names (German + intern
   expect_equal(normalize_street("Hovedvägen 44",        lang="sv"), "HOVEDVAGEN 44")
 })
 
+test_that("normalize_street() vectorized path matches a scalar reference", {
+
+  # Independent, deliberately naive per-string reference implementation.
+  # It mirrors the *contract* (preprocess -> per-token exact-then-suffix
+  # replacement -> rejoin) but is written separately from the optimized body,
+  # so equality is a genuine parity check rather than a tautology.
+  ref_one <- function(s, lang, dict) {
+    if (is.na(s)) return(NA_character_)
+    sn <- s |>
+      stringi::stri_trans_general("Any-Latin") |>
+      stringi::stri_trans_general("Latin-ASCII") |>
+      stringi::stri_trans_toupper() |>
+      stringi::stri_replace_all_regex("[^A-Z0-9 ]", " ") |>
+      stringi::stri_replace_all_regex("\\s+", " ") |>
+      stringi::stri_trim_both()
+    d  <- if (!is.null(lang)) dict[dict$lang == lang, ] else dict
+    ex <- stats::setNames(d$canonical[d$type == "exact"],  d$variant[d$type == "exact"])
+    sf <- stats::setNames(d$canonical[d$type == "suffix"], d$variant[d$type == "suffix"])
+    sv <- names(sf)[order(nchar(names(sf)), decreasing = TRUE)]
+    toks <- stringi::stri_split_regex(sn, " +")[[1]]
+    out  <- vapply(toks, function(tok) {
+      tl <- tolower(tok)
+      if (tl %in% names(ex)) return(unname(ex[[tl]]))
+      if (!is.null(lang)) for (suf in sv) {
+        if (stringi::stri_endswith_fixed(tl, suf)) {
+          base <- stringi::stri_sub(tok, 1, nchar(tok) - nchar(suf))
+          return(paste0(base, sf[[suf]]))
+        }
+      }
+      tok
+    }, character(1))
+    paste(out, collapse = " ")
+  }
+
+  set.seed(42)
+  langs <- c("de", "en", "fr", "es", "it", "pt", "pl", "nl", "tr", "sv", "da")
+  words <- c("Hauptstr.", "Main", "St.", "Rue", "de", "Paris", "Via", "Roma",
+             "Kerkstraat", "Blvd.", "12A", "Königsstraße", "Ul.", "Cad.",
+             "Gatan", "Avda.", "100", "", "Neue", "Allee")
+
+  for (lg in c(list(NULL), as.list(langs))) {
+    inputs <- vapply(1:60, function(i) {
+      k <- sample(1:4, 1)
+      paste(sample(words, k, replace = TRUE), collapse = " ")
+    }, character(1))
+    inputs <- c(inputs, NA_character_, "", "   ")
+    expected <- vapply(inputs, ref_one, character(1),
+                       lang = lg, dict = joinery::street_types,
+                       USE.NAMES = FALSE)
+    expect_equal(normalize_street(inputs, lang = lg), expected)
+  }
+})
+
 test_that("normalize_date() normalizes dates to ISO 8601 format", {
   
   # ===========================================================================#

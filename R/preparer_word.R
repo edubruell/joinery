@@ -122,32 +122,45 @@ normalize_street <- function(x, lang = NULL, dict = joinery::street_types) {
   suffix_variants <- names(suffix_lookup)
   suffix_variants <- suffix_variants[order(stri_length(suffix_variants), decreasing = TRUE)]
 
-  replace_tok <- function(tok) {
-    if (is.na(tok)) return(NA_character_)
-    tok_l <- tolower(tok)
+  # Vectorized token replacement.
+  #
+  # Rather than calling a per-token closure inside a nested map (O(tokens)
+  # R-level dispatch), flatten every row's tokens into one vector, resolve all
+  # exact matches in a single `match()`, resolve suffix matches in one pass per
+  # distinct suffix variant (longest-first, so the longest suffix wins exactly
+  # as the scalar path did), then re-collapse per row. Semantics are identical
+  # to the previous `replace_tok()`; only the loop nesting is gone.
+  toks_list <- stri_split_regex(x_norm, " +")
+  n_tok     <- lengths(toks_list)
+  flat      <- unlist(toks_list, use.names = FALSE)   # uppercased token text
+  flat_l    <- tolower(flat)
+  result    <- flat                                   # default: token unchanged
 
-    # Exact match
-    if (tok_l %in% names(exact_lookup))
-      return(exact_lookup[[tok_l]])
+  # Exact match (takes priority over suffix)
+  ex_idx <- match(flat_l, names(exact_lookup))
+  has_ex <- !is.na(ex_idx)
+  result[has_ex] <- unname(exact_lookup[ex_idx[has_ex]])
 
-    # Suffix match (only if lang specified)
-    if (!is.null(lang)) {
-      ends <- stri_endswith_fixed(tok_l, suffix_variants)
-      if (any(ends)) {
-        suf <- suffix_variants[which(ends)[1]]
-        base <- stri_sub(tok, 1, nchar(tok) - nchar(suf))
-        return(paste0(base, suffix_lookup[[suf]]))
+  # Suffix match — only when lang is specified, only on non-exact tokens.
+  if (!is.null(lang) && length(suffix_variants)) {
+    remaining <- which(!has_ex & !is.na(flat_l))
+    for (suf in suffix_variants) {
+      if (!length(remaining)) break
+      ends <- stri_endswith_fixed(flat_l[remaining], suf)
+      hit  <- remaining[ends]
+      if (length(hit)) {
+        base <- stri_sub(flat[hit], 1, nchar(flat[hit]) - nchar(suf))
+        result[hit] <- paste0(base, suffix_lookup[[suf]])
+        remaining <- remaining[!ends]
       }
     }
-
-    tok
   }
 
-  out <- map_chr(
-    stri_split_regex(x_norm, " +"),
-    ~ map_chr(.x, replace_tok) |>
-      paste(collapse = " ")
-  )
+  # Re-collapse tokens back to one string per input row. A factor with explicit
+  # 1:N levels keeps row order and yields "" for any empty group.
+  grp <- factor(rep.int(seq_along(toks_list), n_tok), levels = seq_along(toks_list))
+  out <- vapply(split(result, grp), paste, character(1), collapse = " ")
+  out <- unname(out)
 
   out[is_na] <- NA_character_
   out
