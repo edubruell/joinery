@@ -17,7 +17,7 @@ DT_tbl <- new_S3_class("data.table")
 method(
   prepare_search_data,
   list(DT_tbl, class_character, Search_Strategy)
-) <- function(data, id, strategy) {
+) <- function(data, id, strategy, warn_nonunique_id = TRUE) {
 
   dt <- data.table::copy(data)
 
@@ -31,13 +31,11 @@ method(
   # rows sharing an id are folded into one record (their tokens are pooled), and
   # before the block-merge fix below it caused an opaque cartesian crash. Warn
   # once, with the count, so the duplication is visible rather than silent.
-  n_dup_ids <- sum(duplicated(dt[[id]]))
-  if (n_dup_ids > 0L) {
-    cli::cli_warn(c(
-      "!" = "{.arg id} column {.field {id}} is not unique: {n_dup_ids} duplicate value{?s}.",
-      "i" = "Rows sharing an id are treated as one record (tokens pooled). \\
-             De-duplicate {.arg data} or supply a unique id if that is not intended."
-    ))
+  # warn_nonunique_id is set FALSE by the DuckDB per-batch tokenizer, which sees
+  # only a partial slice of the ids; that backend runs one global check up front
+  # instead (D2). See .warn_nonunique_id() in internal_validation.R.
+  if (warn_nonunique_id) {
+    .warn_nonunique_id(sum(duplicated(dt[[id]])), id)
   }
 
   preparers <- strategy@preparers
@@ -340,7 +338,66 @@ method(
     ]
   }
 
+  # on_missing = "renormalise": rescale each pair's score by the weight of the
+  # columns actually present (on either side), so a column empty on BOTH records
+  # no longer caps the score at 1 - weight(col). See B1 / §25.
+  if (.strategy_on_missing(strategy) == "renormalise") {
+    z <- .present_col_denominator(
+      lhs_tokens, rhs_tokens, id_lhs, id_rhs, weights, scored
+    )
+    scored <- merge(scored, z, by = c("lhs_id", "rhs_id"), all.x = TRUE)
+    scored[is.na(z_pair) | z_pair <= 0, z_pair := 1]
+    scored[, score := score / z_pair]
+    scored[, z_pair := NULL]
+  }
+
   scored[]
+}
+
+#' Read the `on_missing` policy off any strategy, defaulting to "penalise".
+#'
+#' Robust to strategy classes that predate / lack the slot (e.g. an
+#' `Exact_Strategy` never reaches the token scorer, but keep the read total).
+#' @noRd
+.strategy_on_missing <- function(strategy) {
+  if ("on_missing" %in% S7::prop_names(strategy)) {
+    om <- strategy@on_missing
+    if (length(om)) return(om[[1]])
+  }
+  "penalise"
+}
+
+#' Per-pair present-column weight denominator for `on_missing = "renormalise"`.
+#'
+#' `z_pair = WA + WB - Wboth`, the total weight of columns present on *either*
+#' record of the pair (presence = the column has >= 1 token). A column empty on
+#' both sides is excluded from the denominator (its weight is redistributed); a
+#' column present on one side only stays in it (a genuine penalty). Computed
+#' only for the candidate pairs in `scored`.
+#' @noRd
+.present_col_denominator <- function(lhs_tokens, rhs_tokens,
+                                     id_lhs, id_rhs, weights, scored) {
+  lhs_pres <- unique(lhs_tokens[, .(lhs_id = get(id_lhs), src_column)])
+  rhs_pres <- unique(rhs_tokens[, .(rhs_id = get(id_rhs), src_column)])
+  lhs_pres[, w := weights[src_column]]
+  rhs_pres[, w := weights[src_column]]
+
+  wa <- lhs_pres[, .(wa = sum(w)), by = lhs_id]
+  wb <- rhs_pres[, .(wb = sum(w)), by = rhs_id]
+
+  pairs <- unique(scored[, .(lhs_id, rhs_id)])
+
+  # Columns present on both sides of a candidate pair -> Wboth.
+  pl <- lhs_pres[pairs, on = "lhs_id", allow.cartesian = TRUE]
+  both <- pl[rhs_pres, on = c("rhs_id", "src_column"), nomatch = 0L]
+  wboth <- both[, .(wboth = sum(w)), by = .(lhs_id, rhs_id)]
+
+  out <- merge(pairs, wa, by = "lhs_id", all.x = TRUE)
+  out <- merge(out, wb, by = "rhs_id", all.x = TRUE)
+  out <- merge(out, wboth, by = c("lhs_id", "rhs_id"), all.x = TRUE)
+  out[is.na(wboth), wboth := 0]
+  out[, z_pair := wa + wb - wboth]
+  out[, .(lhs_id, rhs_id, z_pair)]
 }
 
 
@@ -430,6 +487,20 @@ method(
   data.table::setorder(per_column_contrib, -contribution)
 
   raw_score <- sum(per_column_contrib$contribution)
+
+  # on_missing = "renormalise": divide raw_score AND every per-token/per-column
+  # contribution by the same present-column denominator the scorer uses, so the
+  # round-trip contract (sum(contributions) * feedback_factor == score) and
+  # cross-check against .score_token_pairs() both hold exactly. z = total weight
+  # of columns present on either record (columns empty on both are excluded).
+  if (.strategy_on_missing(strategy) == "renormalise") {
+    present <- union(unique(lhs$src_column), unique(rhs$src_column))
+    z_pair  <- sum(weights[present])
+    if (!is.finite(z_pair) || z_pair <= 0) z_pair <- 1
+    shared_tokens[, contribution := contribution / z_pair]
+    per_column_contrib[, contribution := contribution / z_pair]
+    raw_score <- raw_score / z_pair
+  }
 
   # Feedback adjustment — same formula as .score_token_pairs()
   feedback_factor <- 1.0

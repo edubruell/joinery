@@ -14,7 +14,8 @@ search_strategy(
   threshold = 0.9,
   smoothing = smooth_rip_identity(),
   max_candidates = Inf,
-  feedback_strength = 0
+  feedback_strength = 0,
+  on_missing = c("penalise", "renormalise")
 )
 }
 \arguments{
@@ -60,6 +61,18 @@ only the top `max_candidates` highest scoring matches are kept per record.}
 \item{feedback_strength}{Numeric scalar controlling feedback weighted scoring.
 Default is `0` (disabled). Positive values adjust scores based on the
 proportion of matched tokens.}
+
+\item{on_missing}{How to score a pair when a weighted column is **empty on
+both records**. `"penalise"` (default) leaves the column's weight in the
+denominator, so a record missing column *c* has a hard score ceiling of
+`1 - weight(c)` and can never reach a threshold above it. `"renormalise"`
+redistributes the weight of any column empty on *both* sides across the
+columns present on at least one side (a column present on one side only
+stays a genuine penalty). `"renormalise"` is powerful but aggressive — it
+turns an empty-street record into a name-only matcher — so it is opt-in and
+never the default. The empty-column-robust alternative is to front the run
+with an [exact_strategy()] stage, whose set-equality links are
+weight/threshold independent.}
 }
 \value{
 A [Search_Strategy] object.

@@ -64,7 +64,8 @@ Search_Strategy <- new_class("Search_Strategy",
                                max_token_df = new_property(class_numeric, default = Inf),
                                smoothing = Smoothing,
                                max_candidates = class_numeric,
-                               feedback_strength = class_numeric
+                               feedback_strength = class_numeric,
+                               on_missing = new_property(class_character, default = "penalise")
                              )
 )
 
@@ -186,6 +187,11 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
     cli::cli_text("feedback_strength: none")
   }
 
+  # on_missing (only worth printing when non-default)
+  if (length(x@on_missing) && x@on_missing == "renormalise") {
+    cli::cli_text("on_missing: renormalise (present-column weight redistribution)")
+  }
+
   invisible(x)
 }
 
@@ -295,6 +301,17 @@ expr_to_step <- function(expr) {
 #' @param feedback_strength Numeric scalar controlling feedback weighted scoring.
 #'   Default is `0` (disabled). Positive values adjust scores based on the
 #'   proportion of matched tokens.
+#' @param on_missing How to score a pair when a weighted column is **empty on
+#'   both records**. `"penalise"` (default) leaves the column's weight in the
+#'   denominator, so a record missing column *c* has a hard score ceiling of
+#'   `1 - weight(c)` and can never reach a threshold above it. `"renormalise"`
+#'   redistributes the weight of any column empty on *both* sides across the
+#'   columns present on at least one side (a column present on one side only
+#'   stays a genuine penalty). `"renormalise"` is powerful but aggressive — it
+#'   turns an empty-street record into a name-only matcher — so it is opt-in and
+#'   never the default. The empty-column-robust alternative is to front the run
+#'   with an [exact_strategy()] stage, whose set-equality links are
+#'   weight/threshold independent.
 #'
 #' @return A [Search_Strategy] object.
 #'
@@ -308,8 +325,10 @@ search_strategy <- function(...,
                             threshold  = 0.9,
                             smoothing  = smooth_rip_identity(),
                             max_candidates = Inf,
-                            feedback_strength = 0) {
+                            feedback_strength = 0,
+                            on_missing = c("penalise", "renormalise")) {
 
+  on_missing <- match.arg(on_missing)
   check_number_decimal(min_rarity, min = 0)
   check_number_decimal(max_token_df, min = 1, allow_infinite = TRUE)
   check_number_decimal(threshold)
@@ -351,6 +370,7 @@ search_strategy <- function(...,
     max_token_df = max_token_df,
     smoothing  = smoothing,
     max_candidates = max_candidates,
-    feedback_strength = feedback_strength
+    feedback_strength = feedback_strength,
+    on_missing = on_missing
   )
 }

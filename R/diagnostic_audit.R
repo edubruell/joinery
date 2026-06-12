@@ -227,6 +227,11 @@ method(
   # --- 9. Signals and recommendations ----------------------------------------
   signals <- list()
 
+  # est_comparisons drives the est_comparisons_too_high recommendation: a
+  # pre-flight feasibility read (Sum_b n_b*(n_b-1)/2) so a doomed blocking key is
+  # flagged before any overlap join runs. (D1)
+  signals[["est_comparisons"]] <- est_comp
+
   if (!is.null(block_summ)) {
     signals[["block_top_share"]] <- block_summ$summary$top1_share
   }

@@ -214,8 +214,75 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
     
     DBI::dbExecute(con, sql_scored)
   }
-  
-  
+
+
+  # ============================================================
+  # STEP 2.5: on_missing = "renormalise" — rescale score by the present-column
+  # denominator so a column empty on BOTH records stops capping the score at
+  # 1 - weight(col). z_pair = WA + WB - Wboth = total weight of columns present
+  # on either record. Mirrors the data.table .present_col_denominator(). B1/§25.
+  # ============================================================
+  if (.strategy_on_missing(strategy) == "renormalise") {
+    pres_a  <- tmp("_pres_a")
+    pres_b  <- tmp("_pres_b")
+    denom_t <- tmp("_pair_denom")
+    resc_t  <- tmp("_pairs_rescaled")
+
+    if (join_type == "self") {
+      DBI::dbExecute(con, paste0(
+        "CREATE TEMP TABLE ", pres_a, " AS\n",
+        "SELECT DISTINCT ", id1_col, " AS rid, src_column, weight FROM ", enriched_tbl, ";"
+      ))
+      pres_b_ref <- pres_a
+    } else {
+      DBI::dbExecute(con, paste0(
+        "CREATE TEMP TABLE ", pres_a, " AS\n",
+        "SELECT DISTINCT ", id1_col, " AS rid, src_column, weight FROM ", enriched_tbl,
+        " WHERE source = 'base';"
+      ))
+      DBI::dbExecute(con, paste0(
+        "CREATE TEMP TABLE ", pres_b, " AS\n",
+        "SELECT DISTINCT ", id2_col, " AS rid, src_column, weight FROM ", enriched_tbl,
+        " WHERE source = 'target';"
+      ))
+      pres_b_ref <- pres_b
+    }
+
+    DBI::dbExecute(con, paste0(
+      "CREATE TEMP TABLE ", denom_t, " AS\n",
+      "WITH s AS (SELECT DISTINCT id1, id2 FROM ", scored_tbl, "),\n",
+      "     wa AS (SELECT rid, SUM(weight) AS wa FROM ", pres_a, " GROUP BY rid),\n",
+      "     wb AS (SELECT rid, SUM(weight) AS wb FROM ", pres_b_ref, " GROUP BY rid),\n",
+      "     wboth AS (\n",
+      "       SELECT s.id1, s.id2, SUM(a.weight) AS wboth\n",
+      "       FROM s\n",
+      "       JOIN ", pres_a, " a ON a.rid = s.id1\n",
+      "       JOIN ", pres_b_ref, " b ON b.rid = s.id2 AND b.src_column = a.src_column\n",
+      "       GROUP BY s.id1, s.id2\n",
+      "     )\n",
+      "SELECT s.id1, s.id2,\n",
+      "       wa.wa + wb.wb - COALESCE(wboth.wboth, 0) AS z_pair\n",
+      "FROM s\n",
+      "JOIN wa ON wa.rid = s.id1\n",
+      "JOIN wb ON wb.rid = s.id2\n",
+      "LEFT JOIN wboth ON wboth.id1 = s.id1 AND wboth.id2 = s.id2;"
+    ))
+
+    DBI::dbExecute(con, paste0(
+      "CREATE TEMP TABLE ", resc_t, " AS\n",
+      "SELECT sc.* EXCLUDE (score),\n",
+      "       sc.score / (CASE WHEN d.z_pair > 0 THEN d.z_pair ELSE 1 END) AS score\n",
+      "FROM ", scored_tbl, " sc\n",
+      "JOIN ", denom_t, " d ON d.id1 = sc.id1 AND d.id2 = sc.id2;"
+    ))
+
+    DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", scored_tbl, ";"))
+    walk(c(pres_a, if (join_type == "cross") pres_b, denom_t),
+         \(t) DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", t, ";")))
+    scored_tbl <- resc_t
+  }
+
+
   # ============================================================
   # STEP 3: Apply threshold and containment
   # ============================================================
@@ -269,6 +336,14 @@ method(
 
   .check_reserved_names(dplyr::tbl_vars(data), id)
 
+  # D2: one global id-uniqueness check (the per-batch tokenizer suppresses its
+  # own warning). Counts duplicate id *values* across the whole input via SQL,
+  # so an id duplicated across batch boundaries is still caught.
+  n_dup_ids <- DBI::dbGetQuery(con, paste0(
+    "SELECT COUNT(*) - COUNT(DISTINCT ", sprintf('"%s"', id), ") AS n FROM ", table
+  ))$n
+  .warn_nonunique_id(n_dup_ids, id)
+
   block_by <- strategy@block_by %||% NULL
 
   out_name <- output_table %||%
@@ -293,7 +368,9 @@ method(
   
   fn <- function(df) {
     dt <- data.table::as.data.table(df)
-    prepare_search_data(dt, id, strategy)   
+    # A batch is a partial slice of the ids; the global uniqueness check runs
+    # once above (D2), so suppress the per-batch warning here.
+    prepare_search_data(dt, id, strategy, warn_nonunique_id = FALSE)
   }
   
   token_tbl <- batch_map(
