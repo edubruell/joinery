@@ -650,9 +650,17 @@ method(
         " GROUP BY bin ORDER BY bin"
       )
     )
-    # FLOOR can yield bin == bins for score == max_s; clamp to bins-1 then
-    # re-aggregate so the overflow count is added to (not overwriting) bin bins-1.
+    # Clamp both ends before re-aggregating. FLOOR can yield bin == bins for
+    # score == max_s (high overflow). It can also yield bin == -1 for the
+    # minimum row: min_s/range_s are interpolated into the SQL string via
+    # paste0, so the literal min_s is rounded slightly ABOVE the true minimum,
+    # making (score - min_s) a tiny negative and FLOOR(-tiny) == -1 (low
+    # underflow). An unclamped -1 becomes index 0 in `counts[bin + 1L] <- cnt`,
+    # which R drops silently — leaving the LHS one short of the RHS and raising
+    # a spurious "number of items to replace ..." recycling warning. Clamp into
+    # [0, bins-1] so every count lands in a real bin.
     hist_r$bin[hist_r$bin >= bins] <- bins - 1L
+    hist_r$bin[hist_r$bin < 0L]    <- 0L
     hist_r <- stats::aggregate(cnt ~ bin, data = hist_r, FUN = sum)
     breaks <- seq(min_s, max_s, length.out = bins + 1L)
     counts <- integer(bins)

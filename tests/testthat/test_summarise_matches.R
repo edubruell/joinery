@@ -911,6 +911,33 @@ test_that("DuckDB backend: duplicates_mega_cluster fires independently", {
   expect_true("duplicates_mega_cluster" %in% attr(res, "recommendation_ids"))
 })
 
+test_that("DuckDB score histogram: no spurious recycling warning, no lost rows", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  # seed 2: the minimum-score row floors to bin -1 because the min_s SQL literal
+  # (paste0-stringified, hence rounded slightly above the true minimum) makes
+  # (score - min_s) a tiny negative. Pre-fix, bin -1 -> index 0 was dropped in
+  # `counts[bin + 1L] <- cnt`, raising "number of items to replace is not a
+  # multiple of replacement length" AND silently losing that row from the
+  # histogram. The low-side clamp folds it into bin 0.
+  set.seed(2)
+  big <- data.table::data.table(
+    duplicate_group = rep(1L, 60L),
+    id              = paste0("r", seq_len(60L)),
+    score           = runif(60L, 0.85, 0.99),
+    rank            = seq_len(60L)
+  )
+  duck <- local_duckdb_table(big, "dup_hist")
+
+  expect_no_warning(res <- summarise_matches(duck))
+  # every one of the 60 rows lands in a bin
+  expect_equal(sum(res@score_dist$histogram$count), 60L)
+  # bins stay within range (no negative / overflow index leaked through)
+  expect_equal(nrow(res@score_dist$histogram), 50L)
+})
+
 test_that("DuckDB backend: pct_records_in_cluster correct when base is a DuckDB table", {
   skip_if_not_installed("duckdb")
   skip_if_not_installed("DBI")
