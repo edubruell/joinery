@@ -200,3 +200,66 @@ test_that("round-number double ids do not mismatch via scientific notation", {
   e5 <- res$entity[res$id == "500000"]
   expect_equal(res$entity[res$id == "500001"], e5)
 })
+
+# ---------------------------------------------------------------------------
+# 9. DuckDB SQL resolve_entities — the two paths no verb currently reaches.
+#    detect_duplicates() / the exact methods always call the SQL kernel
+#    *with edges and without `vertices`*, and the staged verbs
+#    (multi_stage_dedup / multi_stage_search) resolve on the R-side
+#    data.table kernel (internal_staging.R collects the ledger first).
+#    So these two SQL branches are otherwise uncovered — test them directly.
+# ---------------------------------------------------------------------------
+
+test_that("DuckDB resolve_entities: empty edges, no vertices -> typed empty schema", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  con <- local_duckdb_con()
+  empty <- data.frame(from = character(), to = character(), score = numeric())
+  DBI::dbWriteTable(con, "e_empty", empty)
+
+  res <- resolve_entities(
+    dplyr::tbl(con, "e_empty"), "from", "to", score = "score"
+  ) |> dplyr::collect()
+
+  expect_equal(nrow(res), 0L)
+  expect_true(all(c("id", "entity", "rep", "rank", "score") %in% names(res)))
+  # entity is the DENSE_RANK() label (an integral type, never character).
+  expect_false(is.character(res$entity))
+})
+
+test_that("DuckDB resolve_entities: vertices fold singletons into own entities", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("dplyr")
+
+  con <- local_duckdb_con()
+  # one edge a-b; c and d are vertices with no incident edge.
+  DBI::dbWriteTable(con, "e_one",
+                    data.frame(from = "a", to = "b", score = 0.9,
+                               stringsAsFactors = FALSE))
+  # vertices supplied as a DuckDB relation carrying the required `id` column.
+  DBI::dbWriteTable(con, "v_in",
+                    data.frame(id = c("a", "b", "c", "d"),
+                               stringsAsFactors = FALSE))
+
+  res <- resolve_entities(
+    dplyr::tbl(con, "e_one"), "from", "to",
+    score    = "score",
+    vertices = dplyr::tbl(con, "v_in")
+  ) |> dplyr::collect() |> data.table::as.data.table()
+
+  expect_equal(nrow(res), 4L)
+
+  # {a,b} together; c and d each fold in as their own singleton entity.
+  sets <- lapply(split(res$id, res$entity), sort)
+  expect_true(any(vapply(sets, function(s) identical(s, c("a", "b")), logical(1))))
+  expect_true(any(vapply(sets, function(s) identical(s, "c"), logical(1))))
+  expect_true(any(vapply(sets, function(s) identical(s, "d"), logical(1))))
+
+  # a singleton: rank 1, rep self, no incident-edge score.
+  expect_equal(as.integer(res[id == "c", rank]), 1L)
+  expect_equal(res[id == "c", rep], "c")
+  expect_true(is.na(res[id == "c", score]))
+})
