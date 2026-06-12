@@ -116,3 +116,34 @@
 #'   commonly observed street-name variations across languages. The dictionary is
 #'   periodically expanded as new variants are encountered in real-world data.
 "street_types"
+
+#' Multilingual Street-Name Stopwords
+#'
+#' Locative particles and articles that recur inside multi-word street names
+#' but carry no discriminative signal for matching — German `AN DER`, French
+#' `DE LA`, Italian `DELLA`, and so on. Used by [normalize_street()] when
+#' `drop_stopwords = TRUE` to collapse e.g. `"An der Alster"` to `"ALSTER"`.
+#'
+#' The list is deliberately tight: only true prepositions and articles, never
+#' adjectives (`"NEUE"`, `"GROSSE"`) or directionals that can themselves be the
+#' distinguishing part of a name. Entries are uppercase ASCII so they join
+#' directly against `normalize_street()`'s already-uppercased, transliterated
+#' tokens. When a `lang` is supplied to `normalize_street()`, only that
+#' language's particles are removed.
+#'
+#' ## Format
+#'
+#' A tibble with two columns:
+#'
+#' \describe{
+#'   \item{stopword}{Character string. The particle in uppercase ASCII
+#'     (e.g. `"AN"`, `"DER"`, `"DE"`, `"DELLA"`).}
+#'   \item{lang}{ISO 639-1 language code (`"de"`, `"en"`, `"fr"`, `"es"`,
+#'     `"it"`, `"pt"`, `"nl"`).}
+#' }
+#'
+#' @seealso [normalize_street()], [street_types]
+#'
+#' @source Manually curated from common multi-word street-name patterns across
+#'   languages. Expandable as new particles are encountered.
+"street_stopwords"

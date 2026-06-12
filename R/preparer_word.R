@@ -54,16 +54,30 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
 #' @param x A character vector containing street names or address fragments.
 #' @param lang Optional language code (e.g., `"de"`, `"en"`, `"fr"`).
 #'   When provided, the dictionary is filtered to that language and safe
-#'   language-specific suffix matching is enabled.
+#'   language-specific suffix matching is enabled. It also restricts
+#'   `drop_stopwords` to that language's particle list.
+#' @param drop_house_numbers Logical (default `FALSE`). When `TRUE`, drops any
+#'   token beginning with a digit (house numbers like `"12"`, `"12A"`,
+#'   `"123B"`), keeping only the street name. Applied after street-type
+#'   replacement.
+#' @param drop_stopwords Logical (default `FALSE`). When `TRUE`, removes
+#'   locative particles and articles (e.g. German `AN DER`, French `DE LA`)
+#'   listed in `stopwords`, collapsing `"An der Alster"` to `"ALSTER"`. When
+#'   `lang` is given, only that language's particles are removed; otherwise the
+#'   whole `stopwords` set is used.
 #' @param dict A dictionary of street-type definitions, typically
 #'   [joinery::street_types], containing the columns:
 #'   * `canonical` -- canonical uppercase form
 #'   * `variant`   -- lowercased normalized variant form
 #'   * `type`      -- `"exact"` or `"suffix"`
 #'   * `lang`      -- ISO language code
+#' @param stopwords A street-stopword table, typically
+#'   [joinery::street_stopwords], with columns `stopword` (uppercase ASCII) and
+#'   `lang`. Only consulted when `drop_stopwords = TRUE`.
 #'
 #' @return A character vector of normalized street names. `NA` inputs are
-#'   preserved as `NA`.
+#'   preserved as `NA`. Rows reduced to nothing (e.g. a bare house number with
+#'   `drop_house_numbers = TRUE`) become `""`.
 #'
 #' @details
 #' Normalization steps include:
@@ -87,13 +101,32 @@ normalize_text <- function(text, transliteration = "De-ASCII") {
 #' normalize_street("Calle Mayor 3", lang = "es")
 #' # "CALLE MAYOR 3"
 #'
+#' normalize_street("Hauptstr. 123A", lang = "de", drop_house_numbers = TRUE)
+#' # "HAUPTSTRASSE"
+#'
+#' normalize_street("An der Alster 5", lang = "de",
+#'                  drop_house_numbers = TRUE, drop_stopwords = TRUE)
+#' # "ALSTER"
+#'
 #' @export
-normalize_street <- function(x, lang = NULL, dict = joinery::street_types) {
+normalize_street <- function(x, lang = NULL,
+                             drop_house_numbers = FALSE,
+                             drop_stopwords = FALSE,
+                             dict = joinery::street_types,
+                             stopwords = joinery::street_stopwords) {
 
   check_character(x)
+  check_bool(drop_house_numbers)
+  check_bool(drop_stopwords)
   missing_cols <- setdiff(c("canonical", "variant", "type", "lang"), names(dict))
   if (length(missing_cols)) {
     cli::cli_abort("{.arg dict} is missing required column{?s} {.field {missing_cols}}")
+  }
+  if (drop_stopwords) {
+    missing_sw <- setdiff(c("stopword", "lang"), names(stopwords))
+    if (length(missing_sw)) {
+      cli::cli_abort("{.arg stopwords} is missing required column{?s} {.field {missing_sw}}")
+    }
   }
 
   # Separate NA early
@@ -156,9 +189,27 @@ normalize_street <- function(x, lang = NULL, dict = joinery::street_types) {
     }
   }
 
+  # Optional token drops (house numbers / locative particles), applied to the
+  # post-replacement flat vector before re-collapsing. NA tokens (from NA input
+  # rows) never match either predicate, so they survive to the is_na overwrite.
+  grp_int <- rep.int(seq_along(toks_list), n_tok)
+  if (drop_house_numbers || drop_stopwords) {
+    keep <- !is.na(flat)
+    if (drop_house_numbers) {
+      keep <- keep & !grepl("^[0-9]", flat)
+    }
+    if (drop_stopwords) {
+      sw <- if (!is.null(lang)) stopwords$stopword[stopwords$lang == lang] else stopwords$stopword
+      keep <- keep & !(result %in% sw)
+    }
+    keep[is.na(flat)] <- TRUE                 # carry NA tokens through
+    result  <- result[keep]
+    grp_int <- grp_int[keep]
+  }
+
   # Re-collapse tokens back to one string per input row. A factor with explicit
-  # 1:N levels keeps row order and yields "" for any empty group.
-  grp <- factor(rep.int(seq_along(toks_list), n_tok), levels = seq_along(toks_list))
+  # 1:N levels keeps row order and yields "" for any group emptied by a drop.
+  grp <- factor(grp_int, levels = seq_along(toks_list))
   out <- vapply(split(result, grp), paste, character(1), collapse = " ")
   out <- unname(out)
 

@@ -303,6 +303,66 @@ test_that("normalize_street() vectorized path matches a scalar reference", {
   }
 })
 
+test_that("normalize_street() drop_house_numbers removes leading-digit tokens", {
+
+  expect_equal(normalize_street("Hauptstr. 123A", lang = "de", drop_house_numbers = TRUE),
+               "HAUPTSTRASSE")
+  expect_equal(normalize_street("12 Hauptstr. 123", lang = "de", drop_house_numbers = TRUE),
+               "HAUPTSTRASSE")
+  # a bare house number collapses to empty string, not NA
+  expect_equal(normalize_street("12", lang = "de", drop_house_numbers = TRUE), "")
+  # letter-led tokens are kept (only leading-digit tokens are house numbers)
+  expect_equal(normalize_street("Main St. A1", lang = "en", drop_house_numbers = TRUE),
+               "MAIN STREET A1")
+  # default is unchanged
+  expect_equal(normalize_street("Hauptstr. 123A", lang = "de"), "HAUPTSTRASSE 123A")
+})
+
+test_that("normalize_street() drop_stopwords removes locative particles", {
+
+  expect_equal(normalize_street("An der Alster 5", lang = "de", drop_stopwords = TRUE),
+               "ALSTER 5")
+  expect_equal(normalize_street("An der Alster 5", lang = "de",
+                                drop_house_numbers = TRUE, drop_stopwords = TRUE),
+               "ALSTER")
+  expect_equal(normalize_street("Am Markt", lang = "de", drop_stopwords = TRUE), "MARKT")
+  # French particles
+  expect_equal(normalize_street("Rue de la Paix", lang = "fr", drop_stopwords = TRUE),
+               "RUE PAIX")
+  # lang scoping: with lang = "de", French "de"/"la" are NOT in the de list
+  expect_equal(normalize_street("Rue de la Paix", lang = "de", drop_stopwords = TRUE),
+               "RUE DE LA PAIX")
+  # lang = NULL uses the whole stopword set
+  expect_equal(normalize_street("Rue de la Paix", lang = NULL, drop_stopwords = TRUE),
+               "RUE PAIX")
+  # default is unchanged
+  expect_equal(normalize_street("An der Alster", lang = "de"), "AN DER ALSTER")
+})
+
+test_that("normalize_street() drop flags preserve NA and validate input", {
+
+  out <- normalize_street(c("Hauptstr. 1", NA, "Am Markt"),
+                          lang = "de", drop_house_numbers = TRUE, drop_stopwords = TRUE)
+  expect_equal(out, c("HAUPTSTRASSE", NA, "MARKT"))
+
+  expect_error(normalize_street("X", drop_house_numbers = "yes"))
+  expect_error(normalize_street("X", drop_stopwords = c(TRUE, FALSE)))
+
+  # missing stopword columns only error when drop_stopwords is actually requested
+  bad_sw <- data.frame(word = "an", lang = "de")
+  expect_error(normalize_street("An der Alster", lang = "de",
+                                drop_stopwords = TRUE, stopwords = bad_sw),
+               "stopword")
+  expect_silent(normalize_street("An der Alster", lang = "de", stopwords = bad_sw))
+})
+
+test_that("street_stopwords dataset has the expected shape", {
+  expect_true(all(c("stopword", "lang") %in% names(joinery::street_stopwords)))
+  expect_true(all(joinery::street_stopwords$stopword ==
+                    toupper(joinery::street_stopwords$stopword)))
+  expect_true("de" %in% joinery::street_stopwords$lang)
+})
+
 test_that("normalize_date() normalizes dates to ISO 8601 format", {
   
   # ===========================================================================#

@@ -4,14 +4,33 @@
 \alias{normalize_street}
 \title{Normalize Street Names Across Languages}
 \usage{
-normalize_street(x, lang = NULL, dict = joinery::street_types)
+normalize_street(
+  x,
+  lang = NULL,
+  drop_house_numbers = FALSE,
+  drop_stopwords = FALSE,
+  dict = joinery::street_types,
+  stopwords = joinery::street_stopwords
+)
 }
 \arguments{
 \item{x}{A character vector containing street names or address fragments.}
 
 \item{lang}{Optional language code (e.g., `"de"`, `"en"`, `"fr"`).
 When provided, the dictionary is filtered to that language and safe
-language-specific suffix matching is enabled.}
+language-specific suffix matching is enabled. It also restricts
+`drop_stopwords` to that language's particle list.}
+
+\item{drop_house_numbers}{Logical (default `FALSE`). When `TRUE`, drops any
+token beginning with a digit (house numbers like `"12"`, `"12A"`,
+`"123B"`), keeping only the street name. Applied after street-type
+replacement.}
+
+\item{drop_stopwords}{Logical (default `FALSE`). When `TRUE`, removes
+locative particles and articles (e.g. German `AN DER`, French `DE LA`)
+listed in `stopwords`, collapsing `"An der Alster"` to `"ALSTER"`. When
+`lang` is given, only that language's particles are removed; otherwise the
+whole `stopwords` set is used.}
 
 \item{dict}{A dictionary of street-type definitions, typically
 [joinery::street_types], containing the columns:
@@ -19,10 +38,15 @@ language-specific suffix matching is enabled.}
 * `variant`   -- lowercased normalized variant form
 * `type`      -- `"exact"` or `"suffix"`
 * `lang`      -- ISO language code}
+
+\item{stopwords}{A street-stopword table, typically
+[joinery::street_stopwords], with columns `stopword` (uppercase ASCII) and
+`lang`. Only consulted when `drop_stopwords = TRUE`.}
 }
 \value{
 A character vector of normalized street names. `NA` inputs are
-  preserved as `NA`.
+  preserved as `NA`. Rows reduced to nothing (e.g. a bare house number with
+  `drop_house_numbers = TRUE`) become `""`.
 }
 \description{
 `normalize_street()` standardizes street-type tokens in free-text addresses
@@ -57,5 +81,12 @@ normalize_street("123 Main St.")
 
 normalize_street("Calle Mayor 3", lang = "es")
 # "CALLE MAYOR 3"
+
+normalize_street("Hauptstr. 123A", lang = "de", drop_house_numbers = TRUE)
+# "HAUPTSTRASSE"
+
+normalize_street("An der Alster 5", lang = "de",
+                 drop_house_numbers = TRUE, drop_stopwords = TRUE)
+# "ALSTER"
 
 }
