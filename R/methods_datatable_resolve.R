@@ -39,10 +39,10 @@ method(
       cli::cli_abort("{.arg vertices} table must contain an {.field id} column.")
     }
     vtab <- data.table::copy(vtab)
-    vtab[, id := as.character(id)]
+    vtab[, id := .as_id_chr(id)]
     vtab <- unique(vtab, by = "id")
   } else {
-    vtab <- data.table::data.table(id = unique(as.character(vertices)))
+    vtab <- data.table::data.table(id = unique(.as_id_chr(vertices)))
   }
 
   if (!is.null(rep_by)) {
@@ -51,8 +51,8 @@ method(
     }
   }
 
-  from <- as.character(edges[[id_a]])
-  to   <- as.character(edges[[id_b]])
+  from <- .as_id_chr(edges[[id_a]])
+  to   <- .as_id_chr(edges[[id_b]])
 
   all_ids <- if (!is.null(vtab)) vtab$id else unique(c(from, to))
 

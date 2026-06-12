@@ -174,3 +174,29 @@ test_that("empty edges with vertices yields all singletons; without, empty", {
   expect_true(all(c("id", "entity", "rep", "rank", "score") %in% names(res0)))
   expect_type(res0$entity, "integer")
 })
+
+# ---------------------------------------------------------------------------
+# 8. Round-number numeric ids must not render in scientific notation.
+#    A DuckDB BIGINT id collected to R is a double; bare as.character(5e5)
+#    yields "5e+05", which never matches the backend's CAST(id AS VARCHAR)
+#    ("500000"). The endpoint then drops out of the vertex set and igraph
+#    aborts. resolve_entities() must stringify ids in plain decimal so an
+#    edge endpoint of 500000 resolves against a 500000 vertex.
+#    (Regression: YP DuckDB multi_stage_dedup, year-2021 slice.)
+# ---------------------------------------------------------------------------
+
+test_that("round-number double ids do not mismatch via scientific notation", {
+  edges <- data.table(from = c(500000, 100000), to = c(500001, 100001),
+                      score = c(0.9, 0.8))            # doubles, as a collect() yields
+  # backend CAST(id AS VARCHAR) gives plain decimal, not scientific notation
+  verts <- c("500000", "500001", "100000", "100001", "200000")
+
+  expect_silent(
+    res <- resolve_entities(edges, "from", "to", score = "score", vertices = verts)
+  )
+  expect_equal(nrow(res), 5L)
+  # 500000 and 500001 land in one entity (and never appear as "5e+05")
+  expect_false(any(grepl("e\\+", res$id)))
+  e5 <- res$entity[res$id == "500000"]
+  expect_equal(res$entity[res$id == "500001"], e5)
+})

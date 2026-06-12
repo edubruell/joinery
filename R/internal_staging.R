@@ -103,6 +103,24 @@
 
 
 # ---------------------------------------------------------------------------
+# Canonical id stringifier. A DuckDB BIGINT id collected to R arrives as a
+# double; bare as.character() then renders round values in scientific notation
+# ("5e+05" for 500000), which never matches the backend's CAST(id AS VARCHAR)
+# ("500000"). The mismatch silently drops the endpoint from the vertex set and
+# the final igraph resolve aborts ("vertex names ... not listed in vertices").
+# Format integer-valued doubles in plain decimal so R-side edge ids agree with
+# the backend's string ids. (Surfaced by the YP DuckDB multi_stage_dedup test.)
+# ---------------------------------------------------------------------------
+
+#' @noRd
+.as_id_chr <- function(x) {
+  if (is.character(x)) return(x)
+  if (is.double(x))    return(format(x, scientific = FALSE, trim = TRUE))
+  as.character(x)   # integer / integer64 / factor — already non-scientific
+}
+
+
+# ---------------------------------------------------------------------------
 # groups -> edges (the one composition decision, 06).
 #
 # detect_duplicates() returns formatted *groups* (it runs resolve_entities
@@ -129,7 +147,7 @@
     data.table::setattr(out, "non_reps", character(0))
     return(out)
   }
-  g <- g[, .(duplicate_group, id = as.character(id), score, rank)]
+  g <- g[, .(duplicate_group, id = .as_id_chr(id), score, rank)]
   reps <- g[rank == 1L, .(duplicate_group, rep = id)]
   # rep -> every non-rep member of the same group; the member carries the score.
   members <- g[rank != 1L]
@@ -244,7 +262,7 @@
       direction = character()
     ))
   }
-  p[, id := as.character(id)]
+  p[, id := .as_id_chr(id)]
 
   if (is.null(source_by)) {
     b <- p[source == "base",   .(match_id, from = id)]
@@ -402,9 +420,9 @@
 #' @noRd
 .ids_of <- function(tbl, id) {
   if (data.table::is.data.table(tbl) || is.data.frame(tbl)) {
-    return(unique(as.character(tbl[[id]])))
+    return(unique(.as_id_chr(tbl[[id]])))
   }
-  unique(as.character(dplyr::pull(dplyr::distinct(tbl, !!rlang::sym(id)), 1)))
+  unique(.as_id_chr(dplyr::pull(dplyr::distinct(tbl, !!rlang::sym(id)), 1)))
 }
 
 
