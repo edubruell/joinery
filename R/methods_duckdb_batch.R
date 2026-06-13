@@ -541,54 +541,62 @@ duckdb_batch_plan <- function(db_tbl,
     c("batch_id", "row_count", "row_start", "row_end", "block_size", "oversized")
   )
   
-  # create a block list-column for all block-first batches
-  # each row gets a list containing its block values
-  first[, blocks := lapply(seq_len(.N), function(i) {
-    as.list(first[i, block_cols, with = FALSE])
-  })]
-  
+  # Build the per-batch block tuple (a named list of block-key values) as a
+  # list-column WITHOUT per-row [.data.table indexing. Pull the block columns
+  # into plain vectors once, then index those. The old
+  # `as.list(first[i, block_cols])` inside lapply was an S3-dispatched single-row
+  # data.table subset per block -> O(#blocks) of expensive dispatch, the dominant
+  # cost on a high-cardinality (e.g. plz5 x wz08_3) partition.
+  bl_cols <- as.list(first[, block_cols, with = FALSE])   # named column vectors
+  first[, blocks := lapply(seq_len(.N), function(i) lapply(bl_cols, `[[`, i))]
 
   # separate large and small block batches
   large_batches <- first[block_size >  target_batch_size]
   small_batches <- first[block_size <= target_batch_size]
-  
-  # consolidation accumulators
+
+  # consolidation accumulators. The greedy walk assigns a CONTIGUOUS run of small
+  # batches to each consolidated batch, so we track the run's [lo, hi] index range
+  # and slice the block tuples once at flush — no per-row [.data.table, no
+  # quadratic list growth. Pull the loop's columns into plain vectors first.
   consolidated <- list()
   cur_rows  <- 0L
   cur_start <- NA_integer_
   cur_end   <- NA_integer_
-  cur_blocks <- list()
-  
+  cur_lo    <- NA_integer_
+  cur_hi    <- NA_integer_
+
+  sb_rc     <- small_batches$row_count
+  sb_start  <- small_batches$row_start
+  sb_end    <- small_batches$row_end
+  sb_blocks <- small_batches$blocks
+
   flush <- function() {
     consolidated[[length(consolidated) + 1L]] <<- data.table::data.table(
       row_count = cur_rows,
       row_start = cur_start,
       row_end   = cur_end,
-      blocks = list(cur_blocks),
+      blocks    = list(sb_blocks[cur_lo:cur_hi]),
       oversized = FALSE
     )
     cur_rows  <<- 0L
     cur_start <<- NA_integer_
     cur_end   <<- NA_integer_
-    cur_blocks <<- list()
+    cur_lo    <<- NA_integer_
+    cur_hi    <<- NA_integer_
   }
-  
-  # greedy consolidation
-  for (i in seq_len(nrow(small_batches))) {
-    row <- small_batches[i]
-    
-    if (cur_rows + row$row_count > target_batch_size && cur_rows > 0L) {
+
+  # greedy consolidation over plain vectors
+  for (i in seq_along(sb_rc)) {
+    if (cur_rows + sb_rc[i] > target_batch_size && cur_rows > 0L) {
       flush()
     }
-    
-    if (cur_rows == 0L) cur_start <- row$row_start
-    cur_end  <- row$row_end
-    cur_rows <- cur_rows + row$row_count
-    
-    # append this block's metadata to list column
-    cur_blocks <- c(cur_blocks, list(row$blocks[[1]]))
+
+    if (cur_rows == 0L) { cur_start <- sb_start[i]; cur_lo <- i }
+    cur_end  <- sb_end[i]
+    cur_hi   <- i
+    cur_rows <- cur_rows + sb_rc[i]
   }
-  
+
   if (cur_rows > 0L) flush()
   
   consolidated_dt <- if (length(consolidated)) {
