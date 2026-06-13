@@ -252,19 +252,23 @@ word_tokens <- function(text,min_nchar=0){
   check_character(text)
   check_number_whole(min_nchar, min = 0)
 
-  # Split the text into words based on spaces
+  # Split the text into words based on spaces (vectorised over `text`).
   words <- strsplit(text, "\\s+")
-  # Remove empty elements if any (this can happen with multiple spaces)
-  words <- map(words, function(x) x[nzchar(x)])
 
-  # Filter out words shorter than min_nchar
-  if (min_nchar > 0) {
-    words <- map(words,function(x){
-      filter <- nchar(x)>=min_nchar
-      x[filter]
-    })
-  }
-  return(words)
+  # Flatten once, filter on the flat vector, then re-split — this avoids a
+  # per-row map() closure (the bottleneck at corpus scale). The flat ops
+  # (nzchar, nchar, subsetting) and the regroup (split) are all vectorised /
+  # C-level. Drops empty tokens (multiple-space artefacts) and, when
+  # `min_nchar > 0`, words shorter than the cutoff.
+  lens <- lengths(words)
+  flat <- unlist(words, use.names = FALSE)
+  if (is.null(flat)) flat <- character(0)
+  keep <- nzchar(flat)
+  if (min_nchar > 0) keep <- keep & (nchar(flat) >= min_nchar)
+  idx  <- rep.int(seq_along(words), lens)[keep]
+  out  <- split(flat[keep], factor(idx, levels = seq_along(words)))
+  names(out) <- NULL
+  out
 }
 
 
@@ -451,10 +455,17 @@ filter_stopwords <- function(tokens, stopwords) {
 
   sw <- toupper(stopwords)
 
-  map(tokens, function(x) {
-    x_up <- toupper(x)
-    x[!(x_up %in% sw)]
-  })
+  # Flatten once, drop stopwords on the flat vector, then re-split — avoids a
+  # per-row map() closure (the bottleneck at corpus scale). toupper / %in% /
+  # subsetting are vectorised and split is C-level.
+  lens <- lengths(tokens)
+  flat <- unlist(tokens, use.names = FALSE)
+  if (is.null(flat)) flat <- character(0)
+  keep <- !(toupper(flat) %in% sw)
+  idx  <- rep.int(seq_along(tokens), lens)[keep]
+  out  <- split(flat[keep], factor(idx, levels = seq_along(tokens)))
+  names(out) <- NULL
+  out
 }
 
 #' Drop numeric (house-number) tokens from token lists
