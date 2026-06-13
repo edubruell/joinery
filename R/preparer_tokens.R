@@ -504,13 +504,18 @@ drop_numeric_tokens <- function(tokens, keep_letters = TRUE) {
   }
 
   # Pure-digit tokens are always dropped. With keep_letters = FALSE, any token
-  # containing a digit (e.g. "12A") is dropped too. Vectorized grepl over the
-  # flat token vector per element, mirroring filter_stopwords().
+  # containing a digit (e.g. "12A") is dropped too. Flatten once, grepl over the
+  # flat token vector, then re-split — no per-row map() (mirrors filter_stopwords()).
   pattern <- if (keep_letters) "^[0-9]+$" else "[0-9]"
 
-  map(tokens, function(x) {
-    x[!grepl(pattern, x)]
-  })
+  lens <- lengths(tokens)
+  flat <- unlist(tokens, use.names = FALSE)
+  if (is.null(flat)) flat <- character(0)
+  keep <- !grepl(pattern, flat)
+  idx  <- rep.int(seq_along(tokens), lens)[keep]
+  out  <- split(flat[keep], factor(idx, levels = seq_along(tokens)))
+  names(out) <- NULL
+  out
 }
 
 #' Convert tokens to shape signatures
@@ -540,14 +545,19 @@ token_shapes <- function(tokens) {
     cli::cli_abort("{.arg tokens} must be a list")
   }
 
-  map(tokens, function(x) {
-    map_chr(x, function(tok) {
-      chars <- strsplit(tok, "")[[1]]
-      out <- ifelse(grepl("[A-Z]", chars), "A",
-                    ifelse(grepl("[0-9]", chars), "N", "X"))
-      paste(out, collapse = "")
-    })
-  })
+  # Reduce each token to its layout: uppercase letter -> "A", digit -> "N",
+  # anything else (incl. lowercase) -> "X". Three vectorised gsub passes over the
+  # flat token vector replace the old nested per-token map_chr().
+  lens  <- lengths(tokens)
+  flat  <- unlist(tokens, use.names = FALSE)
+  if (is.null(flat)) flat <- character(0)
+  shape <- gsub("[A-Z]", "A", flat)
+  shape <- gsub("[0-9]", "N", shape)
+  shape <- gsub("[^AN]", "X", shape)
+  out   <- split(shape, factor(rep.int(seq_along(tokens), lens),
+                               levels = seq_along(tokens)))
+  names(out) <- NULL
+  out
 }
 
 #' Extract initials from tokens
@@ -575,9 +585,15 @@ extract_initials <- function(tokens) {
     cli::cli_abort("{.arg tokens} must be a list")
   }
 
-  map(tokens, function(x) {
-    map_chr(x, function(tok) substr(tok, 1, 1))
-  })
+  # First character of each token; substr is vectorised, so flatten -> substr ->
+  # re-split avoids the old nested per-token map_chr().
+  lens <- lengths(tokens)
+  flat <- unlist(tokens, use.names = FALSE)
+  if (is.null(flat)) flat <- character(0)
+  out  <- split(substr(flat, 1, 1),
+                factor(rep.int(seq_along(tokens), lens), levels = seq_along(tokens)))
+  names(out) <- NULL
+  out
 }
 
 #' Collapse near-duplicate tokens to a canonical form
