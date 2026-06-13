@@ -221,7 +221,9 @@
 #'   to `base_id`).
 #' @param columns character vector — columns to compute string similarity on.
 #'   Columns absent from `base_dt` or `target_dt` are silently skipped.
-#' @param method stringdist method name (default `"jw"`).
+#' @param method stringdist method. Scalar applied to every column
+#'   (default `"jw"`), or a named character vector for per-column methods
+#'   (scalar is the degenerate single-element case).
 #'
 #' @return data.table with one row per input pair (in input order) carrying
 #'   `sim_sf_<col>` and `sim_fs_<col>` columns for each col in `columns`.

@@ -70,8 +70,10 @@ prepare_auxiliary_registry <- new_generic(
 #'   in `target`, defaults to `id`), `include_string_sim` (logical;
 #'   when `TRUE` (default) emits `sim_sf_<col>` / `sim_fs_<col>`
 #'   per column via `stringdist::stringsim()` — requires the
-#'   `stringdist` suggested package), `method` (stringdist method,
-#'   default `"jw"`), and `include_block_stats` (logical; whether to
+#'   `stringdist` suggested package), `method` (stringdist method:
+#'   a scalar applied to every column (default `"jw"`), or a named
+#'   character vector selecting a per-column method — a scalar is the
+#'   degenerate single-element case), and `include_block_stats` (logical; whether to
 #'   compute `cnt` / `icnt` / `ipos`). The [`Search_Strategy`] method
 #'   additionally accepts `top_n` (named integer / list controlling
 #'   per-column top-N counts for the `m_/f_/s_` columns; use a
