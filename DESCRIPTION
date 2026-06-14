@@ -24,6 +24,7 @@ Collate:
     'import-standalone-types-check.R'
     'import-standalone-obj-type.R'
     'internal_validation.R'
+    'internal_fanout.R'
     'internal_progress.R'
     'internal_chunking.R'
     'internal_staging.R'

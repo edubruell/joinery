@@ -46,6 +46,14 @@
 #' @slot max_candidates Numeric scalar specifying the maximum number of candidate
 #'   matches to retain per record. Default is `Inf` (no limit). When finite,
 #'   only the top `max_candidates` highest scoring matches are kept.
+#' @slot max_fanout Numeric scalar. Budget on the estimated number of
+#'   intermediate token-overlap-join rows (`sum df^2` for dedup, `sum
+#'   df_base*df_target` for search, over `(column, block, token)`). The
+#'   always-on guard against a hot/boilerplate token fanning a block into a
+#'   quadratic join. Default `5e7`; `Inf` disables.
+#' @slot on_fanout One of `"cap"` (default, auto-drop the hyper-common tokens
+#'   that bust the budget and warn), `"abort"` (stop with an actionable error),
+#'   or `"off"` (no guard).
 #' @slot feedback_strength Numeric scalar controlling feedback weighted scoring.
 #'   Default is `0` (disabled). Positive values adjust scores based on token
 #'   overlap patterns.
@@ -64,6 +72,8 @@ Search_Strategy <- new_class("Search_Strategy",
                                max_token_df = new_property(class_numeric, default = Inf),
                                smoothing = Smoothing,
                                max_candidates = class_numeric,
+                               max_fanout = new_property(class_numeric, default = 5e7),
+                               on_fanout = new_property(class_character, default = "cap"),
                                feedback_strength = class_numeric,
                                on_missing = new_property(class_character, default = "penalise")
                              )
@@ -155,6 +165,13 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
     cli::cli_text("rarity: {x@rarity} (min={format(x@min_rarity)}, max_token_df={format(x@max_token_df)})")
   } else {
     cli::cli_text("rarity: {x@rarity} (min={format(x@min_rarity)})")
+  }
+
+  # fan-out guard
+  if (identical(x@on_fanout, "off") || !is.finite(x@max_fanout)) {
+    cli::cli_text("fan-out guard: off")
+  } else {
+    cli::cli_text("fan-out guard: {x@on_fanout} at {format(x@max_fanout, scientific = FALSE, big.mark = ',')}")
   }
 
   # smoothing
@@ -298,6 +315,19 @@ expr_to_step <- function(expr) {
 #' @param max_candidates Numeric scalar specifying the maximum number of candidate
 #'   matches to retain per record. Default is `Inf` (no limit). When finite,
 #'   only the top `max_candidates` highest scoring matches are kept per record.
+#' @param max_fanout Numeric scalar budgeting the estimated number of
+#'   intermediate token-overlap-join rows (`sum df^2` for dedup, `sum
+#'   df_base*df_target` for search). The always-on guard against a hot or
+#'   boilerplate token fanning one block into a quadratic join (the failure mode
+#'   `min_rarity` / `max_token_df` also address, but here by default). Estimated
+#'   cheaply from the token document-frequency histogram before the join — no
+#'   pairs are materialised. Default `5e7`; set `Inf` (or `on_fanout = "off"`)
+#'   to disable. See [rarity_distribution()] / [plan_strategy()] to choose a value.
+#' @param on_fanout What to do when the estimated fan-out exceeds `max_fanout`:
+#'   `"cap"` (default) auto-drops the smallest set of hyper-common tokens needed
+#'   to get under budget — they carry near-zero rarity, so scores barely move —
+#'   and emits a loud warning naming what was dropped; `"abort"` stops with an
+#'   actionable error instead; `"off"` disables the guard entirely.
 #' @param feedback_strength Numeric scalar controlling feedback weighted scoring.
 #'   Default is `0` (disabled). Positive values adjust scores based on the
 #'   proportion of matched tokens.
@@ -326,12 +356,16 @@ search_strategy <- function(...,
                             threshold  = 0.9,
                             smoothing  = smooth_rip_identity(),
                             max_candidates = Inf,
+                            max_fanout = 5e7,
+                            on_fanout = c("cap", "abort", "off"),
                             feedback_strength = 0,
                             on_missing = c("penalise", "renormalise")) {
 
   on_missing <- match.arg(on_missing)
+  on_fanout  <- match.arg(on_fanout)
   check_number_decimal(min_rarity, min = 0)
   check_number_decimal(max_token_df, min = 1, allow_infinite = TRUE)
+  check_number_decimal(max_fanout, min = 1, allow_infinite = TRUE)
   check_number_decimal(threshold)
   check_number_decimal(max_candidates, min = 0, allow_infinite = TRUE)
   if (is.finite(max_candidates) && max_candidates <= 0) {
@@ -371,6 +405,8 @@ search_strategy <- function(...,
     max_token_df = max_token_df,
     smoothing  = smoothing,
     max_candidates = max_candidates,
+    max_fanout = max_fanout,
+    on_fanout  = on_fanout,
     feedback_strength = feedback_strength,
     on_missing = on_missing
   )

@@ -13,32 +13,10 @@
 method(
   detect_duplicates,
   list(DT_tbl, class_character ,Search_Strategy)
-) <- function(base_table, id, strategy, weights = NULL, max_comparisons = Inf) {
+) <- function(base_table, id, strategy, weights = NULL) {
 
   dt <- data.table::copy(base_table)
   dt[[id]] <- as.character(dt[[id]])
-
-  # --- 0. Opt-in comparison-budget ceiling (D1) ---------------------------
-  # Estimate Sum_b n_b*(n_b-1)/2 from per-block distinct-id counts on the raw
-  # input (cheap, pre-tokenisation) and abort before the doomed overlap join.
-  if (is.finite(max_comparisons)) {
-    block_by <- strategy@block_by %||% character()
-    if (length(block_by)) {
-      # distinct (id, block) then count rows per block = records per block.
-      # Avoids get(id) inside j, which would resolve to the `id` *column*.
-      id_blocks <- unique(dt[, c(id, block_by), with = FALSE])
-      bc <- id_blocks[, .(n = .N), by = block_by]
-      data.table::setorder(bc, -n)
-      est  <- .estimate_self_comparisons(bc$n)
-      topn <- utils::head(bc, 3L)
-      key  <- do.call(paste, c(topn[, block_by, with = FALSE], sep = ", "))
-      top_blocks <- sprintf("%s: %d records", key, topn$n)
-    } else {
-      top_blocks <- NULL
-      est <- .estimate_self_comparisons(data.table::uniqueN(dt[[id]]))
-    }
-    .enforce_comparison_budget(est, max_comparisons, top_blocks)
-  }
 
   # --- 1. Prepare token table ---------------------------------------------
   tokens <- prepare_search_data(
@@ -52,6 +30,9 @@ method(
   # the rarity floor and document-frequency cap are the cheap pre-join levers.
   tokens <- compute_rarity(tokens, strategy)
   tokens <- .rarity_prefilter_dt(tokens, strategy)
+  # Bound the self-join: auto-cap (or abort on) hyper-common tokens that would
+  # fan a dense block into a quadratic overlap join.
+  tokens <- .fanout_guard_dt(tokens, strategy, face = "self", id_col = id)
 
   # --- 3. Determine weights -----------------------------------------------
   if (is.null(weights)) {

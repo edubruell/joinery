@@ -40,6 +40,8 @@ utils::globalVariables(c(
   "tp_prob", "predicted_tp", ".block_default",
   # internal_chunking.R
   "oversized",
+  # internal_fanout.R (token-overlap fan-out guard)
+  "mass", "df_b",
   # exact_methods_datatable.R / exact containment
   "n_match", "n_base", "n_target", "rmass", "lhs_id", "._bid", "._tid",
   # internal_staging.R (staged resolve / ledger)
@@ -128,35 +130,5 @@ utils::globalVariables(c(
            De-duplicate the input or supply a unique id if that is not intended."
   ))
   invisible(TRUE)
-}
-
-# D1: brute self-comparison estimate from per-block record counts.
-# `block_sizes` is an integer vector of records-per-block (one entry per block;
-# a single entry = no blocking). Returns Sum_b n_b*(n_b-1)/2 as a double.
-.estimate_self_comparisons <- function(block_sizes) {
-  n <- as.numeric(block_sizes)
-  sum(n * (n - 1) / 2, na.rm = TRUE)
-}
-
-# D1: opt-in hard ceiling. If `est` exceeds `max_comparisons`, abort before the
-# (known-doomed) overlap join, naming the cost and the levers. `top_blocks` is
-# an optional pre-formatted character vector of the worst offenders.
-.enforce_comparison_budget <- function(est, max_comparisons,
-                                       top_blocks = NULL,
-                                       call = rlang::caller_env()) {
-  if (!is.finite(max_comparisons) || est <= max_comparisons) {
-    return(invisible(FALSE))
-  }
-  msg <- c(
-    "x" = "Estimated brute comparisons ({.val {format(est, big.mark = ',', \\
-           scientific = FALSE)}}) exceed {.arg max_comparisons} \\
-           ({.val {format(max_comparisons, big.mark = ',', scientific = FALSE)}}).",
-    "i" = "Tighten {.arg block_by} or raise {.arg min_rarity} before running, \\
-           or raise {.arg max_comparisons} if this cost is acceptable."
-  )
-  if (!is.null(top_blocks) && length(top_blocks)) {
-    msg <- c(msg, stats::setNames(top_blocks, rep("*", length(top_blocks))))
-  }
-  cli::cli_abort(msg, call = call)
 }
 

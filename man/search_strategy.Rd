@@ -14,6 +14,8 @@ search_strategy(
   threshold = 0.9,
   smoothing = smooth_rip_identity(),
   max_candidates = Inf,
+  max_fanout = 5e+07,
+  on_fanout = c("cap", "abort", "off"),
   feedback_strength = 0,
   on_missing = c("penalise", "renormalise")
 )
@@ -57,6 +59,21 @@ scoring. Default is [smooth_rip_identity()].}
 \item{max_candidates}{Numeric scalar specifying the maximum number of candidate
 matches to retain per record. Default is `Inf` (no limit). When finite,
 only the top `max_candidates` highest scoring matches are kept per record.}
+
+\item{max_fanout}{Numeric scalar budgeting the estimated number of
+intermediate token-overlap-join rows (`sum df^2` for dedup, `sum
+df_base*df_target` for search). The always-on guard against a hot or
+boilerplate token fanning one block into a quadratic join (the failure mode
+`min_rarity` / `max_token_df` also address, but here by default). Estimated
+cheaply from the token document-frequency histogram before the join — no
+pairs are materialised. Default `5e7`; set `Inf` (or `on_fanout = "off"`)
+to disable. See [rarity_distribution()] / [plan_strategy()] to choose a value.}
+
+\item{on_fanout}{What to do when the estimated fan-out exceeds `max_fanout`:
+`"cap"` (default) auto-drops the smallest set of hyper-common tokens needed
+to get under budget — they carry near-zero rarity, so scores barely move —
+and emits a loud warning naming what was dropped; `"abort"` stops with an
+actionable error instead; `"off"` disables the guard entirely.}
 
 \item{feedback_strength}{Numeric scalar controlling feedback weighted scoring.
 Default is `0` (disabled). Positive values adjust scores based on the

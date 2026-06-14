@@ -150,8 +150,18 @@ method(
     )
     DBI::dbExecute(con, sql_filter)
   }
-  
-  
+
+  # Bound the cross-join: auto-cap (or abort on) hyper-common tokens that would
+  # fan a dense block into a quadratic overlap join. Same df-ceiling cut as the
+  # data.table backend, decided from a pairs-free df histogram.
+  fanout_cut <- .fanout_guard_sql(con, enriched_tbl, strategy, face = "cross")
+  if (is.finite(fanout_cut)) {
+    DBI::dbExecute(con, paste0(
+      "CREATE OR REPLACE TABLE ", enriched_tbl, " AS\n",
+      "SELECT * FROM ", enriched_tbl, " WHERE df <= ", fanout_cut, ";\n"))
+  }
+
+
   #----------------------------------------------------------
   # 5. Score pairs using helper
   #----------------------------------------------------------

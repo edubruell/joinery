@@ -27,7 +27,7 @@ method(
   detect_duplicates,
   list(Duck_tbl, class_character, Search_Strategy)
 ) <- function(base_table, id, strategy, weights = NULL, base_tokens = NULL,
-              debug = FALSE, control = duckdb_control(), max_comparisons = Inf) {
+              debug = FALSE, control = duckdb_control()) {
 
   con <- base_table$src$con
   id_q <- sprintf('"%s"', id)
@@ -36,26 +36,6 @@ method(
   base_table <- .materialise_duck_input(base_table, con)
 
   tmp <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))
-
-  # --- Opt-in comparison-budget ceiling (D1) ------------------------------
-  # Estimate Sum_b n_b*(n_b-1)/2 from per-block distinct-id counts via one SQL
-  # aggregate on the raw input, and abort before the doomed self-join.
-  if (is.finite(max_comparisons) && is.null(base_tokens)) {
-    raw_tbl  <- base_table$lazy_query$x
-    block_by <- strategy@block_by %||% character()
-    if (length(block_by)) {
-      grp_q <- paste(sprintf('"%s"', block_by), collapse = ", ")
-      bc <- DBI::dbGetQuery(con, paste0(
-        "SELECT COUNT(DISTINCT ", id_q, ") AS n FROM ", raw_tbl,
-        " GROUP BY ", grp_q
-      ))$n
-    } else {
-      bc <- DBI::dbGetQuery(con, paste0(
-        "SELECT COUNT(DISTINCT ", id_q, ") AS n FROM ", raw_tbl
-      ))$n
-    }
-    .enforce_comparison_budget(.estimate_self_comparisons(bc), max_comparisons)
-  }
 
   # Allow callers to supply a pre-computed data.frame/data.table token table
   # (e.g. from the data.table backend) instead of a DuckDB tbl. Used in
@@ -91,9 +71,19 @@ method(
 
     DBI::dbExecute(con, sql)
   }
-  
+
+  # Bound the self-join: auto-cap (or abort on) hyper-common tokens that would
+  # fan a dense block into a quadratic overlap join. Same df-ceiling cut as the
+  # data.table backend, decided from a pairs-free df histogram.
+  fanout_cut <- .fanout_guard_sql(con, tbl_tokens, strategy, face = "self")
+  if (is.finite(fanout_cut)) {
+    DBI::dbExecute(con, paste0(
+      "CREATE OR REPLACE TABLE ", tbl_tokens, " AS\n",
+      "SELECT * FROM ", tbl_tokens, " WHERE df <= ", fanout_cut, ";"))
+  }
+
   # ----------------------------------------------------------
-  # 2. Score pairs using helper 
+  # 2. Score pairs using helper
   # ----------------------------------------------------------
   block_by <- strategy@block_by %||% character()
   block_join <- if (length(block_by)) {

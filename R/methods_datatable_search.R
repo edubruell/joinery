@@ -42,6 +42,10 @@ method(
   # Pre-join cut (rarity floor + document-frequency cap) on the shared token
   # universe, before .score_token_pairs() does the overlap join.
   all_tokens <- .rarity_prefilter_dt(all_tokens, strategy)
+  # Bound the cross-join: auto-cap (or abort on) hyper-common tokens that would
+  # fan a dense block into a quadratic overlap join.
+  all_tokens <- .fanout_guard_dt(all_tokens, strategy, face = "cross",
+                                 id_col = "uid", side_col = "side")
 
   # split back
   base_tokens   <- all_tokens[side == "base"]
