@@ -111,7 +111,7 @@
 
 #' Block-size summary.
 #'
-#' Accepts any data.table that has the `id_col` and `block_by` columns —
+#' Accepts any data.table that has the `id_col` and `block_by` columns -
 #' typically the tokens frame from the token-path audit, but the
 #' embedding-path audit also calls this with a plain
 #' `(id, block_by)` subset of the raw data.

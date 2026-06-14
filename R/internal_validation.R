@@ -5,6 +5,8 @@ utils::globalVariables(c(
   "src_column", "token", "row_id",
   # Rarity / scoring internals
   "freq", "df", "N", "rarity", "weight", "rIP",
+  # methods_*_prepare.R (global rarity scope)
+  "freq_global", "df_global", "N_global",
   "raw_score", "matched_rip", "total_rip", "overlap_share",
   "rhs_id", "side", "uid", "feedback_factor",
   # Output columns
@@ -42,8 +44,12 @@ utils::globalVariables(c(
   "oversized",
   # internal_fanout.R (token-overlap fan-out guard)
   "mass", "df_b",
+  # strategy_blocking.R (token-blocking explosion)
+  "._btok", "._bdf", "._brar", "._row",
   # exact_methods_datatable.R / exact containment
   "n_match", "n_base", "n_target", "rmass", "lhs_id", "._bid", "._tid",
+  # exact_methods_datatable.R (set-equality fingerprint links)
+  "._id", "._rep",
   # internal_staging.R (staged resolve / ledger)
   "from", "to", "id_a", "id_b", "covered_sources", "n_in_entity",
   "within_source", "source_from", "source_to", ".mid",
@@ -60,10 +66,13 @@ utils::globalVariables(c(
 .JOINERY_RESERVED_COLS <- c(
   "src_column", "token", "row_id",
   "freq", "df", "N", "rarity", "weight", "rIP",
+  "freq_global", "df_global", "N_global",
   "raw_score", "matched_rip", "total_rip", "overlap_share",
   "feedback_factor", "side", "uid",
   "score", "rank", "duplicate_group", "match_id", "source",
-  "stage", "contribution"
+  "stage", "contribution",
+  # strategy_blocking.R (token-blocking derived block column)
+  "._btok"
 )
 
 # Materialise a DuckDB lazy input into a temp table if it is not

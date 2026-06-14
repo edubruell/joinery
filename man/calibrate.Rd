@@ -28,9 +28,9 @@ the reliability table, Brier score, log-loss, per-class confusion
 matrix, and a threshold sweep curve.
 
 Two call shapes:
-  * `calibrate(calibrated_matches, labels)` — evaluate on labels held
+  * `calibrate(calibrated_matches, labels)` - evaluate on labels held
      out from the training fit.
-  * `calibrate(calibrated_matches)` — evaluate on the training labels
+  * `calibrate(calibrated_matches)` - evaluate on the training labels
      stored on the [`Filter_Model`] (sanity-check view; do not use
      for model selection).
 }

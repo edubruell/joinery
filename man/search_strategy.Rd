@@ -9,6 +9,7 @@ search_strategy(
   block_by = NULL,
   weights = numeric(),
   rarity = "inverse_freq",
+  rarity_scope = c("block", "global"),
   min_rarity = 0,
   max_token_df = Inf,
   threshold = 0.9,
@@ -36,6 +37,18 @@ Names should correspond to columns. Default is `numeric()` (uniform weights).}
 \item{rarity}{Character scalar specifying the rarity computation method.
 Default is `"inverse_freq"`.}
 
+\item{rarity_scope}{Character scalar, `"block"` (default) or `"global"`,
+selecting the scope over which a token's rarity (informativeness) is
+measured. `"block"` measures rarity within each block (the historical and
+only previous behaviour). `"global"` measures it across the whole corpus, so
+a token's informativeness no longer depends on which block it lands in. This
+is the chain defense for region-free linking: a globally common name (think
+a franchise) gets low global rarity and is dropped by `min_rarity`, while a
+distinctive brand reads as a strong link signal regardless of where it
+appears. Only the rarity metric and the `min_rarity` gate follow this
+argument; the cost axis (block-local `df`, `max_token_df`, the fan-out
+guard) stays block-local under both scopes.}
+
 \item{min_rarity}{Numeric scalar specifying the minimum rarity value required
 for a token to be included in similarity scoring. Tokens with rarity below
 this threshold are filtered out. Default is `0`.}
@@ -60,18 +73,19 @@ scoring. Default is [smooth_rip_identity()].}
 matches to retain per record. Default is `Inf` (no limit). When finite,
 only the top `max_candidates` highest scoring matches are kept per record.}
 
-\item{max_fanout}{Numeric scalar budgeting the estimated number of
-intermediate token-overlap-join rows (`sum df^2` for dedup, `sum
-df_base*df_target` for search). The always-on guard against a hot or
-boilerplate token fanning one block into a quadratic join (the failure mode
-`min_rarity` / `max_token_df` also address, but here by default). Estimated
-cheaply from the token document-frequency histogram before the join — no
-pairs are materialised. Default `5e7`; set `Inf` (or `on_fanout = "off"`)
-to disable. See [rarity_distribution()] / [plan_strategy()] to choose a value.}
+\item{max_fanout}{Numeric scalar. The always-on guard against a single hot or
+boilerplate token (think a directory publisher's name, or a stopword that
+slipped through) fanning one block into a huge number of pairwise
+comparisons. This is the same failure `min_rarity` / `max_token_df` address, but on
+by default. It caps the estimated number of record pairs the token-overlap
+join will form, predicted cheaply from token frequencies before the join
+runs (no pairs are built to measure it). Default `5e7`; set `Inf` (or
+`on_fanout = "off"`) to disable. Use [rarity_distribution()] or
+[plan_strategy()] to pick a value for your data.}
 
 \item{on_fanout}{What to do when the estimated fan-out exceeds `max_fanout`:
 `"cap"` (default) auto-drops the smallest set of hyper-common tokens needed
-to get under budget — they carry near-zero rarity, so scores barely move —
+to get under budget (they carry near-zero rarity, so scores barely move)
 and emits a loud warning naming what was dropped; `"abort"` stops with an
 actionable error instead; `"off"` disables the guard entirely.}
 

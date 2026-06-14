@@ -17,7 +17,7 @@ duckdb_control(
 \item{target_batch_size}{`NULL` (auto-tune from RAM / row size) or a positive
 number of rows per batch / scoring chunk.}
 
-\item{min_batch_size}{`NULL` (auto-tune) or a positive number — the minimum
+\item{min_batch_size}{`NULL` (auto-tune) or a positive number - the minimum
 table size before preprocess batching engages.}
 
 \item{chunk_strategy}{Preprocess chunking strategy: `"block_consolidated"`
@@ -29,7 +29,7 @@ the monolithic path; a character vector names an explicit key, which must be
 a subset of the strategy's `block_by` (else cross-chunk pairs would be
 silently dropped).}
 
-\item{on_error}{Per-scoring-chunk failure policy: `"skip"` (default — record
+\item{on_error}{Per-scoring-chunk failure policy: `"skip"` (default - record
 and continue), `"retry"` (re-run once with conservative pragmas, then skip),
 or `"stop"` (re-raise).}
 
@@ -43,14 +43,14 @@ A [Duckdb_Control] object.
 Build a [Duckdb_Control] bundling the DuckDB backend's execution knobs, and
 pass it as `control =` to [prepare_search_data()], [detect_duplicates()], or
 [search_candidates()] on DuckDB tables. It controls **how** a match runs
-(memory, batching, chunking, failure isolation), never **what** matches —
+(memory, batching, chunking, failure isolation), never **what** matches -
 matching semantics stay on the [search_strategy()].
 
 Two execution stages, two atomicity rules:
 - **Preprocess batching** (tokenization) is per-row, governed by
   `target_batch_size` / `min_batch_size` / `chunk_strategy`. Any row split is
   safe.
-- **Scoring chunking** (the overlap join) is *block-atomic* — a pair only
+- **Scoring chunking** (the overlap join) is *block-atomic* - a pair only
   forms within a block, so a block can never be split. `chunk_by` packs
   *whole* blocks under `target_batch_size`; `on_error` isolates a
   pathological block from the rest of the run.

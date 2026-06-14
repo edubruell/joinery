@@ -40,14 +40,14 @@
 #' @description
 #' Result of [plan_strategy()]. Carries the four pre-match, pre-strategy reads:
 #' the blocking-resolution frontier, the exact-set persister rate, the residual
-#' structure, and the per-column discriminativeness / `min_rarity` cost curve —
+#' structure, and the per-column discriminativeness / `min_rarity` cost curve -
 #' all computed scoring-free.
 #'
 #' @slot frontier `data.table`. One row per candidate block key:
 #'   `block_key`, `n_blocks`, `max_block`, `mean_block`, `brute_pairs`
 #'   (Sum(na*nb), the cost axis), `exact_twin_survival` (recall axis).
 #' @slot persister_rate Named list: `overall` (scalar) + `per_column` (named
-#'   numeric) — the share of records an exact front stage would link.
+#'   numeric) - the share of records an exact front stage would link.
 #' @slot residual_structure Named list: `matchable`, `one_sided`,
 #'   `partial_recoverable` (named per-column numeric), and `reference_block`.
 #' @slot column_reads Named list: `distribution`, `offenders` (Stage-04 core),

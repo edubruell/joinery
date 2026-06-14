@@ -27,11 +27,11 @@ if (!rlang::is_installed(c("duckdb", "DBI", "dplyr", "dbplyr"))) {
 #' @param block_by Optional character vector. Column name(s) to use for semantic blocking.
 #'   If specified, batches respect block boundaries. Supports multiple columns (e.g., c("region", "year")).
 #' @param atomic_blocks Logical. When `FALSE` (default) the planner may sub-split
-#'   a block larger than `target_batch_size` into row-number windows — correct
+#'   a block larger than `target_batch_size` into row-number windows - correct
 #'   for *preprocess* batching, where token generation is per-row independent.
 #'   When `TRUE` (the *scoring* path) a block is treated as **indivisible**: small
 #'   blocks are consolidated under the budget but a large block is kept whole as a
-#'   single chunk (flagged `oversized = TRUE`), never sub-split — because a match
+#'   single chunk (flagged `oversized = TRUE`), never sub-split - because a match
 #'   pair only forms *within* a block, so splitting one would silently drop
 #'   cross-pairs. Requires `block_by`; rejects `chunk_strategy = "even"`.
 #'
@@ -753,7 +753,7 @@ suggest_batch_params <- function(con,
 #'   generated. Ignored when `persist = FALSE`.
 #'
 #' @return
-#' - If `persist = TRUE`: A `tbl_duckdb_connection` pointing to the output table.  
+#' - If `persist = TRUE`: A `tbl_duckdb_connection` pointing to the output table.
 #' - If `persist = FALSE`: A list of data.frames, one per batch.
 #'
 #' @export

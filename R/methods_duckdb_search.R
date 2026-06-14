@@ -51,7 +51,12 @@ method(
   base_table   <- .materialise_duck_input(base_table, con)
   target_table <- .materialise_duck_input(target_table, con)
 
-  block_by <- strategy@block_by %||% NULL
+  # PLAIN block columns only: chunking slices base_table by block tuples, and
+  # `._btok` (token-blocking) does not exist on base_table - it is a derived
+  # token-table column. The scoring join's effective block columns (plain +
+  # `._btok`) are resolved separately inside run_core via .block_cols().
+  block_by <- .plain_block_cols(strategy)
+  if (!length(block_by)) block_by <- NULL
   tmp <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))
 
   # ==========================================================================
@@ -165,8 +170,11 @@ method(
   #----------------------------------------------------------
   # 5. Score pairs using helper
   #----------------------------------------------------------
-  if (length(block_by)) {
-    block_join <- paste(sprintf("AND t1.\"%s\" = t2.\"%s\"", block_by, block_by), collapse = "\n")
+  # Effective block columns on the token table (plain + `._btok`); the cross
+  # scoring join keys on these. See .block_cols().
+  join_block <- .block_cols(strategy)
+  if (length(join_block)) {
+    block_join <- paste(sprintf("AND t1.\"%s\" = t2.\"%s\"", join_block, join_block), collapse = "\n")
   } else {
     block_join <- ""
   }
@@ -184,7 +192,8 @@ method(
     id2_col    = "doc_id",
     strategy   = strategy,
     join_type  = "cross",
-    block_join = block_join
+    block_join = block_join,
+    block_cols = join_block
   )
   
   

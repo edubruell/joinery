@@ -517,8 +517,8 @@ stage_score_plot <- function(x, ...) {
 
 #' Cost/recall frontier scatter for a strategy plan
 #'
-#' Plots each candidate block key at (candidate, exact_twin_survival) — the
-#' recall axis — with the brute-pair cost in the point labels. The knee is the
+#' Plots each candidate block key at (candidate, exact_twin_survival) - the
+#' recall axis - with the brute-pair cost in the point labels. The knee is the
 #' cheapest candidate whose twin survival stays high.
 #'
 #' @param x A `Strategy_Plan` object from [plan_strategy()].

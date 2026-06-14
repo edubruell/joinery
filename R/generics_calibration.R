@@ -69,10 +69,10 @@ prepare_auxiliary_registry <- new_generic(
 #'   table for cross-table candidate matches), `target_id` (ID column
 #'   in `target`, defaults to `id`), `include_string_sim` (logical;
 #'   when `TRUE` (default) emits `sim_sf_<col>` / `sim_fs_<col>`
-#'   per column via `stringdist::stringsim()` — requires the
+#'   per column via `stringdist::stringsim()` - requires the
 #'   `stringdist` suggested package), `method` (stringdist method:
 #'   a scalar applied to every column (default `"jw"`), or a named
-#'   character vector selecting a per-column method — a scalar is the
+#'   character vector selecting a per-column method - a scalar is the
 #'   degenerate single-element case), and `include_block_stats` (logical; whether to
 #'   compute `cnt` / `icnt` / `ipos`). The [`Search_Strategy`] method
 #'   additionally accepts `top_n` (named integer / list controlling
@@ -130,9 +130,9 @@ calibrate_matches <- new_generic(
 #' matrix, and a threshold sweep curve.
 #'
 #' Two call shapes:
-#'   * `calibrate(calibrated_matches, labels)` — evaluate on labels held
+#'   * `calibrate(calibrated_matches, labels)` - evaluate on labels held
 #'      out from the training fit.
-#'   * `calibrate(calibrated_matches)` — evaluate on the training labels
+#'   * `calibrate(calibrated_matches)` - evaluate on the training labels
 #'      stored on the [`Filter_Model`] (sanity-check view; do not use
 #'      for model selection).
 #'

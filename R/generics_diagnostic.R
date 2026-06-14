@@ -128,7 +128,7 @@ sample_matches <- new_generic(
 #' Multi-stage diagnostic. Produces per-stage
 #' [`Match_Overview`]s, marginal coverage per stage, and overlaid
 #' per-stage score distributions. Note that [summarise_matches()] does
-#' **not** auto-detect a `stage` column — users explicitly call this
+#' **not** auto-detect a `stage` column - users explicitly call this
 #' verb when they want per-stage analysis (see
 #' `notes/diagnostics_design.md`).
 #'
@@ -244,7 +244,7 @@ plan_strategy <- new_generic(
 #' recommendations fired. The same strings are surfaced inline by the
 #' object's `print()` method.
 #'
-#' Methods for individual classes live alongside those classes —
+#' Methods for individual classes live alongside those classes -
 #' diagnostic classes (`Match_Overview`, `Strategy_Audit`) in
 #' `diagnostic_classes.R`; calibration classes (`Calibrated_Matches`,
 #' `Filter_Calibration`) in `calibration_classes.R`.

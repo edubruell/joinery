@@ -319,11 +319,11 @@ extract_unmatched <- new_generic(
 #' matches. Row order is not guaranteed; the caller sorts if needed.
 #'
 #' On the DuckDB backend the IDs are **always** registered as a temp table and
-#' joined — never inlined as an `id IN (<literal list>)`, which binds in
+#' joined - never inlined as an `id IN (<literal list>)`, which binds in
 #' roughly O(n^2) and pins cores for minutes on large residual sets.
 #'
 #' @param data A data.frame / tibble / data.table (or db table in other
-#'   backends) — the corpus to pull records from.
+#'   backends) - the corpus to pull records from.
 #' @param id Character scalar naming the ID column in `data`.
 #' @param ids Either an atomic vector of ID values, or a table carrying them
 #'   (read from an `id` column, else a column named `id`'s value).

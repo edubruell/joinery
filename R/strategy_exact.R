@@ -35,7 +35,7 @@
 #'
 #' @slot preparers Named list of `Search_Preparer` objects (one per column).
 #' @slot block_by NULL or a character vector of blocking variables.
-#' @slot rarity Character scalar rarity metric — used only by the containment
+#' @slot rarity Character scalar rarity metric - used only by the containment
 #'   guard (`min_base_rarity`); ignored under set-equality.
 #' @slot containment One of `"off"`, `"forward"`, `"bidirectional"`.
 #' @slot min_base_rarity Numeric. Containment guard: drop links whose base

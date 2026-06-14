@@ -134,7 +134,7 @@
 #' Expand a detect_duplicates groups table into a star edge list.
 #'
 #' Returns `data.table(from, to, score)` plus, as an attribute `"non_reps"`, the
-#' ids of the non-representative members — the rows the staged loop drops from
+#' ids of the non-representative members - the rows the staged loop drops from
 #' the working set (keeping the rep, an original id, so a later looser stage can
 #' still bridge a drifted record into the cluster).
 #' @noRd

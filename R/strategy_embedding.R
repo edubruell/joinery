@@ -140,7 +140,7 @@ method(print.Search_Preparer, Embedding_Strategy) <- function(x, ...) {
 #'
 #' @param columns Character vector of column names to embed, or NULL (default)
 #'   to use all non-id character-like columns.
-#' @param embedding_model A tidyllm provider object (e.g., 
+#' @param embedding_model A tidyllm provider object (e.g.,
 #'   `ollama(.model = "mxbai-embed-large")`). This is passed directly to
 #'   tidyllm's `embed()` function.
 #' @param threshold Numeric scalar in [0, 1]. Cosine similarity threshold for
@@ -159,14 +159,14 @@ method(print.Search_Preparer, Embedding_Strategy) <- function(x, ...) {
 #' @examples
 #' \dontrun{
 #' library(tidyllm)
-#' 
+#'
 #' # Create an embedding strategy using Ollama
 #' emb_strat <- embedding_strategy(
 #'   columns = c("name", "address"),
 #'   embedding_model = ollama(.model = "mxbai-embed-large"),
 #'   threshold = 0.85
 #' )
-#' 
+#'
 #' # Use in multi-stage workflow
 #' results <- multi_stage_search(
 #'   base_table = customers_a,

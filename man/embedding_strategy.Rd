@@ -18,7 +18,7 @@ embedding_strategy(
 \item{columns}{Character vector of column names to embed, or NULL (default)
 to use all non-id character-like columns.}
 
-\item{embedding_model}{A tidyllm provider object (e.g., 
+\item{embedding_model}{A tidyllm provider object (e.g.,
 `ollama(.model = "mxbai-embed-large")`). This is passed directly to
 tidyllm's `embed()` function.}
 

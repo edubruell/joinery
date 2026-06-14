@@ -8,7 +8,7 @@ materialize_records(data, id, ids, ...)
 }
 \arguments{
 \item{data}{A data.frame / tibble / data.table (or db table in other
-backends) — the corpus to pull records from.}
+backends) - the corpus to pull records from.}
 
 \item{id}{Character scalar naming the ID column in `data`.}
 
@@ -42,7 +42,7 @@ common type on both sides, so a BIGINT-corpus / character-id request still
 matches. Row order is not guaranteed; the caller sorts if needed.
 
 On the DuckDB backend the IDs are **always** registered as a temp table and
-joined — never inlined as an `id IN (<literal list>)`, which binds in
+joined - never inlined as an `id IN (<literal list>)`, which binds in
 roughly O(n^2) and pins cores for minutes on large residual sets.
 }
 \seealso{

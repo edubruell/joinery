@@ -16,7 +16,7 @@ street_stopwords
 }
 \description{
 Locative particles and articles that recur inside multi-word street names
-but carry no discriminative signal for matching — German `AN DER`, French
+but carry no discriminative signal for matching - German `AN DER`, French
 `DE LA`, Italian `DELLA`, and so on. Used by [normalize_street()] when
 `drop_stopwords = TRUE` to collapse e.g. `"An der Alster"` to `"ALSTER"`.
 }

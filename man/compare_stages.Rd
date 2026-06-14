@@ -19,7 +19,7 @@ A `Stage_Comparison` object.
 Multi-stage diagnostic. Produces per-stage
 [`Match_Overview`]s, marginal coverage per stage, and overlaid
 per-stage score distributions. Note that [summarise_matches()] does
-**not** auto-detect a `stage` column — users explicitly call this
+**not** auto-detect a `stage` column - users explicitly call this
 verb when they want per-stage analysis (see
 `notes/diagnostics_design.md`).
 }

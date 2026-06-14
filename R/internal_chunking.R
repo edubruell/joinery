@@ -86,8 +86,8 @@
 #' Empty per-chunk failure log
 #'
 #' One row per chunk that did **not** complete (skipped or failed). Attached to
-#' a chunked result as `attr(result, "failed_chunks")`. A compact record — not
-#' the full per-block audit table — kept because failure isolation is
+#' a chunked result as `attr(result, "failed_chunks")`. A compact record - not
+#' the full per-block audit table - kept because failure isolation is
 #' meaningless if the caller can't tell what was skipped.
 #'
 #' @noRd

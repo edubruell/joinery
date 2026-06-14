@@ -85,9 +85,18 @@ method(
   # ----------------------------------------------------------
   # 2. Score pairs using helper
   # ----------------------------------------------------------
-  block_by <- strategy@block_by %||% character()
-  block_join <- if (length(block_by)) {
-    paste(sprintf("AND t1.\"%s\" = t2.\"%s\"", block_by, block_by), collapse = "\n")
+  # Two block axes (token-blocking, Feature A):
+  #  - join_block: effective columns on the TOKEN table (plain + `._btok`); the
+  #    scoring self-join keys on these.
+  #  - block_by:   PLAIN block columns only; these live on `base_table` and are
+  #    the partition for resolve_entities. `._btok` must NOT partition entity
+  #    resolution, else a record matched under two block-tokens would split into
+  #    separate components (the cross-token union must stay free). See
+  #    .block_cols() / .plain_block_cols().
+  join_block <- .block_cols(strategy)
+  block_by   <- .plain_block_cols(strategy)
+  block_join <- if (length(join_block)) {
+    paste(sprintf("AND t1.\"%s\" = t2.\"%s\"", join_block, join_block), collapse = "\n")
   } else ""
   
   # Override weights if provided as argument
@@ -103,7 +112,8 @@ method(
     id2_col    = id_q,
     strategy   = strategy,
     join_type  = "self",
-    block_join = block_join
+    block_join = block_join,
+    block_cols = join_block
   )
   
   # Quick empty check — emit the full schema (matching the non-empty

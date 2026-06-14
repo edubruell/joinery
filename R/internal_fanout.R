@@ -3,13 +3,13 @@
 # ==========================================================================
 # The token-overlap join — the heart of every score path — joins records on a
 # shared (src_column, token[, block]) and groups / scores / thresholds AFTER.
-# One hot or boilerplate token shared by f records in a block materialises f^2
-# (dedup) / n_base*n_target (search) intermediate rows BEFORE any filter.
+# One hot or boilerplate token shared by f records in a block materialises
+# f*(f-1) (dedup) / n_base*n_target (search) intermediate rows BEFORE any filter.
 # Blocking is the only other guard, and a dense block defeats it (the v0.9 audit
 # CRITICAL; the YP directory-publisher clique).
 #
 # This guard estimates that fan-out cheaply from the token document-frequency
-# histogram — `sum df^2` (dedup) / `sum df_base*df_target` (search) over
+# histogram — `sum df*(df-1)` (dedup) / `sum df_base*df_target` (search) over
 # (src_column, block, token) groups, an O(#distinct tokens) aggregate that never
 # materialises a pair — and, when it busts the strategy's `max_fanout` budget,
 # either auto-drops the smallest set of hyper-common (near-zero-rarity) tokens
@@ -102,7 +102,7 @@
 
 # ---- data.table backend ----------------------------------------------------
 # Thin `tokens` (a compute_rarity() output) so the downstream overlap join can't
-# exceed the strategy's `max_fanout`. `face = "self"` for dedup (sum df^2),
+# exceed the strategy's `max_fanout`. `face = "self"` for dedup (sum df*(df-1)),
 # `"cross"` for search (sum df_base*df_target, needs `id_col` + `side_col`).
 .fanout_guard_dt <- function(tokens, strategy, face = c("self", "cross"),
                              id_col, side_col = NULL) {
@@ -111,7 +111,9 @@
   policy <- strategy@on_fanout
   if (identical(policy, "off") || !is.finite(budget)) return(tokens)
 
-  block_by <- strategy@block_by %||% character()
+  # Effective block columns of the token table (plain + derived `._btok`): the
+  # fan-out cost axis is per-block, and `._btok` is just another block column.
+  block_by <- .block_cols(strategy)
   key <- c("src_column", block_by, "token")
 
   if (face == "self") {
@@ -159,7 +161,8 @@
   policy <- strategy@on_fanout
   if (identical(policy, "off") || !is.finite(budget)) return(Inf)
 
-  block_by <- strategy@block_by %||% character()
+  # Effective block columns of the token table (plain + derived `._btok`).
+  block_by <- .block_cols(strategy)
   blk_sel  <- if (length(block_by))
     paste0(", ", paste(sprintf('"%s"', block_by), collapse = ", ")) else ""
 

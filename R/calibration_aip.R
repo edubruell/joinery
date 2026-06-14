@@ -133,7 +133,7 @@ method(
 
 #' Compute absolute identification potential (aIP).
 #'
-#' Internal primitive — joins base- and auxiliary-side registries and
+#' Internal primitive - joins base- and auxiliary-side registries and
 #' applies Doherr (2023) eq. (9) per `(src_column, token)`.
 #'
 #' For tokens present in both registries we take the smaller of the two
@@ -146,7 +146,7 @@ method(
 #'
 #' @param base_registry,aux_registry data.tables (or DuckDB tbls) with
 #'   columns `src_column`, `token`, `occ`, `maxocc`. DuckDB tbls are
-#'   collected eagerly — registries are small relative to token tables.
+#'   collected eagerly - registries are small relative to token tables.
 #'
 #' @return data.table with columns `src_column`, `token`, `aip`,
 #'   plus `occ_R`, `maxocc_R`, `occ_A`, `maxocc_A` for debuggability.

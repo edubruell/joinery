@@ -41,8 +41,8 @@ A `data.table` with one row per flagged `(src_column, token)`:
   nothing crosses the threshold.
 }
 \description{
-Scores every `(src_column, token)` by its document frequency — the share of
-records in that column whose value contains the token — and returns the
+Scores every `(src_column, token)` by its document frequency - the share of
+records in that column whose value contains the token - and returns the
 tokens common enough to be poor discriminators. These are stopword
 candidates: feed them to [`filter_stopwords()`] in the preparer chain and
 re-run `prepare_search_data()`.
@@ -52,7 +52,7 @@ Document frequency is computed corpus-wide by default (`by_block = FALSE`),
 i.e. across all blocks. This matches the intuition of a stopword as a
 globally common term. With `by_block = TRUE` the share is computed within
 each block and a token is returned if it crosses `max_prop` in *any* block,
-reported at its maximum block-level share — useful when a token is rare
+reported at its maximum block-level share - useful when a token is rare
 overall but saturates a single dense block.
 }
 \seealso{

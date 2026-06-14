@@ -12,7 +12,7 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
 #' Returns one SQL boolean expression combining the strategy's `min_rarity`
 #' (rarity-metric floor) and `max_token_df` (raw document-frequency cap), or
 #' `NULL` when both are off. Applied to the token table *before* the
-#' `(src_column, token, block)` equi-join — never after scoring. The DuckDB
+#' `(src_column, token, block)` equi-join - never after scoring. The DuckDB
 #' mirror of [.rarity_prefilter_dt()]; the two predicates must stay identical
 #' so both backends thin the same tokens.
 #' @noRd
@@ -26,6 +26,62 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
   }
   if (length(conds) == 0L) return(NULL)
   paste(conds, collapse = " AND ")
+}
+
+
+#' Internal helper: global token-blocking explosion on a DuckDB token table.
+#'
+#' The DuckDB mirror of `.explode_token_blocks_dt()`. Because the per-batch
+#' tokenizer sees only a slice of the ids, the blocking-token df cap must be
+#' computed once over the whole corpus. This pulls the raw `(id, blocking-cols)`
+#' from the input table into R (distinct by id - one row per record, cheap),
+#' reuses the data.table survivor kernel (`.btok_surviving_dt`) to get the
+#' corpus-wide surviving `(id, ._btok)` pairs, writes them to DuckDB, and
+#' rebuilds the token table as an INNER JOIN that fans each surviving record's
+#' tokens across its block keys and drops records with no surviving key.
+#'
+#' No-op when the strategy has no `block_on_tokens()` spec.
+#' @noRd
+.explode_token_blocks_duck <- function(con, token_tbl, input_table, id,
+                                       strategy, out_name) {
+  specs <- .token_block_specs(strategy)
+  if (length(specs) == 0L) return(token_tbl)
+
+  id_q <- sprintf('"%s"', id)
+  block_cols <- unique(vapply(specs, function(s) s@column, character(1)))
+  sel_cols <- paste(c(id_q, sprintf('"%s"', block_cols)), collapse = ", ")
+
+  # One row per record (distinct by id) carrying the raw blocking columns.
+  raw <- DBI::dbGetQuery(con, paste0(
+    "SELECT ", sel_cols, " FROM ",
+    "(SELECT *, ROW_NUMBER() OVER (PARTITION BY ", id_q, ") AS _rn FROM ",
+    input_table, ") WHERE _rn = 1"))
+  raw <- data.table::as.data.table(raw)
+  raw[[id]] <- as.character(raw[[id]])
+
+  surv_list <- lapply(specs, function(s) .btok_surviving_dt(raw, id, s, strategy))
+  surv <- unique(data.table::rbindlist(surv_list, use.names = TRUE))
+  data.table::setnames(surv, "id", id)
+  surv[[id]] <- as.character(surv[[id]])
+
+  surv_tbl <- paste0("_joinery_btok_", sample.int(1e9, 1))
+  DBI::dbWriteTable(con, surv_tbl, as.data.frame(surv), overwrite = TRUE)
+
+  # Rebuild the token table with `._btok` attached (inner join: records with no
+  # surviving block key drop out, exactly as the data.table backend does).
+  tok_name <- token_tbl$lazy_query$x
+  rebuilt  <- paste0(out_name, "_btok")
+  DBI::dbExecute(con, paste0(
+    "CREATE TABLE ", rebuilt, " AS\n",
+    "SELECT t.*, s.\"._btok\" AS \"._btok\"\n",
+    "FROM ", tok_name, " t\n",
+    "JOIN ", surv_tbl, " s ON t.", id_q, " = s.", id_q, ";"))
+
+  DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", surv_tbl))
+  DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", tok_name))
+  DBI::dbExecute(con, paste0("ALTER TABLE ", rebuilt, " RENAME TO ", out_name))
+
+  dplyr::tbl(con, out_name)
 }
 
 
@@ -49,10 +105,19 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
                              id2_col,
                              strategy,
                              join_type = c("self", "cross"),
-                             block_join = "") {
-  
+                             block_join = "",
+                             block_cols = character()) {
+
   tmp <- function(prefix) paste0(prefix, "_", sample.int(1e9, 1))
   join_type <- match.arg(join_type)
+
+  # Token-blocking (`._btok`): a record is exploded across several blocks, each
+  # carrying its full token set. rIP must normalise PER BLOCK, and the pair
+  # score is the MAX over the blocks the pair co-occurs in (see the collapse
+  # after STEP 2 and .score_token_pairs() on the data.table side). With plain
+  # blocking each record sits in one block, so this is a no-op.
+  block_part <- if (length(block_cols))
+    paste0(", ", paste(sprintf('"%s"', block_cols), collapse = ", ")) else ""
   
   # ============================================================
   # STEP 1: Add weights and compute smoothed rIP
@@ -74,11 +139,11 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
     " ELSE 1.0 END"
   )
   
-  # Determine partition for rIP calculation
+  # Determine partition for rIP calculation (per record, per block, per column).
   partition_by <- if (join_type == "self") {
-    paste0(id1_col, ", src_column")
+    paste0(id1_col, ", src_column", block_part)
   } else {
-    paste0(id1_col, ", source, src_column")
+    paste0(id1_col, ", source, src_column", block_part)
   }
   
   # Build rIP expression with optional smoothing
@@ -156,8 +221,13 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
     id2_ref <- paste0("t2.", id2_col)
   }
   
-  group_by <- paste0(id1_ref, ", ", id2_ref)
-  
+  # Per (pair, block): block columns are equal on both sides (block_join), so
+  # group on t1's copy. The per-block scores are collapsed to one best row per
+  # pair right after STEP 2.
+  block_grp <- if (length(block_cols))
+    paste0(", ", paste(sprintf('t1."%s"', block_cols), collapse = ", ")) else ""
+  group_by <- paste0(id1_ref, ", ", id2_ref, block_grp)
+
   if (strategy@feedback_strength > 0) {
     # WITH FEEDBACK: need total_rip and matched_rip
     total_rip_tbl <- tmp("_total_rip")
@@ -213,6 +283,24 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
     )
     
     DBI::dbExecute(con, sql_scored)
+  }
+
+  # ============================================================
+  # STEP 2.25: collapse per-block scores to one best row per pair.
+  # Only needed under token-blocking (a pair can co-block under several `._btok`
+  # keys). Downstream (renormalise, threshold, containment, the long-form
+  # expansion) consumes only id1/id2/score, so MAX(score) per pair suffices.
+  # ============================================================
+  if (length(block_cols)) {
+    collapsed_tbl <- tmp("_pairs_collapsed")
+    DBI::dbExecute(con, paste0(
+      "CREATE TEMP TABLE ", collapsed_tbl, " AS\n",
+      "SELECT id1, id2, MAX(score) AS score\n",
+      "FROM ", scored_tbl, "\n",
+      "GROUP BY id1, id2;\n"
+    ))
+    DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", scored_tbl, ";"))
+    scored_tbl <- collapsed_tbl
   }
 
 
@@ -344,7 +432,11 @@ method(
   ))$n
   .warn_nonunique_id(n_dup_ids, id)
 
-  block_by <- strategy@block_by %||% NULL
+  # Batch planning blocks by PLAIN columns only: a block_on_tokens() spec is not
+  # a literal column to slice batches by, and its `._btok` explosion runs once
+  # globally after batch_map (so the df cap is corpus-wide).
+  block_by <- .plain_block_cols(strategy)
+  if (!length(block_by)) block_by <- NULL
 
   out_name <- output_table %||%
     paste0("_joinery_tokens_", sample.int(1e9, 1))
@@ -369,10 +461,13 @@ method(
   fn <- function(df) {
     dt <- data.table::as.data.table(df)
     # A batch is a partial slice of the ids; the global uniqueness check runs
-    # once above (D2), so suppress the per-batch warning here.
-    prepare_search_data(dt, id, strategy, warn_nonunique_id = FALSE)
+    # once above (D2), so suppress the per-batch warning here. Token-blocking is
+    # exploded globally below (a batch's global-df cut would be batch-local), so
+    # the per-batch tokenizer skips it.
+    prepare_search_data(dt, id, strategy, warn_nonunique_id = FALSE,
+                        explode_token_blocks = FALSE)
   }
-  
+
   token_tbl <- batch_map(
     plan         = plan,
     con          = con,
@@ -381,7 +476,14 @@ method(
     persist      = TRUE,
     output_table = out_name
   )
-  
+
+  # Token-blocking (Feature A): explode the assembled token table by each
+  # record's surviving rare blocking-tokens into a `._btok` column. Run once,
+  # globally, so the df cap on blocking-token eligibility is corpus-wide (a
+  # per-batch cut would be batch-local). See .explode_token_blocks_duck().
+  token_tbl <- .explode_token_blocks_duck(con, token_tbl, table, id, strategy,
+                                          out_name)
+
   token_tbl
 }
 
@@ -397,23 +499,46 @@ method(
     table <- lazy$lazy_query$x
     
     rarity_method <- strategy@rarity
-    block_by      <- strategy@block_by %||% NULL
-    
-    block_cols_sql <- if (length(block_by)) paste(block_by, collapse = ", ") else ""
+    # Effective block columns of the token table (plain + derived `._btok`); the
+    # df / cost windows partition by these. See .block_cols().
+    block_by      <- .block_cols(strategy)
+    if (!length(block_by)) block_by <- NULL
+    rarity_scope  <- strategy@rarity_scope
+
+    # Quote block identifiers: the derived `._btok` (token-blocking) is not a
+    # bare SQL identifier, and quoting is harmless for plain column names.
+    block_cols_sql <- if (length(block_by))
+      paste(sprintf('"%s"', block_by), collapse = ", ") else ""
     block_cols_prefixed <- if (length(block_by)) paste0(", ", block_cols_sql) else ""
-    
+
+    # Under global scope the rarity formula reads the corpus-wide trio
+    # (freq_global/df_global/N_global, computed with the block columns dropped
+    # from the PARTITION BY). The block-local freq/df/N stay on the output as
+    # the cost axis (df cut, fan-out guard) - only informativeness follows
+    # rarity_scope. See notes/region_free_linking.md section 5.2.
+    is_global <- identical(rarity_scope, "global")
+    fcol <- if (is_global) "freq_global" else "freq"
+    dcol <- if (is_global) "df_global"   else "df"
+    ncol <- if (is_global) "N_global"    else "N"
+
     rarity_expr <- switch(
       rarity_method,
-      inverse_freq          = "1.0 / freq",
-      smoothed_inverse_freq = "1.0 / (freq + 1)",
+      inverse_freq          = paste0("1.0 / ", fcol),
+      smoothed_inverse_freq = paste0("1.0 / (", fcol, " + 1)"),
       tfidf = paste0(
-        "(freq / SUM(freq) OVER (PARTITION BY src_column",
-        if (length(block_by)) paste0(", ", block_cols_sql) else "",
-        ")) * LOG(1.0 + N / df)"
+        "(", fcol, " / SUM(", fcol, ") OVER (PARTITION BY src_column",
+        if (is_global) "" else if (length(block_by)) paste0(", ", block_cols_sql) else "",
+        ")) * LOG(1.0 + ", ncol, " / ", dcol, ")"
       ),
-      bm25 = "LOG((N - df + 0.5) / (df + 0.5))",
+      bm25 = paste0("LOG((", ncol, " - ", dcol, " + 0.5) / (", dcol, " + 0.5))"),
       cli::cli_abort("Unknown rarity method: {.val {rarity_method}}")
     )
+
+    global_window <- if (is_global) paste0(
+      "    COUNT(*) OVER (PARTITION BY src_column, token) AS freq_global,\n",
+      "    COUNT(DISTINCT row_id) OVER (PARTITION BY src_column, token) AS df_global,\n",
+      "    COUNT(DISTINCT row_id) OVER (PARTITION BY src_column) AS N_global,\n"
+    ) else ""
 
     # Two-level SQL: inner query computes freq/df/N as window functions; outer
     # query applies the rarity formula. This avoids DuckDB's prohibition on
@@ -423,6 +548,7 @@ method(
       "SELECT *, ", rarity_expr, " AS rarity\n",
       "FROM (\n",
       "  SELECT *,\n",
+      global_window,
       "    COUNT(*) OVER (PARTITION BY src_column, token", block_cols_prefixed, ") AS freq,\n",
       "    COUNT(DISTINCT row_id) OVER (PARTITION BY src_column, token", block_cols_prefixed, ") AS df,\n",
       "    COUNT(DISTINCT row_id) OVER (PARTITION BY src_column", block_cols_prefixed, ") AS N\n",

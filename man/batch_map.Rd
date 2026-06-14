@@ -28,7 +28,7 @@ when `persist = TRUE`. If omitted, a random temporary table name is
 generated. Ignored when `persist = FALSE`.}
 }
 \value{
-- If `persist = TRUE`: A `tbl_duckdb_connection` pointing to the output table.  
+- If `persist = TRUE`: A `tbl_duckdb_connection` pointing to the output table.
 - If `persist = FALSE`: A list of data.frames, one per batch.
 }
 \description{

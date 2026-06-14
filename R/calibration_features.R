@@ -216,10 +216,10 @@
 #' @param base_dt data.table with `id_col` and the columns in `columns`.
 #' @param target_dt data.table or NULL. When NULL (dedup), `base_dt` is also
 #'   used for the found-side lookup.
-#' @param base_id character scalar — id column in `base_dt`.
-#' @param target_id character scalar — id column in `target_dt` (defaults
+#' @param base_id character scalar - id column in `base_dt`.
+#' @param target_id character scalar - id column in `target_dt` (defaults
 #'   to `base_id`).
-#' @param columns character vector — columns to compute string similarity on.
+#' @param columns character vector - columns to compute string similarity on.
 #'   Columns absent from `base_dt` or `target_dt` are silently skipped.
 #' @param method stringdist method. Scalar applied to every column
 #'   (default `"jw"`), or a named character vector for per-column methods

@@ -20,12 +20,12 @@
 #' @description
 #' Result of [match_features()]. A wide, one-row-per-pair feature table
 #' suitable for downstream calibration / filtering. Schema is documented
-#' in `notes/calibration_design.md` and treated as the public API —
+#' in `notes/calibration_design.md` and treated as the public API -
 #' additions only, never reorder or rename.
 #'
 #' @slot features `data.table`. The wide feature matrix.
 #' @slot schema Character. One of `"token"` (full schema) or
-#'   `"embedding"` (reduced schema — no token columns).
+#'   `"embedding"` (reduced schema - no token columns).
 #' @slot strategy_class Character. Class name of the strategy used.
 #' @slot top_n Named integer. Effective per-column `top_n` (after defaulting).
 #' @slot columns Character. Strategy column names in their canonical order.

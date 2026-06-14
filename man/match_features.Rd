@@ -20,10 +20,10 @@ scalar naming the ID column in `base`), `target` (optional target
 table for cross-table candidate matches), `target_id` (ID column
 in `target`, defaults to `id`), `include_string_sim` (logical;
 when `TRUE` (default) emits `sim_sf_<col>` / `sim_fs_<col>`
-per column via `stringdist::stringsim()` — requires the
+per column via `stringdist::stringsim()` - requires the
 `stringdist` suggested package), `method` (stringdist method:
 a scalar applied to every column (default `"jw"`), or a named
-character vector selecting a per-column method — a scalar is the
+character vector selecting a per-column method - a scalar is the
 degenerate single-element case), and `include_block_stats` (logical; whether to
 compute `cnt` / `icnt` / `ipos`). The [`Search_Strategy`] method
 additionally accepts `top_n` (named integer / list controlling

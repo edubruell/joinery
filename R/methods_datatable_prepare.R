@@ -17,7 +17,8 @@ DT_tbl <- new_S3_class("data.table")
 method(
   prepare_search_data,
   list(DT_tbl, class_character, Search_Strategy)
-) <- function(data, id, strategy, warn_nonunique_id = TRUE) {
+) <- function(data, id, strategy, warn_nonunique_id = TRUE,
+              explode_token_blocks = TRUE) {
 
   dt <- data.table::copy(data)
 
@@ -39,7 +40,6 @@ method(
   }
 
   preparers <- strategy@preparers
-  block_by  <- strategy@block_by
 
   # --------------------------------------------------------------------
   # Compute total work in advance: sum over all (columns * steps * chunks)
@@ -127,8 +127,12 @@ method(
   # --------------------------------------------------------------------
   # Add block_by columns
   # --------------------------------------------------------------------
-  if (!is.null(block_by)) {
-    missing <- setdiff(block_by, names(dt))
+  # Only the PLAIN (literal-column) block entries are merged here from the raw
+  # data; token-blocking specs become the derived `._btok` column in the
+  # explosion below. .plain_block_cols() drops any block_on_tokens() spec.
+  plain_block <- .plain_block_cols(strategy)
+  if (length(plain_block)) {
+    missing <- setdiff(plain_block, names(dt))
     if (length(missing) > 0) {
       cli::cli_abort("Blocking columns not found: {.field {missing}}")
     }
@@ -139,8 +143,23 @@ method(
     # the many-to-one block merge becomes many-to-many — a cartesian explosion
     # that trips data.table's allow.cartesian guard deep in merge() with an
     # opaque error. `unique(by = id)` keeps the merge strictly many-to-one.
-    block_dt <- unique(dt[, c(id, block_by), with = FALSE], by = id)
+    block_dt <- unique(dt[, c(id, plain_block), with = FALSE], by = id)
     tokens <- merge(tokens, block_dt, by = id, all.x = TRUE)
+  }
+
+  # Token-blocking (Feature A): explode each record's token rows against its
+  # surviving rare blocking-tokens into a derived `._btok` block column. This
+  # runs strictly AFTER the non-unique-id guard above, so the id repetition the
+  # explosion introduces (one id per `._btok` value) never trips that guard -
+  # the repetition is the mechanism, not a data bug. See
+  # notes/region_free_linking.md section 4.5.
+  #
+  # explode_token_blocks = FALSE is the DuckDB per-batch path: a batch is a
+  # partial slice of the ids, so its global-df cut on blocking tokens would be
+  # batch-local (wrong). The DuckDB prepare method runs the explosion once,
+  # globally, on the assembled token table instead. See methods_duckdb_prepare.R.
+  if (explode_token_blocks) {
+    tokens <- .explode_token_blocks_dt(tokens, dt, id, strategy)
   }
 
   progress_finish(pb, progress_env)
@@ -158,13 +177,17 @@ method(
 
   dt <- data.table::copy(tokens)
   rarity_method <- strategy@rarity
-  block_by      <- strategy@block_by
+  # Effective block columns of the token table: plain block columns plus the
+  # derived `._btok` (token-blocking). The cost axis (block-local df) groups by
+  # these, exactly as the overlap join does. See .block_cols().
+  block_by      <- .block_cols(strategy)
+  rarity_scope  <- strategy@rarity_scope
 
   # Grouping keys: block + column + token
   by_keys <- c(block_by, "src_column", "token")
 
   # Ensure block columns exist if block_by was specified
-  if (!is.null(block_by)) {
+  if (length(block_by)) {
     missing <- setdiff(block_by, names(dt))
     if (length(missing) > 0) {
       cli::cli_abort("Block columns missing: {.field {missing}}")
@@ -181,11 +204,27 @@ method(
   # (we attach once per group; downstream summed over matches)
   dt[, N := uniqueN(row_id), by = c(block_by, "src_column")]
 
+  # Global (corpus-wide) freq/df/N - only the rarity metric uses these.
+  # The block-local df above stays the cost axis (max_token_df, fan-out
+  # guard, prefilter all keep reading it); only the informativeness measure
+  # follows rarity_scope. See notes/region_free_linking.md section 5.2.
+  if (rarity_scope == "global") {
+    dt[, freq_global := .N, by = c("src_column", "token")]
+    dt[, df_global := uniqueN(row_id), by = c("src_column", "token")]
+    dt[, N_global := uniqueN(row_id), by = "src_column"]
+  }
+
   # Apply rarity formula ---------------------------------------------------
   dt[, rarity := {
-    f  <- freq
-    d  <- df
-    n  <- N
+    if (rarity_scope == "global") {
+      f <- freq_global
+      d <- df_global
+      n <- N_global
+    } else {
+      f <- freq
+      d <- df
+      n <- N
+    }
 
     switch(
       rarity_method,
@@ -227,12 +266,12 @@ method(
 #' Internal helper: apply the pre-join rarity / document-frequency cut
 #'
 #' joinery's single biggest cheap lever for a slow/dense linkage is to thin the
-#' token table **before** the `(src_column, token, block)` equi-join — never
+#' token table **before** the `(src_column, token, block)` equi-join - never
 #' after scoring, where it would save nothing. This helper applies both cut
 #' axes in one predicate on a `compute_rarity()` output (which carries `rarity`
 #' and `df`): `min_rarity` floors the rarity metric, `max_token_df` caps raw
 #' document frequency. It is the data.table mirror of [.rarity_prefilter_sql()]
-#' on the DuckDB backend — keep the two predicates identical.
+#' on the DuckDB backend - keep the two predicates identical.
 #' @noRd
 .rarity_prefilter_dt <- function(tokens, strategy) {
   if (strategy@min_rarity > 0 || is.finite(strategy@max_token_df)) {
@@ -253,7 +292,8 @@ method(
     weights
 ) {
 
-  block_by <- strategy@block_by %||% character()
+  # Effective block columns of the token table (plain + derived `._btok`).
+  block_by <- .block_cols(strategy)
   by_cols  <- c("src_column", "token", block_by)
 
   # Set semantics: collapse within-record token multiplicity before scoring.
@@ -272,23 +312,34 @@ method(
   lhs_tokens[, weight := weights[src_column]]
   rhs_tokens[, weight := weights[src_column]]
 
+  # rIP / smoothing / feedback are normalised per record PER BLOCK. With plain
+  # blocking a record sits in exactly one block, so c(id, src_column) and
+  # c(id, src_column, block_by) are equivalent - behaviour is unchanged. Under
+  # token-blocking (`._btok`) a record is exploded into several blocks, each
+  # carrying its full original token set; normalising per block keeps each
+  # block's score equal to the un-exploded score, and the final per-pair score
+  # is the max over the blocks the pair co-occurs in (see the aggregation
+  # below). See notes/region_free_linking.md section 4.
+  rip_lhs <- c(id_lhs, "src_column", block_by)
+  rip_rhs <- c(id_rhs, "src_column", block_by)
+
   # Base rIP
-  lhs_tokens[, rIP := rarity / sum(rarity), by = c(id_lhs, "src_column")]
-  rhs_tokens[, rIP := rarity / sum(rarity), by = c(id_rhs, "src_column")]
+  lhs_tokens[, rIP := rarity / sum(rarity), by = rip_lhs]
+  rhs_tokens[, rIP := rarity / sum(rarity), by = rip_rhs]
 
   # Optional smoothing
   sm <- strategy@smoothing@method
   if (sm == "log") {
-    lhs_tokens[, rIP := {x <- log1p(rIP); x / sum(x)}, by = c(id_lhs, "src_column")]
-    rhs_tokens[, rIP := {x <- log1p(rIP); x / sum(x)}, by = c(id_rhs, "src_column")]
+    lhs_tokens[, rIP := {x <- log1p(rIP); x / sum(x)}, by = rip_lhs]
+    rhs_tokens[, rIP := {x <- log1p(rIP); x / sum(x)}, by = rip_rhs]
   } else if (sm == "softmax") {
     t <- strategy@smoothing@temperature
-    lhs_tokens[, rIP := {ex <- exp(rIP / t); ex / sum(ex)}, by = c(id_lhs, "src_column")]
-    rhs_tokens[, rIP := {ex <- exp(rIP / t); ex / sum(ex)}, by = c(id_rhs, "src_column")]
+    lhs_tokens[, rIP := {ex <- exp(rIP / t); ex / sum(ex)}, by = rip_lhs]
+    rhs_tokens[, rIP := {ex <- exp(rIP / t); ex / sum(ex)}, by = rip_rhs]
   } else if (sm == "offset") {
     a <- strategy@smoothing@alpha
-    lhs_tokens[, rIP := {x <- rIP + a; x / sum(x)}, by = c(id_lhs, "src_column")]
-    rhs_tokens[, rIP := {x <- rIP + a; x / sum(x)}, by = c(id_rhs, "src_column")]
+    lhs_tokens[, rIP := {x <- rIP + a; x / sum(x)}, by = rip_lhs]
+    rhs_tokens[, rIP := {x <- rIP + a; x / sum(x)}, by = rip_rhs]
   }
 
   # Prepare RHS for join
@@ -303,25 +354,30 @@ method(
     nomatch = 0L
   ]
 
-  # Compute scores with optional feedback adjustment
+  # Compute scores with optional feedback adjustment. Aggregation is per pair
+  # PER BLOCK (block_by, which under token-blocking is `._btok`), then collapsed
+  # to one row per pair by taking the max over blocks. With plain blocking each
+  # pair sits in one block, so this is a no-op; under token-blocking it dedups a
+  # pair that co-blocks under several `._btok` keys to its single best score.
   if (strategy@feedback_strength > 0) {
-    # Need total rIP per LHS record for overlap calculation
+    # Need total rIP per LHS record PER BLOCK for the overlap calculation.
     total_rip <- lhs_tokens[
       , .(total_rip = sum(rIP)),
-      by = c(id_lhs)
+      by = c(id_lhs, block_by)
     ]
 
-    # Compute raw score and matched rIP
+    # Compute raw score and matched rIP per (pair, block).
     scored <- joined[
       , .(
         raw_score = sum(rIP * weight, na.rm = TRUE),
         matched_rip = sum(rIP, na.rm = TRUE)
       ),
-      by = .(lhs_id = get(id_lhs), rhs_id)
+      by = c(id_lhs, "rhs_id", block_by)
     ]
 
-    # Join total rIP
-    scored <- merge(scored, total_rip, by.x = "lhs_id", by.y = id_lhs, all.x = TRUE)
+    # Join total rIP on (lhs record, block), then rename the lhs id column.
+    scored <- merge(scored, total_rip, by = c(id_lhs, block_by), all.x = TRUE)
+    data.table::setnames(scored, id_lhs, "lhs_id")
 
     # Compute overlap share and adjusted score
     s <- strategy@feedback_strength
@@ -331,11 +387,19 @@ method(
     # Clean up intermediate columns
     scored[, c("raw_score", "matched_rip", "total_rip", "overlap_share") := NULL]
   } else {
-    # Standard scoring without feedback
+    # Standard scoring without feedback, per (pair, block).
     scored <- joined[
       , .(score = sum(rIP * weight, na.rm = TRUE)),
-      by = .(lhs_id = get(id_lhs), rhs_id)
+      by = c(id_lhs, "rhs_id", block_by)
     ]
+    data.table::setnames(scored, id_lhs, "lhs_id")
+  }
+
+  # Collapse per-block scores to one best row per pair (no-op for plain
+  # blocking). Done before on_missing so the denominator is per pair.
+  if (length(block_by)) {
+    scored <- scored[order(-score), .SD[1L], by = .(lhs_id, rhs_id)]
+    scored[, (block_by) := NULL]
   }
 
   # on_missing = "renormalise": rescale each pair's score by the weight of the
@@ -418,7 +482,47 @@ method(
     strategy,
     weights
 ) {
-  block_by <- strategy@block_by %||% character()
+  # Effective block columns of the token table (plain + derived `._btok`).
+  block_by <- .block_cols(strategy)
+
+  # Token-blocking: a record is exploded across several `._btok` blocks, each
+  # carrying its full token set. The scorer takes the max over blocks, so
+  # attribution must explain that single best block. Restrict both sides to one
+  # `._btok` they share (every shared block yields the same contribution), then
+  # drop `._btok` so the rest of the attribution math runs exactly as before and
+  # the round-trip contract still holds. See .score_token_pairs().
+  if (.JOINERY_BTOK_COL %in% block_by) {
+    lhs_tokens <- data.table::as.data.table(lhs_tokens)
+    rhs_tokens <- data.table::as.data.table(rhs_tokens)
+    shared_bt <- intersect(
+      unique(lhs_tokens[[.JOINERY_BTOK_COL]]),
+      unique(rhs_tokens[[.JOINERY_BTOK_COL]])
+    )
+    # The scorer normalises rIP per `._btok` block and, for a pair that
+    # co-blocks under several rare tokens, keeps the MAX-scoring block (block
+    # local rarity differs between blocks). Attribution must explain that same
+    # block, or explain_match's score would disagree with the reported match
+    # score. Evaluate every shared block and return the best one (recursing so
+    # each single-block call runs the standard math below). Each recursive call
+    # sees exactly one shared `._btok`, so the recursion is one level deep.
+    if (length(shared_bt) > 1L) {
+      cand <- lapply(shared_bt, function(pick) {
+        .pair_attribution_dt(
+          lhs_tokens[lhs_tokens[[.JOINERY_BTOK_COL]] == pick],
+          rhs_tokens[rhs_tokens[[.JOINERY_BTOK_COL]] == pick],
+          id_lhs, id_rhs, strategy, weights
+        )
+      })
+      scores <- vapply(cand, function(r) r$score, numeric(1))
+      return(cand[[which.max(scores)]])
+    }
+    if (length(shared_bt)) {
+      pick <- shared_bt[[1L]]
+      lhs_tokens <- lhs_tokens[lhs_tokens[[.JOINERY_BTOK_COL]] == pick]
+      rhs_tokens <- rhs_tokens[rhs_tokens[[.JOINERY_BTOK_COL]] == pick]
+    }
+    block_by <- setdiff(block_by, .JOINERY_BTOK_COL)
+  }
   by_cols  <- c("src_column", "token", block_by)
 
   # Set semantics: collapse within-record token multiplicity before

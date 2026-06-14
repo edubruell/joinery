@@ -32,7 +32,7 @@
 #' An S7 class bundling the DuckDB backend's execution knobs (batch sizes,
 #' scoring chunk key, per-chunk failure policy, progress). Construct it with
 #' [duckdb_control()] and pass it as the `control =` argument to the DuckDB
-#' methods. It carries no matching semantics — those live on the
+#' methods. It carries no matching semantics - those live on the
 #' [Search_Strategy].
 #'
 #' @slot target_batch_size NULL (auto-tune) or a positive number. Preprocess
@@ -115,14 +115,14 @@ method(print.Duckdb_Control, Duckdb_Control) <- function(x, ...) {
 #' Build a [Duckdb_Control] bundling the DuckDB backend's execution knobs, and
 #' pass it as `control =` to [prepare_search_data()], [detect_duplicates()], or
 #' [search_candidates()] on DuckDB tables. It controls **how** a match runs
-#' (memory, batching, chunking, failure isolation), never **what** matches —
+#' (memory, batching, chunking, failure isolation), never **what** matches -
 #' matching semantics stay on the [search_strategy()].
 #'
 #' Two execution stages, two atomicity rules:
 #' - **Preprocess batching** (tokenization) is per-row, governed by
 #'   `target_batch_size` / `min_batch_size` / `chunk_strategy`. Any row split is
 #'   safe.
-#' - **Scoring chunking** (the overlap join) is *block-atomic* — a pair only
+#' - **Scoring chunking** (the overlap join) is *block-atomic* - a pair only
 #'   forms within a block, so a block can never be split. `chunk_by` packs
 #'   *whole* blocks under `target_batch_size`; `on_error` isolates a
 #'   pathological block from the rest of the run.
@@ -132,7 +132,7 @@ method(print.Duckdb_Control, Duckdb_Control) <- function(x, ...) {
 #'
 #' @param target_batch_size `NULL` (auto-tune from RAM / row size) or a positive
 #'   number of rows per batch / scoring chunk.
-#' @param min_batch_size `NULL` (auto-tune) or a positive number — the minimum
+#' @param min_batch_size `NULL` (auto-tune) or a positive number - the minimum
 #'   table size before preprocess batching engages.
 #' @param chunk_strategy Preprocess chunking strategy: `"block_consolidated"`
 #'   (default), `"block_first"`, or `"even"`.
@@ -141,7 +141,7 @@ method(print.Duckdb_Control, Duckdb_Control) <- function(x, ...) {
 #'   the monolithic path; a character vector names an explicit key, which must be
 #'   a subset of the strategy's `block_by` (else cross-chunk pairs would be
 #'   silently dropped).
-#' @param on_error Per-scoring-chunk failure policy: `"skip"` (default — record
+#' @param on_error Per-scoring-chunk failure policy: `"skip"` (default - record
 #'   and continue), `"retry"` (re-run once with conservative pragmas, then skip),
 #'   or `"stop"` (re-raise).
 #' @param progress `NULL` (auto), `TRUE`, or `FALSE` to force or suppress

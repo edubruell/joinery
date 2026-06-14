@@ -34,6 +34,11 @@
 #' @slot weights   A named numeric vector (validated in wrapper).
 #' @slot block_by  NULL or a character vector of blocking variables.
 #' @slot rarity    A character scalar describing the rarity method.
+#' @slot rarity_scope A character scalar, `"block"` (default) or `"global"`,
+#'   selecting whether a token's rarity (informativeness) is measured within its
+#'   block or across the whole corpus. Only the rarity metric follows this slot;
+#'   the cost axis (block-local `df`, `max_token_df`, fan-out guard) is always
+#'   block-local.
 #' @slot threshold  A numeric scalar containing the match or deduplication threshold
 #' @slot min_rarity  Numeric scalar between 0 and Inf.
 #'   Tokens with rarity below this value are removed before scoring.
@@ -47,7 +52,7 @@
 #'   matches to retain per record. Default is `Inf` (no limit). When finite,
 #'   only the top `max_candidates` highest scoring matches are kept.
 #' @slot max_fanout Numeric scalar. Budget on the estimated number of
-#'   intermediate token-overlap-join rows (`sum df^2` for dedup, `sum
+#'   intermediate token-overlap-join rows (`sum df*(df-1)` for dedup, `sum
 #'   df_base*df_target` for search, over `(column, block, token)`). The
 #'   always-on guard against a hot/boilerplate token fanning a block into a
 #'   quadratic join. Default `5e7`; `Inf` disables.
@@ -67,6 +72,7 @@ Search_Strategy <- new_class("Search_Strategy",
                                weights   = class_any,
                                block_by  = class_any,
                                rarity    = class_character,
+                               rarity_scope = new_property(class_character, default = "block"),
                                threshold = class_numeric,
                                min_rarity = class_any,
                                max_token_df = new_property(class_numeric, default = Inf),
@@ -146,7 +152,8 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
   if (is.null(x@block_by)) {
     cli::cli_text("blocking: none")
   } else {
-    cli::cli_text("blocking: {paste(x@block_by, collapse = ', ')}")
+    block_txt <- .format_block_by(x@block_by)
+    cli::cli_text("blocking: {block_txt}")
   }
 
   # weights
@@ -161,10 +168,11 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
   }
 
   # rarity
+  scope_tag <- if (identical(x@rarity_scope, "global")) "global, " else ""
   if (is.finite(x@max_token_df)) {
-    cli::cli_text("rarity: {x@rarity} (min={format(x@min_rarity)}, max_token_df={format(x@max_token_df)})")
+    cli::cli_text("rarity: {x@rarity} ({scope_tag}min={format(x@min_rarity)}, max_token_df={format(x@max_token_df)})")
   } else {
-    cli::cli_text("rarity: {x@rarity} (min={format(x@min_rarity)})")
+    cli::cli_text("rarity: {x@rarity} ({scope_tag}min={format(x@min_rarity)})")
   }
 
   # fan-out guard
@@ -245,7 +253,7 @@ expr_to_step <- function(expr) {
 
 #' Parse `column ~ steps` formulas into a named list of Search_Preparers
 #'
-#' Shared by [search_strategy()] and [exact_strategy()] — both consume the
+#' Shared by [search_strategy()] and [exact_strategy()]; both consume the
 #' same `column ~ step1 + step2` tokenization grammar; only the matching half
 #' differs. Keeping one parser prevents the two constructors from drifting.
 #' @noRd
@@ -277,6 +285,43 @@ expr_to_step <- function(expr) {
 }
 
 
+#' Validate and normalise a `block_by` argument.
+#'
+#' Accepts `NULL`, a character vector, a single [block_on_tokens()] spec
+#' (`Block_On_Tokens`), or a list mixing character entries and token-block
+#' specs. Each element must be a non-empty string or a `Block_On_Tokens`.
+#' Returns the value unchanged (the downstream resolver `.block_cols()` handles
+#' every accepted shape); plain-character behaviour is identical to before.
+#' @noRd
+.validate_block_by <- function(block_by, arg = "block_by",
+                               call = rlang::caller_env()) {
+  if (is.null(block_by)) return(NULL)
+  if (is.character(block_by)) {
+    check_character(block_by, arg = arg, call = call)
+    return(block_by)
+  }
+  if (.is_token_block(block_by)) return(block_by)
+  if (is.list(block_by)) {
+    for (e in block_by) {
+      ok <- (is.character(e) && length(e) == 1L && nzchar(e)) || .is_token_block(e)
+      if (!ok) {
+        cli::cli_abort(
+          "{.arg {arg}} list entries must each be a single column name or a \\
+           {.fn block_on_tokens} spec.",
+          call = call
+        )
+      }
+    }
+    return(block_by)
+  }
+  cli::cli_abort(
+    "{.arg {arg}} must be {.code NULL}, a character vector, a {.fn block_on_tokens} \\
+     spec, or a list mixing the two.",
+    call = call
+  )
+}
+
+
 #' Define a Search Strategy for Record Linkage
 #'
 #' @description
@@ -296,6 +341,17 @@ expr_to_step <- function(expr) {
 #'   Names should correspond to columns. Default is `numeric()` (uniform weights).
 #' @param rarity Character scalar specifying the rarity computation method.
 #'   Default is `"inverse_freq"`.
+#' @param rarity_scope Character scalar, `"block"` (default) or `"global"`,
+#'   selecting the scope over which a token's rarity (informativeness) is
+#'   measured. `"block"` measures rarity within each block (the historical and
+#'   only previous behaviour). `"global"` measures it across the whole corpus, so
+#'   a token's informativeness no longer depends on which block it lands in. This
+#'   is the chain defense for region-free linking: a globally common name (think
+#'   a franchise) gets low global rarity and is dropped by `min_rarity`, while a
+#'   distinctive brand reads as a strong link signal regardless of where it
+#'   appears. Only the rarity metric and the `min_rarity` gate follow this
+#'   argument; the cost axis (block-local `df`, `max_token_df`, the fan-out
+#'   guard) stays block-local under both scopes.
 #' @param min_rarity Numeric scalar specifying the minimum rarity value required
 #'   for a token to be included in similarity scoring. Tokens with rarity below
 #'   this threshold are filtered out. Default is `0`.
@@ -315,17 +371,18 @@ expr_to_step <- function(expr) {
 #' @param max_candidates Numeric scalar specifying the maximum number of candidate
 #'   matches to retain per record. Default is `Inf` (no limit). When finite,
 #'   only the top `max_candidates` highest scoring matches are kept per record.
-#' @param max_fanout Numeric scalar budgeting the estimated number of
-#'   intermediate token-overlap-join rows (`sum df^2` for dedup, `sum
-#'   df_base*df_target` for search). The always-on guard against a hot or
-#'   boilerplate token fanning one block into a quadratic join (the failure mode
-#'   `min_rarity` / `max_token_df` also address, but here by default). Estimated
-#'   cheaply from the token document-frequency histogram before the join — no
-#'   pairs are materialised. Default `5e7`; set `Inf` (or `on_fanout = "off"`)
-#'   to disable. See [rarity_distribution()] / [plan_strategy()] to choose a value.
+#' @param max_fanout Numeric scalar. The always-on guard against a single hot or
+#'   boilerplate token (think a directory publisher's name, or a stopword that
+#'   slipped through) fanning one block into a huge number of pairwise
+#'   comparisons. This is the same failure `min_rarity` / `max_token_df` address, but on
+#'   by default. It caps the estimated number of record pairs the token-overlap
+#'   join will form, predicted cheaply from token frequencies before the join
+#'   runs (no pairs are built to measure it). Default `5e7`; set `Inf` (or
+#'   `on_fanout = "off"`) to disable. Use [rarity_distribution()] or
+#'   [plan_strategy()] to pick a value for your data.
 #' @param on_fanout What to do when the estimated fan-out exceeds `max_fanout`:
 #'   `"cap"` (default) auto-drops the smallest set of hyper-common tokens needed
-#'   to get under budget — they carry near-zero rarity, so scores barely move —
+#'   to get under budget (they carry near-zero rarity, so scores barely move)
 #'   and emits a loud warning naming what was dropped; `"abort"` stops with an
 #'   actionable error instead; `"off"` disables the guard entirely.
 #' @param feedback_strength Numeric scalar controlling feedback weighted scoring.
@@ -351,6 +408,7 @@ search_strategy <- function(...,
                             block_by   = NULL,
                             weights    = numeric(),
                             rarity     = "inverse_freq",
+                            rarity_scope = c("block", "global"),
                             min_rarity = 0,
                             max_token_df = Inf,
                             threshold  = 0.9,
@@ -363,6 +421,7 @@ search_strategy <- function(...,
 
   on_missing <- match.arg(on_missing)
   on_fanout  <- match.arg(on_fanout)
+  rarity_scope <- match.arg(rarity_scope)
   check_number_decimal(min_rarity, min = 0)
   check_number_decimal(max_token_df, min = 1, allow_infinite = TRUE)
   check_number_decimal(max_fanout, min = 1, allow_infinite = TRUE)
@@ -379,9 +438,7 @@ search_strategy <- function(...,
 
   preparers <- .parse_strategy_formulas(rlang::list2(...))
 
-  if (!is.null(block_by)) {
-    check_character(block_by)
-  }
+  block_by <- .validate_block_by(block_by)
   if (length(weights) > 0 &&
       (is.null(names(weights)) || any(names(weights) == ""))) {
     cli::cli_abort("{.arg weights} must be a named numeric vector")
@@ -400,6 +457,7 @@ search_strategy <- function(...,
     weights    = weights,
     block_by   = block_by,
     rarity     = rarity,
+    rarity_scope = rarity_scope,
     threshold  = threshold,
     min_rarity = min_rarity,
     max_token_df = max_token_df,
