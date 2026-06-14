@@ -88,6 +88,7 @@ method(
               direction   = c("forward", "backward", "bidirectional"),
               edge_filter = NULL,
               rep_by      = NULL,
+              control     = duckdb_control(),
               ...) {
 
   con      <- base_table$src$con
@@ -109,7 +110,7 @@ method(
     target_id = target_id, strategies = strategies, self = self,
     source_by = source_by, collapse = pol$collapse, rep_rule = rep_rule,
     rebind = pol$rebind, direction = pol$direction,
-    edge_filter = edge_filter, rep_by = rep_by
+    edge_filter = edge_filter, rep_by = rep_by, control = control
   )
 
   # Pooled vertex / source map (collect id + source_by + rep_by columns).
@@ -155,7 +156,7 @@ method(
   multi_stage_dedup,
   list(Duck_tbl, class_character, class_list)
 ) <- function(table, id, strategies,
-              rep_by = NULL, edge_filter = NULL, ...) {
+              rep_by = NULL, edge_filter = NULL, control = duckdb_control(), ...) {
 
   con   <- table$src$con
   table <- .materialise_duck_input(table, con)
@@ -175,7 +176,7 @@ method(
   )$id
 
   staged <- .run_staged_dedup(table, id, strategies, all_ids,
-                              edge_filter = edge_filter)
+                              edge_filter = edge_filter, control = control)
   edges <- staged$edges
 
   # Join an R-side result table (id + dedup cols) back to the corpus in SQL.

@@ -88,23 +88,50 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
   blk_out <- if (length(block_by)) {
     paste0(", ", paste(sprintf('a."%s"', block_by), collapse = ", "))
   } else ""
+  # bare block selector + partition key for the self group-by star.
+  blk_bare <- if (length(block_by)) {
+    paste0(", ", paste(sprintf('"%s"', block_by), collapse = ", "))
+  } else ""
+  part_sql <- paste(c(
+    if (length(block_by)) sprintf('"%s"', block_by),
+    sprintf('"%s"', fp_cols)
+  ), collapse = ", ")
+  # Empty-fingerprint guard: drop records whose every fp column is '' (no tokens
+  # in ANY column) — they carry no identity and must not collapse together (else
+  # all token-less rows in a block form one spurious entity / N^2 clique).
+  empty_all <- paste(sprintf('"%s" = \'\'', fp_cols), collapse = " AND ")
 
   links_tbl <- paste0("_joinery_tmp_exact_links_", sample.int(1e9, 1))
   if (self) {
+    # GROUP-BY star, NOT an all-pairs self-join: set-equality is transitive, so
+    # rep = MIN(id) per (block, fp...) group + rep->member edges yield identical
+    # connected components at O(N) instead of O(N^2). A K-record identical clique
+    # (e.g. a directory-publisher row duplicated thousands of times) collapses in
+    # K-1 star edges, not K(K-1)/2 pairs. Mirrors v1 31_collapse_within_year.R.
     DBI::dbExecute(con, paste0(
       "CREATE TEMP TABLE ", links_tbl, " AS\n",
-      "SELECT a.id AS id_a, b.id AS id_b", blk_out, "\n",
-      "FROM ", bw, " a JOIN ", bw, " b\n  ON ", on_clause, "\n",
-      "WHERE a.id < b.id;"
+      "WITH g AS (\n",
+      "  SELECT id", blk_bare, ",\n",
+      "         MIN(id) OVER (PARTITION BY ", part_sql, ") AS rep\n",
+      "  FROM ", bw, "\n",
+      "  WHERE NOT (", empty_all, ")\n",
+      ")\n",
+      "SELECT rep AS id_a, id AS id_b", blk_bare, "\n",
+      "FROM g WHERE id <> rep;"
     ))
   } else {
     ttok <- prepare_search_data(dplyr::tbl(con, target_src), target_id, proxy)
     tw   <- .exact_fp_wide_duck(con, ttok$lazy_query$x, target_id, block_by, cols)
     reg$drop <- c(reg$drop, ttok$lazy_query$x, tw)
+    # cross/search keeps every base x target pair (each is a distinct candidate);
+    # only fully-empty fingerprints are excluded. fp-equality (the join key) means
+    # a is empty <=> b is empty, so guarding the base side suffices.
+    empty_a <- paste(sprintf('a."%s" = \'\'', fp_cols), collapse = " AND ")
     DBI::dbExecute(con, paste0(
       "CREATE TEMP TABLE ", links_tbl, " AS\n",
       "SELECT a.id AS base_id, b.id AS target_id", blk_out, "\n",
-      "FROM ", bw, " a JOIN ", tw, " b\n  ON ", on_clause, ";"
+      "FROM ", bw, " a JOIN ", tw, " b\n  ON ", on_clause, "\n",
+      "WHERE NOT (", empty_a, ");"
     ))
   }
   links_tbl

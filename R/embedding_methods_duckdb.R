@@ -189,7 +189,8 @@ method(
               target_id,
               strategy,
               threshold = NULL,
-              weights   = NULL) {
+              weights   = NULL,
+              control   = NULL) {  # accepted for staged-engine uniformity; embedding uses VSS, not chunking
 
   if (!is.null(weights)) {
     cli::cli_abort("Embedding strategies do not support {.arg weights}")
@@ -385,7 +386,8 @@ method(
 method(
   detect_duplicates,
   list(Duck_tbl, class_character, Embedding_Strategy)
-) <- function(base_table, id, strategy, threshold = NULL) {
+) <- function(base_table, id, strategy, threshold = NULL, control = NULL) {
+  # control accepted for staged-engine uniformity; embedding uses VSS, not chunking.
 
   con <- base_table$src$con
   .ensure_vss(con)

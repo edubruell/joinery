@@ -244,3 +244,51 @@ test_that("exact search + forward containment parity on DuckDB", {
   expect_true(all(cand$score == 1.0))
   expect_setequal(cand$id, c("b1", "t1"))
 })
+
+# ---------------------------------------------------------------------------
+# 7. GROUP-BY star: large identical cliques collapse without an N^2 self-join,
+#    and the empty-fingerprint guard keeps token-less rows as singletons.
+#    (Regression for the YP directory-publisher mega-clique blow-up.)
+# ---------------------------------------------------------------------------
+
+test_that("a large identical-fingerprint clique collapses to one group (dt + DuckDB)", {
+  K <- 200L   # the old all-pairs self-join made K(K-1)/2 edges; the star makes K-1
+  d <- data.table(
+    id     = as.character(seq_len(K + 1L)),
+    name   = c(rep("Dumrath Fassnacht", K), "Solo Firm"),
+    street = c(rep("Winsbergring 38", K), "Andere 1")
+  )
+  dt_dups <- detect_duplicates(d, "id", ex_strat)
+  expect_equal(length(unique(dt_dups$duplicate_group)), 1L)   # one group
+  expect_equal(nrow(dt_dups), K)                              # all K members kept
+  expect_setequal(dt_dups$id, as.character(seq_len(K)))       # singleton excluded
+  expect_equal(sort(dt_dups$rank), seq_len(K))
+
+  skip_if_not_installed("duckdb"); skip_if_not_installed("DBI"); skip_if_not_installed("dplyr")
+  con <- local_duckdb_con()
+  DBI::dbWriteTable(con, "d", as.data.frame(d))
+  dk_dups <- detect_duplicates(dplyr::tbl(con, "d"), "id", ex_strat) |>
+    dplyr::collect() |> data.table::as.data.table()
+  expect_equal(length(unique(dk_dups$duplicate_group)), 1L)
+  expect_equal(nrow(dk_dups), K)
+  expect_setequal(dk_dups$id, as.character(seq_len(K)))
+})
+
+test_that("fully-empty fingerprints stay singletons, never one spurious group (dt + DuckDB)", {
+  d <- data.table(
+    id     = c("e1", "e2", "e3", "n1", "n2"),
+    name   = c("", "", "", "Anna", "Anna"),
+    street = c("", "", "", "Weg 1", "Weg 1")
+  )
+  dt_dups <- detect_duplicates(d, "id", ex_strat)
+  expect_setequal(dt_dups$id, c("n1", "n2"))                  # only the real pair
+  expect_false(any(c("e1", "e2", "e3") %in% dt_dups$id))      # token-less rows excluded
+
+  skip_if_not_installed("duckdb"); skip_if_not_installed("DBI"); skip_if_not_installed("dplyr")
+  con <- local_duckdb_con()
+  DBI::dbWriteTable(con, "d", as.data.frame(d))
+  dk_dups <- detect_duplicates(dplyr::tbl(con, "d"), "id", ex_strat) |>
+    dplyr::collect() |> data.table::as.data.table()
+  expect_setequal(dk_dups$id, c("n1", "n2"))
+  expect_false(any(c("e1", "e2", "e3") %in% dk_dups$id))
+})

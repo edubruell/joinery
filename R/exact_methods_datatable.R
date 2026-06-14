@@ -44,11 +44,25 @@
 }
 
 # Set-equality links (containment = "off").
+#
+# Self/dedup form emits a GROUP-BY *star* (rep -> each member), NOT the
+# all-pairs self-join: set-equality is transitive, so every record sharing a
+# fingerprint is one entity and the N^2 clique pairs are pure waste. A block
+# with K identical records (e.g. a directory-publisher row duplicated thousands
+# of times) collapses in O(K) star edges instead of O(K^2) pairs. resolve_entities
+# yields identical connected components. Mirrors v1 31_collapse_within_year.R.
+#
+# Empty-fingerprint guard: a record with no tokens in ANY column ('' in every
+# fp_col) carries no identity and must not collapse — else every token-less row
+# in a block merges into one spurious entity (and self-joins into an N^2 clique).
+# Such rows stay singletons. (Distinct from the §25 empty-*column* case — an
+# identical name with empty street still links; only ALL-empty is excluded.)
 .exact_links_off_dt <- function(base, proxy, base_id,
                                 target, target_id, block_by, self) {
   cols    <- names(proxy@preparers)
   fp_cols <- paste0("fp_", cols)
   keys    <- c(block_by, fp_cols)
+  not_all_empty <- function(w) Reduce(`|`, lapply(fp_cols, function(cc) w[[cc]] != ""))
 
   wb <- .exact_fp_wide_dt(
     prepare_search_data(base, base_id, proxy),
@@ -56,16 +70,26 @@
   )
 
   if (self) {
-    left  <- data.table::copy(wb); data.table::setnames(left,  base_id, "id_a")
-    right <- data.table::copy(wb); data.table::setnames(right, base_id, "id_b")
-    links <- merge(left, right, by = keys, allow.cartesian = TRUE)
-    links <- links[id_a < id_b]
-    links <- unique(links[, c("id_a", "id_b", block_by), with = FALSE])
+    wb <- wb[not_all_empty(wb)]
+    if (nrow(wb) == 0L) {
+      out <- data.table::data.table(id_a = character(), id_b = character())
+      for (b in block_by) out[[b]] <- character()
+      return(out[])
+    }
+    # rep = lexicographically smallest id per exact-fingerprint group; star edges
+    # rep -> member (O(K)), never the K(K-1)/2 clique.
+    data.table::setnames(wb, base_id, "._id")
+    wb[, ._rep := min(._id), by = keys]
+    links <- wb[._id != ._rep, c("._rep", "._id", block_by), with = FALSE]
+    data.table::setnames(links, c("._rep", "._id"), c("id_a", "id_b"))
+    links <- unique(links)
   } else {
     wt <- .exact_fp_wide_dt(
       prepare_search_data(target, target_id, proxy),
       target_id, block_by, cols, .JOINERY_FP_DELIM
     )
+    wb <- wb[not_all_empty(wb)]
+    wt <- wt[not_all_empty(wt)]
     data.table::setnames(wb, base_id,   "base_id")
     data.table::setnames(wt, target_id, "target_id")
     links <- merge(wb, wt, by = keys, allow.cartesian = TRUE)

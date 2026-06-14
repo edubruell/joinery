@@ -184,7 +184,7 @@
 
 #' @noRd
 .run_staged_dedup <- function(table, id, strategies, all_ids,
-                              edge_filter = NULL) {
+                              edge_filter = NULL, control = NULL) {
   strategies <- .stage_strategies(strategies)
 
   working     <- table
@@ -192,7 +192,13 @@
   edge_chunks <- list()
 
   for (stage_name in names(strategies)) {
-    groups <- detect_duplicates(working, id, strategies[[stage_name]])
+    # control is a DuckDB-only execution surface; forward it only when set so
+    # non-DuckDB per-stage methods (which never chunk) keep their plain signature.
+    groups <- if (is.null(control)) {
+      detect_duplicates(working, id, strategies[[stage_name]])
+    } else {
+      detect_duplicates(working, id, strategies[[stage_name]], control = control)
+    }
     e <- .star_expand_groups(groups)
     non_reps <- attr(e, "non_reps", exact = TRUE)
 
@@ -317,13 +323,18 @@
                                self = FALSE, source_by = NULL,
                                collapse = "none", rep_rule = "canonical",
                                rebind = "explicit", direction = "forward",
-                               edge_filter = NULL, rep_by = NULL) {
+                               edge_filter = NULL, rep_by = NULL, control = NULL) {
   strategies <- .stage_strategies(strategies)
 
   # One stage, possibly two orientations for `bidirectional`.
   run_one <- function(b_tbl, b_id, t_tbl, t_id, strategy, stage_name) {
     orient <- function(bt, bi, tt, ti, dir) {
-      pairs <- search_candidates(bt, tt, bi, ti, strategy = strategy)
+      # control is DuckDB-only; forward only when set (see .run_staged_dedup).
+      pairs <- if (is.null(control)) {
+        search_candidates(bt, tt, bi, ti, strategy = strategy)
+      } else {
+        search_candidates(bt, tt, bi, ti, strategy = strategy, control = control)
+      }
       .pairs_to_edges(pairs, stage_name, dir, source_by)
     }
     if (direction == "bidirectional") {
