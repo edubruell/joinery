@@ -1203,6 +1203,43 @@ test_that("drop_numeric_tokens() works inside a search_strategy pipeline", {
   expect_true(nrow(dups) >= 1L)
 })
 
+test_that("drop_short_tokens() removes tokens below min_nchar", {
+  expect_equal(
+    drop_short_tokens(list(c("BAU", "AG", "X"))),         # default min_nchar = 2
+    list(c("BAU", "AG"))
+  )
+  expect_equal(
+    drop_short_tokens(list(c("BAU", "AG", "X")), min_nchar = 3),
+    list("BAU")
+  )
+  # row shape preserved, including empties
+  expect_equal(
+    drop_short_tokens(list(c("AB", "C"), character(0), "DE"), min_nchar = 2),
+    list("AB", character(0), "DE")
+  )
+  expect_error(drop_short_tokens(c("a", "bb")), "must be a list")
+  expect_error(drop_short_tokens(list("a"), min_nchar = 0), "min_nchar")
+})
+
+test_that("drop_short_tokens() drops the collision-prone short phonetic codes", {
+  # the motivating case: Bülau and Pauli both encode to the 2-digit Cologne "15";
+  # a 4-char floor keeps only the discriminative long code (Mertens -> 67268).
+  codes <- as_cologne(list(c("Bülau", "Mertens")))
+  expect_equal(drop_short_tokens(codes, min_nchar = 4), list("67268"))
+})
+
+test_that("drop_short_tokens() composes after as_cologne in a pipeline", {
+  df <- data.table::data.table(id = 1:2, nm = c("Bülau", "Mertens"))
+  strat <- search_strategy(
+    nm ~ normalize_text + word_tokens(min_nchar = 3) + as_cologne +
+         drop_short_tokens(min_nchar = 4),
+    weights = c(nm = 1)
+  )
+  tok <- prepare_search_data(df, "id", strat)
+  expect_equal(tok[["token"]], "67268")   # only the 5-digit code survives
+  expect_equal(unique(tok[["id"]]), 2L)    # Bülau's "15" was dropped
+})
+
 test_that("filter_stopwords() removes stopwords correctly", {
   
   # Basic removal

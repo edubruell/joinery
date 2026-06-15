@@ -60,6 +60,7 @@ fuzzy_tokens(c("Neumann", "Neumaxn", "Neuman"), max_dist = 2)
 
 Other token transformers: 
 \code{\link{drop_numeric_tokens}()},
+\code{\link{drop_short_tokens}()},
 \code{\link{extract_initials}()},
 \code{\link{filter_stopwords}()},
 \code{\link{token_shapes}()},

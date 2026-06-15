@@ -547,6 +547,57 @@ drop_numeric_tokens <- function(tokens, keep_letters = TRUE) {
   out
 }
 
+#' Drop short tokens from token lists
+#'
+#' @description
+#' Removes tokens shorter than `min_nchar` characters from a token column. Where
+#' [word_tokens()]'s own `min_nchar` filters length at *tokenisation*, this filters
+#' length *after* a token transform - which is where it matters for the phonetic
+#' encoders ([as_cologne()], [as_soundex()], [as_metaphone()]) and [generate_ngrams()]:
+#' those produce short codes, and a 1-2 character code maps to a very large
+#' equivalence class (low distinctiveness), so it behaves as a false-match magnet.
+#' Chain `drop_short_tokens()` after the encoder to keep only the discriminative codes.
+#'
+#' Operates on the list-of-character token vectors produced by earlier steps,
+#' mirroring [filter_stopwords()] / [drop_numeric_tokens()].
+#'
+#' @param tokens A list of character vectors.
+#' @param min_nchar Whole number; tokens with fewer than this many characters are
+#'   dropped. Default `2`.
+#'
+#' @return A list of character vectors with short tokens removed.
+#'
+#' @examples
+#' drop_short_tokens(list(c("BAU", "AG", "X")))
+#' # list(c("BAU", "AG"))  # the 1-char token is dropped at the default min_nchar = 2
+#'
+#' # keep only Cologne codes of 4+ digits (drops the collision-prone short class)
+#' drop_short_tokens(as_cologne(list(c("Bülau", "Mertens"))), min_nchar = 4)
+#' # list("67268")
+#'
+#' @family token transformers
+#' @seealso [filter_stopwords()] and [drop_numeric_tokens()] for the same
+#'   list-column idea with other drop rules; [word_tokens()] for the same length
+#'   cut applied at tokenisation instead.
+#' @export
+drop_short_tokens <- function(tokens, min_nchar = 2) {
+  if (!is.list(tokens)) {
+    cli::cli_abort("{.arg tokens} must be a list")
+  }
+  check_number_whole(min_nchar, min = 1)
+
+  # Flatten once, keep tokens meeting the length, then re-split - no per-row
+  # map() (mirrors filter_stopwords() / drop_numeric_tokens()).
+  lens <- lengths(tokens)
+  flat <- unlist(tokens, use.names = FALSE)
+  if (is.null(flat)) flat <- character(0)
+  keep <- nchar(flat) >= min_nchar
+  idx  <- rep.int(seq_along(tokens), lens)[keep]
+  out  <- split(flat[keep], factor(idx, levels = seq_along(tokens)))
+  names(out) <- NULL
+  out
+}
+
 #' Convert tokens to shape signatures
 #'
 #' Reduces each token to its letter/digit pattern: every letter becomes `"A"`,

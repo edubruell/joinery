@@ -35,6 +35,7 @@ filter_stopwords(list(c("MUELLER", "GMBH")), stopwords = c("gmbh"))
 
 Other token transformers: 
 \code{\link{drop_numeric_tokens}()},
+\code{\link{drop_short_tokens}()},
 \code{\link{extract_initials}()},
 \code{\link{fuzzy_tokens}()},
 \code{\link{token_shapes}()},

@@ -39,6 +39,7 @@ drop_numeric_tokens(list(c("MAIN", "12A")), keep_letters = FALSE)
   idea with a named word list.
 
 Other token transformers: 
+\code{\link{drop_short_tokens}()},
 \code{\link{extract_initials}()},
 \code{\link{filter_stopwords}()},
 \code{\link{fuzzy_tokens}()},

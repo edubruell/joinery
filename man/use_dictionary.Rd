@@ -42,6 +42,7 @@ use_dictionary("nonexistent", dict)
 
 Other token transformers: 
 \code{\link{drop_numeric_tokens}()},
+\code{\link{drop_short_tokens}()},
 \code{\link{extract_initials}()},
 \code{\link{filter_stopwords}()},
 \code{\link{fuzzy_tokens}()},

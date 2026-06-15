@@ -30,6 +30,7 @@ extract_initials(list(c("Anna", "Berta")))
 \seealso{
 Other token transformers: 
 \code{\link{drop_numeric_tokens}()},
+\code{\link{drop_short_tokens}()},
 \code{\link{filter_stopwords}()},
 \code{\link{fuzzy_tokens}()},
 \code{\link{token_shapes}()},
