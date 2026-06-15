@@ -50,6 +50,43 @@ test_that("as_cologne() works as in examples", {
   )
 })
 
+test_that("phonetic encoders accept a token list-column (post word_tokens)", {
+  # When placed after a token generator the engine hands the encoder a list (one
+  # character vector of tokens per row); it must encode per token and preserve
+  # the row shape, matching the per-string result element-wise.
+  toks <- list(c("Meier", "Schmidt"), "Maier", character(0))
+
+  expect_equal(
+    as_cologne(toks),
+    list(as_cologne(c("Meier", "Schmidt")), as_cologne("Maier"), character(0))
+  )
+  expect_equal(
+    as_metaphone(toks),
+    list(as_metaphone(c("Meier", "Schmidt")), as_metaphone("Maier"), character(0))
+  )
+  expect_equal(
+    as_soundex(toks),
+    list(as_soundex(c("Meier", "Schmidt")), as_soundex("Maier"), character(0))
+  )
+
+  # sound-alike variants collapse to one key per token
+  expect_equal(as_cologne(list(c("Meier", "Maier", "Mayer")))[[1]],
+               rep(as_cologne("Meier"), 3))
+})
+
+test_that("phonetic encoders compose with word_tokens in a Step pipeline", {
+  df <- data.table::data.table(id = 1:2, nm = c("Meier Bau", "Maier Bau"))
+  strat <- search_strategy(
+    nm ~ normalize_text + word_tokens(min_nchar = 1) + as_cologne,
+    weights = c(nm = 1)
+  )
+  tok <- prepare_search_data(df, "id", strat)   # long-form token table
+  k1 <- sort(tok[get("id") == 1L][["token"]])
+  k2 <- sort(tok[get("id") == 2L][["token"]])
+  expect_equal(k1, k2)                           # Meier/Maier collapse -> identical tokens
+  expect_true(all(grepl("^[0-9]+$", k1)))        # Cologne keys are digit strings
+})
+
 test_that("word_tokens() works as in examples", {
   expect_equal(
     word_tokens("This is an example."),

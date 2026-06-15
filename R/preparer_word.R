@@ -375,12 +375,14 @@ strip_vowels <- function(text) {
 #' Best on single-word fields such as surnames or company names; it is tuned for
 #' English pronunciation (for German, see [as_cologne()]).
 #'
-#' Returns text, so it slots ahead of a token generator, or use it directly on a
-#' one-word column. Phonetic keys are deliberately coarse, so they trade
-#' precision for recall: pair them with a sharper field rather than matching on a
-#' phonetic key alone.
+#' Runs on either side of a token generator: ahead of one (on a text column), or
+#' after one (on a token column, encoding each token in place). Phonetic keys are
+#' deliberately coarse, so they trade precision for recall: pair them with a
+#' sharper field rather than matching on a phonetic key alone.
 #'
-#' @param text A character string or vector to encode.
+#' @param text A character string or vector to encode, or a token list-column
+#'   (one character vector of tokens per row) when the encoder is placed *after*
+#'   a token generator -- each token is then encoded in place.
 #'
 #' @return A character vector of Metaphone keys, one per input element.
 #'
@@ -392,6 +394,10 @@ strip_vowels <- function(text) {
 #' @export
 #' @import phonics
 as_metaphone <- function(text) {
+  # Token list-column (encoder placed after a token generator): encode per token.
+  if (is.list(text)) return(.encode_token_list(text, as_metaphone))
+  check_character(text)
+
   # Normalize accents: Cafe (accented) -> Cafe
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
 
@@ -411,11 +417,14 @@ as_metaphone <- function(text) {
 #' and older than Metaphone but widely understood and a good default for English
 #' surnames.
 #'
-#' Returns text, so it slots ahead of a token generator, or use it directly on a
-#' one-word column. As with any phonetic key it favours recall over precision;
-#' pair it with a sharper field rather than matching on the key alone.
+#' Runs on either side of a token generator: ahead of one (on a text column), or
+#' after one (on a token column, encoding each token in place). As with any
+#' phonetic key it favours recall over precision; pair it with a sharper field
+#' rather than matching on the key alone.
 #'
-#' @param text A character string or vector to encode.
+#' @param text A character string or vector to encode, or a token list-column
+#'   (one character vector of tokens per row) when the encoder is placed *after*
+#'   a token generator -- each token is then encoded in place.
 #'
 #' @return A character vector of Soundex keys (letter followed by digits), one
 #'   per input element.
@@ -428,6 +437,8 @@ as_metaphone <- function(text) {
 #' @export
 #' @import phonics
 as_soundex <- function(text){
+  # Token list-column (encoder placed after a token generator): encode per token.
+  if (is.list(text)) return(.encode_token_list(text, as_soundex))
   check_character(text)
 
   # Normalize accents: Cafe (accented) -> Cafe
@@ -453,7 +464,9 @@ as_soundex <- function(text){
 #' one-word column. Like any phonetic key it favours recall over precision; pair
 #' it with a sharper field rather than matching on the key alone.
 #'
-#' @param text A character string or vector to encode.
+#' @param text A character string or vector to encode, or a token list-column
+#'   (one character vector of tokens per row) when the encoder is placed *after*
+#'   a token generator -- each token is then encoded in place.
 #'
 #' @return A character vector of Cologne phonetic keys (digit strings), one per
 #'   input element.
@@ -465,6 +478,8 @@ as_soundex <- function(text){
 #' @export
 #' @import phonics
 as_cologne <- function(text){
+  # Token list-column (encoder placed after a token generator): encode per token.
+  if (is.list(text)) return(.encode_token_list(text, as_cologne))
   check_character(text)
 
   x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")

@@ -7,7 +7,9 @@
 as_metaphone(text)
 }
 \arguments{
-\item{text}{A character string or vector to encode.}
+\item{text}{A character string or vector to encode, or a token list-column
+(one character vector of tokens per row) when the encoder is placed *after*
+a token generator -- each token is then encoded in place.}
 }
 \value{
 A character vector of Metaphone keys, one per input element.
@@ -20,10 +22,10 @@ Best on single-word fields such as surnames or company names; it is tuned for
 English pronunciation (for German, see [as_cologne()]).
 }
 \details{
-Returns text, so it slots ahead of a token generator, or use it directly on a
-one-word column. Phonetic keys are deliberately coarse, so they trade
-precision for recall: pair them with a sharper field rather than matching on a
-phonetic key alone.
+Runs on either side of a token generator: ahead of one (on a text column), or
+after one (on a token column, encoding each token in place). Phonetic keys are
+deliberately coarse, so they trade precision for recall: pair them with a
+sharper field rather than matching on a phonetic key alone.
 }
 \examples{
 as_metaphone("Smith")

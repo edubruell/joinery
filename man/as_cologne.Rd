@@ -7,7 +7,9 @@
 as_cologne(text)
 }
 \arguments{
-\item{text}{A character string or vector to encode.}
+\item{text}{A character string or vector to encode, or a token list-column
+(one character vector of tokens per row) when the encoder is placed *after*
+a token generator -- each token is then encoded in place.}
 }
 \value{
 A character vector of Cologne phonetic keys (digit strings), one per

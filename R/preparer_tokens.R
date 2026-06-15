@@ -468,6 +468,35 @@ filter_stopwords <- function(tokens, stopwords) {
   out
 }
 
+#' Apply a per-element text encoder across a token list-column
+#'
+#' Internal helper shared by the phonetic encoders ([as_metaphone()],
+#' [as_soundex()], [as_cologne()]) so they can run *after* a token generator as
+#' well as before one. When a Step pipeline applies an encoder to a token column,
+#' the engine hands it a list (one character vector of tokens per row), not a flat
+#' character vector. This flattens once, encodes the flat vector in a single
+#' vectorised call (encoding is 1:1, so length is preserved), and re-splits to the
+#' original row shape - the same flatten-once strategy as [filter_stopwords()],
+#' avoiding a per-row closure at corpus scale.
+#'
+#' @param tokens A list of character vectors (a tokenised column).
+#' @param encode A function mapping a character vector to a character vector of
+#'   equal length (one of the phonetic encoders, passed by name).
+#'
+#' @return A list of character vectors matching `tokens` in length and row shape,
+#'   each token replaced by its encoding.
+#'
+#' @noRd
+.encode_token_list <- function(tokens, encode) {
+  lens <- lengths(tokens)
+  flat <- unlist(tokens, use.names = FALSE)
+  enc  <- if (length(flat)) encode(flat) else character(0)
+  out  <- split(enc, factor(rep.int(seq_along(tokens), lens),
+                            levels = seq_along(tokens)))
+  names(out) <- NULL
+  out
+}
+
 #' Drop numeric (house-number) tokens from token lists
 #'
 #' @description

@@ -7,7 +7,9 @@
 as_soundex(text)
 }
 \arguments{
-\item{text}{A character string or vector to encode.}
+\item{text}{A character string or vector to encode, or a token list-column
+(one character vector of tokens per row) when the encoder is placed *after*
+a token generator -- each token is then encoded in place.}
 }
 \value{
 A character vector of Soundex keys (letter followed by digits), one
@@ -21,9 +23,10 @@ and older than Metaphone but widely understood and a good default for English
 surnames.
 }
 \details{
-Returns text, so it slots ahead of a token generator, or use it directly on a
-one-word column. As with any phonetic key it favours recall over precision;
-pair it with a sharper field rather than matching on the key alone.
+Runs on either side of a token generator: ahead of one (on a text column), or
+after one (on a token column, encoding each token in place). As with any
+phonetic key it favours recall over precision; pair it with a sharper field
+rather than matching on the key alone.
 }
 \examples{
 as_soundex("Robert")
