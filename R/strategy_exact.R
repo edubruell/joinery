@@ -33,6 +33,23 @@
 #' tokenization but matches by token-set equality (or containment) rather than
 #' weighted scoring.
 #'
+#' @details
+#' **The containment guards are the exact strategy's feedback.** A
+#' `Search_Strategy` softens a partial match through `feedback_strength`:
+#' `score = raw_score * (1 - s*(1 - overlap_share))`, docking credit when only
+#' part of a record's rarity mass actually matched. An exact strategy has no
+#' continuous score to soften (every link is 1.0), so the same "is the overlap
+#' real substance?" intent lives in two *gates* on the contained side of a
+#' proper-containment link:
+#'
+#' - `min_base_rarity` is the **rarity-mass** analogue of feedback - the
+#'   contained side must carry enough summed rarity to be worth linking.
+#' - `min_containment_tokens` is the **cardinality** analogue - the contained
+#'   side must hold enough tokens, so a single generic/hub token cannot ride in
+#'   as a subset of many richer names. It is applied *per column* (street tokens
+#'   must not pad a thin name past the threshold), which is why it is a count
+#'   statement, not a rarity statement.
+#'
 #' @slot preparers Named list of `Search_Preparer` objects (one per column).
 #' @slot block_by NULL or a character vector of blocking variables.
 #' @slot rarity Character scalar rarity metric - used only by the containment
@@ -40,6 +57,12 @@
 #' @slot containment One of `"off"`, `"forward"`, `"bidirectional"`.
 #' @slot min_base_rarity Numeric. Containment guard: drop links whose base
 #'   record carries summed rarity mass below this floor.
+#' @slot min_containment_tokens Numeric. Containment guard (the cardinality
+#'   analogue of `feedback_strength`; see Details): a *proper* subset link
+#'   (strict containment) requires the contained record's token set to hold at
+#'   least this many tokens *per column*. Set-equality always links regardless.
+#'   Default `1` (no restriction); `2` stops a single generic token (a category
+#'   or hub name) being a subset of many richer names and chaining them.
 #'
 #' @seealso [exact_strategy()]
 #'
@@ -47,11 +70,12 @@
 Exact_Strategy <- new_class(
   "Exact_Strategy",
   properties = list(
-    preparers       = class_list,
-    block_by        = class_any,
-    rarity          = class_character,
-    containment     = class_character,
-    min_base_rarity = class_numeric
+    preparers             = class_list,
+    block_by              = class_any,
+    rarity                = class_character,
+    containment           = class_character,
+    min_base_rarity       = class_numeric,
+    min_containment_tokens = class_numeric
   ),
   validator = function(self) {
     if (length(self@containment) != 1 ||
@@ -61,6 +85,11 @@ Exact_Strategy <- new_class(
     if (length(self@min_base_rarity) != 1 ||
         !is.finite(self@min_base_rarity) || self@min_base_rarity < 0) {
       return("min_base_rarity must be a non-negative finite scalar")
+    }
+    if (length(self@min_containment_tokens) != 1 ||
+        !is.finite(self@min_containment_tokens) ||
+        self@min_containment_tokens < 1) {
+      return("min_containment_tokens must be a finite scalar >= 1")
     }
   }
 )
@@ -95,7 +124,9 @@ method(print.Search_Strategy, Exact_Strategy) <- function(x, ...) {
   if (x@containment == "off") {
     cli::cli_text("containment: off")
   } else {
-    cli::cli_text("containment: {x@containment} (min_base_rarity={format(x@min_base_rarity)})")
+    cli::cli_text(paste0("containment: {x@containment} ",
+                         "(min_base_rarity={format(x@min_base_rarity)}, ",
+                         "min_containment_tokens={format(x@min_containment_tokens)})"))
   }
   invisible(x)
 }
@@ -168,6 +199,14 @@ method(print.Search_Strategy, Exact_Strategy) <- function(x, ...) {
 #'   it over-links on noisy corpora, so it is never the default.
 #' @param min_base_rarity Numeric containment guard: drop links whose base
 #'   record carries summed rarity mass below this floor. Default `0`.
+#' @param min_containment_tokens Numeric containment guard, default `1` (no
+#'   restriction). A *proper* containment link (one record's tokens a strict
+#'   subset of the other's) requires the contained record to hold at least this
+#'   many tokens; set-equality always links. Raise to `2` to stop a single
+#'   generic token - a bare category or hub name (e.g. a shopping-centre name) -
+#'   being a subset of every richer "Store + Centre" name and transitively
+#'   chaining unrelated records into one entity. Ignored when `containment =
+#'   "off"`.
 #'
 #' @return An [Exact_Strategy] object.
 #'
@@ -176,23 +215,26 @@ method(print.Search_Strategy, Exact_Strategy) <- function(x, ...) {
 #'
 #' @export
 exact_strategy <- function(...,
-                           block_by        = NULL,
-                           rarity          = "inverse_freq",
-                           containment     = c("off", "forward", "bidirectional"),
-                           min_base_rarity = 0) {
+                           block_by               = NULL,
+                           rarity                 = "inverse_freq",
+                           containment            = c("off", "forward", "bidirectional"),
+                           min_base_rarity        = 0,
+                           min_containment_tokens = 1) {
 
   containment <- match.arg(containment)
   check_number_decimal(min_base_rarity, min = 0)
+  check_number_whole(min_containment_tokens, min = 1)
   check_string(rarity)
   if (!is.null(block_by)) check_character(block_by)
 
   preparers <- .parse_strategy_formulas(rlang::list2(...))
 
   Exact_Strategy(
-    preparers       = preparers,
-    block_by        = block_by,
-    rarity          = rarity,
-    containment     = containment,
-    min_base_rarity = min_base_rarity
+    preparers              = preparers,
+    block_by               = block_by,
+    rarity                 = rarity,
+    containment            = containment,
+    min_base_rarity        = min_base_rarity,
+    min_containment_tokens = min_containment_tokens
   )
 }

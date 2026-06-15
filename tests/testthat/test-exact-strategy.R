@@ -149,6 +149,67 @@ test_that("bidirectional catches the reverse; guard drops low-info base", {
   expect_equal(nrow(search_candidates(base2, targ2, "id", "id", gated_strat)), 0L)
 })
 
+test_that("min_containment_tokens stops a single-token hub chaining richer names", {
+  # A bare hub name ('Passage') is a subset of every 'Store Passage' name, so
+  # bidirectional containment chains the whole mall into one entity. Equality
+  # (the two identical 'McDonalds') must always survive the guard.
+  d <- data.table(
+    id   = c("h", "s1", "s2", "m1", "m2"),
+    name = c("Passage", "Esprit Passage", "MediaMarkt Passage", "McDonalds", "McDonalds")
+  )
+  hub_strat  <- exact_strategy(name ~ normalize_text() + word_tokens(),
+                               containment = "bidirectional")
+  gated_strat <- exact_strategy(name ~ normalize_text() + word_tokens(),
+                                containment = "bidirectional", min_containment_tokens = 2)
+
+  ungated <- detect_duplicates(d, "id", hub_strat)
+  # default (mc = 1): the hub chains h + s1 + s2 into one group.
+  hub_grp <- ungated[id == "h", duplicate_group]
+  expect_setequal(ungated[duplicate_group == hub_grp, id], c("h", "s1", "s2"))
+
+  gated <- detect_duplicates(d, "id", gated_strat)
+  # mc = 2: the single-token hub no longer absorbs the richer names...
+  expect_false(any(c("h", "s1", "s2") %in% gated$id))
+  # ...but the equality pair still collapses.
+  expect_setequal(gated[, id], c("m1", "m2"))
+
+  skip_if_not_installed("duckdb"); skip_if_not_installed("DBI"); skip_if_not_installed("dplyr")
+  con <- local_duckdb_con()
+  DBI::dbWriteTable(con, "d", as.data.frame(d))
+  dk <- detect_duplicates(dplyr::tbl(con, "d"), "id", gated_strat) |>
+    dplyr::collect() |> data.table::as.data.table()
+  expect_false(any(c("h", "s1", "s2") %in% dk$id))
+  expect_setequal(dk[, id], c("m1", "m2"))
+})
+
+test_that("min_containment_tokens gates PER COLUMN, not pooled across columns", {
+  # The multi-column trap: a shared street pads a generic NAME past a pooled token
+  # count. Per-column gating must still stop it - the NAME column alone decides.
+  d <- data.table(
+    id     = c("h", "s1", "s2", "r1", "r2"),
+    name   = c("Praxis", "Dr Schmidt Praxis", "Dr Mueller Praxis",
+               "Lange Transport", "Lange Transport GmbH"),
+    street = c("Klinikweg 5", "Klinikweg 5", "Klinikweg 5", "Hauptstr 1", "Hauptstr 1")
+  )
+  gated <- exact_strategy(name   ~ normalize_text() + word_tokens(),
+                          street ~ normalize_text() + word_tokens(),
+                          containment = "bidirectional", min_containment_tokens = 2)
+
+  dt <- detect_duplicates(d, "id", gated)
+  # the generic single-token-name hub is gated despite the shared street...
+  expect_false(any(c("h", "s1", "s2") %in% dt$id))
+  # ...but a real >=2-token name growth still links (Lange Transport [GmbH], same street).
+  expect_setequal(dt[, id], c("r1", "r2"))
+
+  skip_if_not_installed("duckdb"); skip_if_not_installed("DBI"); skip_if_not_installed("dplyr")
+  con <- local_duckdb_con()
+  DBI::dbWriteTable(con, "d2", as.data.frame(d))
+  dk <- detect_duplicates(dplyr::tbl(con, "d2"), "id", gated) |>
+    dplyr::collect() |> data.table::as.data.table()
+  expect_false(any(c("h", "s1", "s2") %in% dk$id))
+  expect_setequal(dk[, id], c("r1", "r2"))
+})
+
 # ---------------------------------------------------------------------------
 # 6. exact_strategy() constructor + print
 # ---------------------------------------------------------------------------
@@ -156,9 +217,11 @@ test_that("bidirectional catches the reverse; guard drops low-info base", {
 test_that("exact_strategy validates containment and min_base_rarity", {
   expect_error(exact_strategy(name ~ normalize_text(), containment = "nope"))
   expect_error(exact_strategy(name ~ normalize_text(), min_base_rarity = -1))
+  expect_error(exact_strategy(name ~ normalize_text(), min_containment_tokens = 0))
   s <- exact_strategy(name ~ normalize_text(), block_by = "plz")
   expect_s3_class(s, "joinery::Exact_Strategy")
   expect_equal(s@block_by, "plz")
+  expect_equal(s@min_containment_tokens, 1)
 })
 
 # ---------------------------------------------------------------------------

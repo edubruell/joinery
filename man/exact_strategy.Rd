@@ -9,7 +9,8 @@ exact_strategy(
   block_by = NULL,
   rarity = "inverse_freq",
   containment = c("off", "forward", "bidirectional"),
-  min_base_rarity = 0
+  min_base_rarity = 0,
+  min_containment_tokens = 1
 )
 }
 \arguments{
@@ -28,6 +29,15 @@ it over-links on noisy corpora, so it is never the default.}
 
 \item{min_base_rarity}{Numeric containment guard: drop links whose base
 record carries summed rarity mass below this floor. Default `0`.}
+
+\item{min_containment_tokens}{Numeric containment guard, default `1` (no
+restriction). A *proper* containment link (one record's tokens a strict
+subset of the other's) requires the contained record to hold at least this
+many tokens; set-equality always links. Raise to `2` to stop a single
+generic token - a bare category or hub name (e.g. a shopping-centre name) -
+being a subset of every richer "Store + Centre" name and transitively
+chaining unrelated records into one entity. Ignored when `containment =
+"off"`.}
 }
 \value{
 An [Exact_Strategy] object.

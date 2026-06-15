@@ -141,7 +141,8 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
 # overlap join + HAVING. Returns the links table name.
 .exact_links_containment_duck <- function(con, base_src, base_id, target_src, target_id,
                                           proxy, block_by, self, mode,
-                                          min_base_rarity, reg) {
+                                          min_base_rarity, reg,
+                                          min_containment_tokens = 1) {
   btok <- compute_rarity(prepare_search_data(dplyr::tbl(con, base_src), base_id, proxy), proxy)
   btok_tbl <- btok$lazy_query$x
   if (self) {
@@ -176,6 +177,25 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
     "FROM ", ttok_tbl, " GROUP BY ", tidq, ";"
   ))
 
+  # Per-column token counts for the per-column containment gate (mc > 1 only).
+  mc  <- as.integer(min_containment_tokens)
+  nbc <- paste0("_joinery_cnbc_", sample.int(1e9, 1))
+  ntc <- paste0("_joinery_cntc_", sample.int(1e9, 1))
+  if (mc > 1) {
+    DBI::dbExecute(con, paste0(
+      "CREATE TEMP TABLE ", nbc, " AS\n",
+      "SELECT bid, src_column, COUNT(*) AS n_base_c FROM (\n",
+      "  SELECT DISTINCT ", bidq, " AS bid, src_column, token FROM ", btok_tbl, "\n",
+      ") GROUP BY bid, src_column;"
+    ))
+    DBI::dbExecute(con, paste0(
+      "CREATE TEMP TABLE ", ntc, " AS\n",
+      "SELECT tid, src_column, COUNT(*) AS n_target_c FROM (\n",
+      "  SELECT DISTINCT ", tidq, " AS tid, src_column, token FROM ", ttok_tbl, "\n",
+      ") GROUP BY tid, src_column;"
+    ))
+  }
+
   blk_on  <- if (length(block_by)) {
     paste0(" AND ", paste(sprintf('bb."%s" = tt."%s"', block_by, block_by), collapse = " AND "))
   } else ""
@@ -196,10 +216,27 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
     "GROUP BY bb.bid, tt.tid", blk_cgrp, ";"
   ))
 
+  # Pooled direction test (n_match = n_base => base subset of target) with a
+  # PER-COLUMN min_containment_tokens gate: drop a link if any column in which the
+  # contained side is a non-empty proper subset carries fewer than mc tokens. Per
+  # column (not pooled) so a shared street cannot pad a generic NAME past the
+  # threshold (the YP mall / Aerztehaus chain). Empty contained columns are ignored
+  # (the NOT EXISTS only sees rows the contained side has tokens in), preserving §25
+  # empty-column robustness; mc == 1 skips the gate entirely (prior behaviour).
+  fwd_bad <- sprintf(paste0(
+    "EXISTS (SELECT 1 FROM %s bc JOIN %s tc ON bc.src_column = tc.src_column\n",
+    "          WHERE bc.bid = o.bid AND tc.tid = o.tid\n",
+    "            AND bc.n_base_c < tc.n_target_c AND bc.n_base_c < %d)"), nbc, ntc, mc)
+  rev_bad <- sprintf(paste0(
+    "EXISTS (SELECT 1 FROM %s bc JOIN %s tc ON bc.src_column = tc.src_column\n",
+    "          WHERE bc.bid = o.bid AND tc.tid = o.tid\n",
+    "            AND tc.n_target_c < bc.n_base_c AND tc.n_target_c < %d)"), nbc, ntc, mc)
+  fwd_cond <- if (mc > 1) paste0("(o.n_match = nb.n_base AND NOT ", fwd_bad, ")") else "o.n_match = nb.n_base"
+  rev_cond <- if (mc > 1) paste0("(o.n_match = nt.n_target AND NOT ", rev_bad, ")") else "o.n_match = nt.n_target"
   qual_cond <- if (mode == "bidirectional") {
-    "(o.n_match = nb.n_base OR o.n_match = nt.n_target)"
+    paste0("(", fwd_cond, " OR ", rev_cond, ")")
   } else {
-    "o.n_match = nb.n_base"
+    fwd_cond
   }
   blk_out_sel <- if (length(block_by)) {
     paste0(", ", paste(sprintf('o."%s"', block_by), collapse = ", "))
@@ -229,7 +266,8 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
     ))
   }
 
-  walk(c(nb, nt, ov), function(x) DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", x, ";")))
+  walk(c(nb, nt, ov, if (mc > 1) c(nbc, ntc)),
+       function(x) DBI::dbExecute(con, paste0("DROP TABLE IF EXISTS ", x, ";")))
   links_tbl
 }
 
@@ -242,7 +280,8 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
   } else {
     .exact_links_containment_duck(con, base_src, base_id, target_src, target_id,
                                   proxy, block_by, self,
-                                  strategy@containment, strategy@min_base_rarity, reg)
+                                  strategy@containment, strategy@min_base_rarity, reg,
+                                  strategy@min_containment_tokens)
   }
 }
 

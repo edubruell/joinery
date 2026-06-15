@@ -104,7 +104,8 @@
 # <block_by>.
 .exact_links_containment_dt <- function(base, proxy, base_id,
                                         target, target_id, block_by, self,
-                                        mode, min_base_rarity) {
+                                        mode, min_base_rarity,
+                                        min_containment_tokens = 1) {
   btok <- compute_rarity(prepare_search_data(base, base_id, proxy), proxy)
   btok <- .collapse_token_set(data.table::as.data.table(btok), base_id, block_by)
 
@@ -140,13 +141,45 @@
   nmatch <- merge(nmatch, nbase,   by = "._bid")
   nmatch <- merge(nmatch, ntarget, by = "._tid")
 
-  fwd <- nmatch[n_match == n_base]
+  # Containment qualifiers. The direction test is pooled (n_match == n_base for
+  # forward = base subset of target), but the min_containment_tokens guard is
+  # applied PER COLUMN: a link is dropped if any column in which the contained
+  # side is a NON-EMPTY proper subset carries fewer than mc tokens. Per-column is
+  # essential for multi-column strategies - otherwise street tokens shared across a
+  # building's tenants pad a generic NAME past the threshold (the YP shopping-mall
+  # / Aerztehaus chain). Empty contained columns are ignored, preserving the §25
+  # empty-column robustness; mc == 1 gates nothing (prior behaviour exactly).
+  mc <- min_containment_tokens
+  if (mc > 1) {                              # per-column counts only feed the gate
+    bc <- b[, .(n_base_c   = .N), by = c("._bid", "src_column")]
+    tc <- t[, .(n_target_c = .N), by = c("._tid", "src_column")]
+  }
+
+  gate_fwd <- function(pairs) {              # base is the contained side
+    if (mc <= 1 || nrow(pairs) == 0L) return(pairs)
+    cmp <- merge(pairs, bc, by = "._bid", allow.cartesian = TRUE)
+    cmp <- merge(cmp, tc, by = c("._tid", "src_column"))
+    bad <- unique(cmp[n_base_c < n_target_c & n_base_c < mc, .(._bid, ._tid)])
+    if (nrow(bad)) pairs[!bad, on = c("._bid", "._tid")] else pairs
+  }
+  gate_rev <- function(pairs) {              # target is the contained side
+    if (mc <= 1 || nrow(pairs) == 0L) return(pairs)
+    cmp <- merge(pairs, tc, by = "._tid", allow.cartesian = TRUE)
+    cmp <- merge(cmp, bc, by = c("._bid", "src_column"))
+    bad <- unique(cmp[n_target_c < n_base_c & n_target_c < mc, .(._bid, ._tid)])
+    if (nrow(bad)) pairs[!bad, on = c("._bid", "._tid")] else pairs
+  }
+
+  fwd <- gate_fwd(nmatch[n_match == n_base, .(._bid, ._tid)])
   qualifying <- if (mode == "bidirectional") {
-    data.table::rbindlist(list(fwd, nmatch[n_match == n_target]))
+    rev <- gate_rev(nmatch[n_match == n_target, .(._bid, ._tid)])
+    data.table::rbindlist(list(fwd, rev))
   } else {
     fwd
   }
 
+  qualifying <- unique(qualifying)
+  qualifying <- merge(qualifying, nbase[, .(._bid, rmass)], by = "._bid", all.x = TRUE)
   qualifying <- qualifying[rmass >= min_base_rarity]
   if (self) qualifying <- qualifying[._bid != ._tid]
   qualifying <- unique(qualifying[, .(._bid, ._tid)])
@@ -155,12 +188,14 @@
 }
 
 # Self-form links: id_a | id_b | <block_by>, handling off + containment.
-.exact_self_links_dt <- function(base, proxy, id, block_by, containment, min_base_rarity) {
+.exact_self_links_dt <- function(base, proxy, id, block_by, containment, min_base_rarity,
+                                 min_containment_tokens = 1) {
   if (containment == "off") {
     return(.exact_links_off_dt(base, proxy, id, NULL, id, block_by, self = TRUE))
   }
   raw <- .exact_links_containment_dt(base, proxy, id, NULL, id, block_by,
-                                     self = TRUE, containment, min_base_rarity)
+                                     self = TRUE, containment, min_base_rarity,
+                                     min_containment_tokens)
   if (nrow(raw) == 0L) {
     return(data.table::data.table(id_a = character(), id_b = character()))
   }
@@ -174,12 +209,14 @@
 
 # Cross-form links: base_id | target_id | <block_by>, handling off + containment.
 .exact_cross_links_dt <- function(base, proxy, base_id, target, target_id,
-                                  block_by, containment, min_base_rarity) {
+                                  block_by, containment, min_base_rarity,
+                                  min_containment_tokens = 1) {
   if (containment == "off") {
     return(.exact_links_off_dt(base, proxy, base_id, target, target_id, block_by, self = FALSE))
   }
   raw <- .exact_links_containment_dt(base, proxy, base_id, target, target_id,
-                                     block_by, self = FALSE, containment, min_base_rarity)
+                                     block_by, self = FALSE, containment, min_base_rarity,
+                                     min_containment_tokens)
   if (nrow(raw) == 0L) {
     return(data.table::data.table(base_id = character(), target_id = character()))
   }
@@ -202,7 +239,8 @@ method(
   proxy    <- .exact_proxy_strategy(strategy)
 
   links <- .exact_self_links_dt(dt, proxy, id, block_by,
-                                strategy@containment, strategy@min_base_rarity)
+                                strategy@containment, strategy@min_base_rarity,
+                                strategy@min_containment_tokens)
 
   empty <- function() data.table::data.table(
     duplicate_group = integer(), id = character(),
@@ -245,7 +283,8 @@ method(
   proxy    <- .exact_proxy_strategy(strategy)
 
   links <- .exact_cross_links_dt(base_dt, proxy, base_id, target_dt, target_id,
-                                 block_by, strategy@containment, strategy@min_base_rarity)
+                                 block_by, strategy@containment, strategy@min_base_rarity,
+                                 strategy@min_containment_tokens)
 
   if (nrow(links) == 0L) {
     return(data.table::data.table(
