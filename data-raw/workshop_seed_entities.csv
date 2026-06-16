@@ -1,0 +1,851 @@
+seed_id,stem,business,proprietor_first,proprietor_last,trade,legal_form,gen_region,gen_emphasis
+W00001,Holloway,Holloway Boat Builders Ltd,Arthur,Holloway,Boat Builder,Ltd,Yorkshire,Boat Builder
+W00002,Brocklehurst,Brocklehurst & Sons Partnership,Geoffrey,Brocklehurst,Cabinet Maker,Partnership,Yorkshire,Boat Builder
+W00003,Thwaite,Thwaite Boat Building Sole Trader,Ian,Thwaite,Boat Builder,Sole Trader,Yorkshire,Boat Builder
+W00004,Garrick,Garrick Shopfitting LLP,Marcus,Garrick,Shopfitter,LLP,Yorkshire,Boat Builder
+W00005,Sutcliffe,Sutcliffe & Sons Boat Builders,Peter,Sutcliffe,Boat Builder,Partnership,Yorkshire,Boat Builder
+W00006,Pendleton,Pendleton Staircase Specialists Ltd,Julian,Pendleton,Staircase Specialist,Ltd,Yorkshire,Boat Builder
+W00007,Mather,Mather Joinery,David,Mather,Joiner,Sole Trader,Yorkshire,Boat Builder
+W00008,Kelsall,Kelsall Boat Builders Ltd,Rupert,Kelsall,Boat Builder,Ltd,Yorkshire,Boat Builder
+W00009,Hargreaves,Hargreaves Cabinet Making,Simon,Hargreaves,Cabinet Maker,Sole Trader,Yorkshire,Boat Builder
+W00010,Widdicombe,Widdicombe Wood Turning LLP,Alastair,Widdicombe,Wood Turner,LLP,Yorkshire,Boat Builder
+W00011,Fairclough,Fairclough & Sons Boat Builders,Terence,Fairclough,Boat Builder,Partnership,Yorkshire,Boat Builder
+W00012,Loxley,Loxley French Polishing Ltd,Graham,Loxley,French Polisher,Ltd,Yorkshire,Boat Builder
+W00013,Sowerby,Sowerby Carpentry Sole Trader,Miles,Sowerby,Carpenter,Sole Trader,Yorkshire,Boat Builder
+W00014,Gaskell,Gaskell Boat Builders,Huw,Gaskell,Boat Builder,Sole Trader,Yorkshire,Boat Builder
+W00015,Nethercott,Nethercott & Sons Joiners Ltd,Philip,Nethercott,Joiner,Ltd,Yorkshire,Boat Builder
+W00016,Talloway,Talloway Boat Building LLP,Cedric,Talloway,Boat Builder,LLP,Yorkshire,Boat Builder
+W00017,Huxley,Huxley Shopfitting,Nigel,Huxley,Shopfitter,Sole Trader,Yorkshire,Boat Builder
+W00018,Rutherford,Rutherford & Sons Cabinet Makers,George,Rutherford,Cabinet Maker,Partnership,Yorkshire,Boat Builder
+W00019,Ashworth,Ashworth Boat Builders Ltd,Kevin,Ashworth,Boat Builder,Ltd,Yorkshire,Boat Builder
+W00020,Belmont,Belmont Staircase Specialists,Adrian,Belmont,Staircase Specialist,Sole Trader,Yorkshire,Boat Builder
+W00021,Lowther,Lowther Wood Turning Ltd,Victor,Lowther,Wood Turner,Ltd,Yorkshire,Boat Builder
+W00022,Grimshaw,Grimshaw Boat Building,Derek,Grimshaw,Boat Builder,Sole Trader,Yorkshire,Boat Builder
+W00023,Sterling,Sterling French Polishing LLP,Owen,Sterling,French Polisher,LLP,Yorkshire,Boat Builder
+W00024,Hallowell,Hallowell & Sons Carpentry,Bernard,Hallowell,Carpenter,Partnership,Yorkshire,Boat Builder
+W00025,Windsor,Windsor Boat Builders Ltd,Lawrence,Windsor,Boat Builder,Ltd,Yorkshire,Boat Builder
+W00026,Penhaligon,Penhaligon Boat Builders,Alistair,Penhaligon,Boat Builder,Sole Trader,Devon,Boat Builder
+W00027,Trewin,Trewin & Sons Cabinet Maker Ltd,Geoffrey,Trewin,Cabinet Maker,Ltd,Devon,Boat Builder
+W00028,Kemp,Kemp's Carpentry Partnership,Marcus,Kemp,Carpenter,Partnership,Devon,Boat Builder
+W00029,Vane,Vane Boat Builder LLP,Julian,Vane,Boat Builder,LLP,Devon,Boat Builder
+W00030,Gidley,Gidley French Polisher,Simon,Gidley,French Polisher,Sole Trader,Devon,Boat Builder
+W00031,Hocking,Hocking Staircase Specialists Ltd,Derek,Hocking,Staircase Specialist,Ltd,Devon,Boat Builder
+W00032,Mace,Mace Shopfitting Ltd,Terrence,Mace,Shopfitter,Ltd,Devon,Boat Builder
+W00033,Osborne,Osborne Boat Building & Sons,Reginald,Osborne,Boat Builder,Partnership,Devon,Boat Builder
+W00034,Davenport,Davenport Wood Turner,Arthur,Davenport,Wood Turner,Sole Trader,Devon,Boat Builder
+W00035,Sloane,Sloane Joinery LLP,Felicity,Sloane,Joiner,LLP,Devon,Boat Builder
+W00036,Winch,Winch & Son Boat Builders Ltd,Gordon,Winch,Boat Builder,Ltd,Devon,Boat Builder
+W00037,Parrish,Parrish Cabinet Maker,Clive,Parrish,Cabinet Maker,Sole Trader,Devon,Boat Builder
+W00038,Thorne,Thorne Carpenter Partnership,Ian,Thorne,Carpenter,Partnership,Devon,Boat Builder
+W00039,Lowell,Lowell Staircase Specialist,Victor,Lowell,Staircase Specialist,Sole Trader,Devon,Boat Builder
+W00040,Hedge,Hedge French Polisher LLP,Nigel,Hedge,French Polisher,LLP,Devon,Boat Builder
+W00041,Broadbent,Broadbent Shopfitter Ltd,Lawrence,Broadbent,Shopfitter,Ltd,Devon,Boat Builder
+W00042,Fallow,Fallow & Sons Joinery,Harold,Fallow,Joiner,Partnership,Devon,Boat Builder
+W00043,Cutter,Cutter Boat Builder,Sean,Cutter,Boat Builder,Sole Trader,Devon,Boat Builder
+W00044,Wetherell,Wetherell Wood Turner Ltd,Graham,Wetherell,Wood Turner,Ltd,Devon,Boat Builder
+W00045,Stark,Stark Cabinet Making LLP,Miles,Stark,Cabinet Maker,LLP,Devon,Boat Builder
+W00046,Grose,Grose & Sons Carpenter,Edwin,Grose,Carpenter,Partnership,Devon,Boat Builder
+W00047,Tallis,Tallis Boat Builders Ltd,Rupert,Tallis,Boat Builder,Ltd,Devon,Boat Builder
+W00048,Yates,Yates Joiner,Colin,Yates,Joiner,Sole Trader,Devon,Boat Builder
+W00049,Bleeker,Bleeker Staircase Specialist Ltd,Oscar,Bleeker,Staircase Specialist,Ltd,Devon,Boat Builder
+W00050,Wickham,Wickham & Sons Carpentry,Arthur,Wickham,Carpenter,Partnership,Kent,Carpenter
+W00051,Blythe,Blythe Wood Turning LLP,Simon,Blythe,Wood Turner,LLP,Kent,Carpenter
+W00052,Pendle,Pendle & Sons Shopfitting Ltd,Geoffrey,Pendle,Shopfitter,Ltd,Kent,Carpenter
+W00053,Fairweather,Fairweather Boat Building,Alastair,Fairweather,Boat Builder,Sole Trader,Kent,Carpenter
+W00054,Gillingham,Gillingham Carpentry Ltd,Terrence,Gillingham,Carpenter,Ltd,Kent,Carpenter
+W00055,Marsden,Marsden French Polishing LLP,Hugo,Marsden,French Polisher,LLP,Kent,Carpenter
+W00056,Calthorpe,Calthorpe & Sons Joiners,Edward,Calthorpe,Joiner,Partnership,Kent,Carpenter
+W00057,Renton,Renton Staircases Ltd,Philip,Renton,Staircase Specialist,Ltd,Kent,Carpenter
+W00058,Sutton,Sutton Shopfitting LLP,Clive,Sutton,Shopfitter,LLP,Kent,Carpenter
+W00059,Whitlock,Whitlock French Polisher,Ian,Whitlock,French Polisher,Sole Trader,Kent,Carpenter
+W00060,Ashford,Ashford & Sons Joinery Ltd,Peter,Ashford,Joiner,Ltd,Kent,Carpenter
+W00061,Kinsley,Kinsley Wood Turner LLP,Nigel,Kinsley,Wood Turner,LLP,Kent,Carpenter
+W00062,Templeton,Templeton Staircase Specialists,Reginald,Templeton,Staircase Specialist,Sole Trader,Kent,Carpenter
+W00063,Drake,Drake & Sons Boat Building Ltd,Oscar,Drake,Boat Builder,Ltd,Kent,Carpenter
+W00064,Beaumont,Beaumont Cabinets,Lawrence,Beaumont,Cabinet Maker,Sole Trader,Kent,Carpenter
+W00065,Hatcher,Hatcher Shopfitting LLP,Kevin,Hatcher,Shopfitter,LLP,Kent,Carpenter
+W00066,Thistlethwaite,Thistlethwaite & Sons Wood Turners,George,Thistlethwaite,Wood Turner,Partnership,Cumbria,Wood Turner
+W00067,Satterthwaite,Satterthwaite Wood Turner,Ian,Satterthwaite,Wood Turner,Sole Trader,Cumbria,Wood Turner
+W00068,Grahame,Grahame Cabinet Maker LLP,Alastair,Grahame,Cabinet Maker,LLP,Cumbria,Wood Turner
+W00069,Pendlebury,Pendlebury Joinery Ltd,Marcus,Pendlebury,Joiner,Ltd,Cumbria,Wood Turner
+W00070,Kendall,Kendall Boat Builders Ltd,Simon,Kendall,Boat Builder,Ltd,Cumbria,Wood Turner
+W00071,Winstone,Winstone Wood Turner,Philip,Winstone,Wood Turner,Sole Trader,Cumbria,Wood Turner
+W00072,Rigg,Rigg Staircase Specialist LLP,Derek,Rigg,Staircase Specialist,LLP,Cumbria,Wood Turner
+W00073,Broughton,Broughton & Sons Wood Turner,Harold,Broughton,Wood Turner,Partnership,Cumbria,Wood Turner
+W00074,Mirehouse,Mirehouse Carpentry,Stephen,Mirehouse,Carpenter,Sole Trader,Cumbria,Wood Turner
+W00075,Hadrian,Hadrian Shopfitting Ltd,Lawrence,Hadrian,Shopfitter,Ltd,Cumbria,Wood Turner
+W00076,Calcraft,Calcraft Wood Turners LLP,Nigel,Calcraft,Wood Turner,LLP,Cumbria,Wood Turner
+W00077,Fletcher,Fletcher & Sons Joinery,Robert,Fletcher,Joiner,Partnership,Cumbria,Wood Turner
+W00078,Slessor,Slessor Wood Turner Ltd,Graham,Slessor,Wood Turner,Ltd,Cumbria,Wood Turner
+W00079,Windermere,Windermere Boat Building,Edward,Windermere,Boat Builder,Sole Trader,Cumbria,Wood Turner
+W00080,Greaves,Greaves Cabinet Making LLP,Victor,Greaves,Cabinet Maker,LLP,Cumbria,Wood Turner
+W00081,Langdale,Langdale & Sons Wood Turner,Peter,Langdale,Wood Turner,Partnership,Cumbria,Wood Turner
+W00082,Craggs,Craggs Staircase Specialists Ltd,Kevin,Craggs,Staircase Specialist,Ltd,Cumbria,Wood Turner
+W00083,Hesketh,Hesketh Wood Turner,Brian,Hesketh,Wood Turner,Sole Trader,Cumbria,Wood Turner
+W00084,Ormsby,Ormsby French Polisher Ltd,Miles,Ormsby,French Polisher,Ltd,Cumbria,Wood Turner
+W00085,Wetherill,Wetherill & Sons Wood Turner,Clive,Wetherill,Wood Turner,Partnership,Cumbria,Wood Turner
+W00086,Naylor,Naylor Shopfitting LLP,Geoffrey,Naylor,Shopfitter,LLP,Cumbria,Wood Turner
+W00087,Cartwright,Cartwright Wood Turner Ltd,Alan,Cartwright,Wood Turner,Ltd,Cumbria,Wood Turner
+W00088,McCallum,McCallum Shopfitting Ltd,Alastair,McCallum,Shopfitter,Ltd,the Lothians around Edinburgh,Shopfitter
+W00089,Forrest,Forrest & Sons Shopfitters,Gordon,Forrest,Shopfitter,Partnership,the Lothians around Edinburgh,Shopfitter
+W00090,Kinnaird,Kinnaird Cabinet Maker,Isobel,Kinnaird,Cabinet Maker,Sole Trader,the Lothians around Edinburgh,Shopfitter
+W00091,Drummond,Drummond & Co Shopfitting LLP,Hamish,Drummond,Shopfitter,LLP,the Lothians around Edinburgh,Shopfitter
+W00092,Guthrie,Guthrie Joinery Ltd,Robert,Guthrie,Joiner,Ltd,the Lothians around Edinburgh,Shopfitter
+W00093,Braidwood,Braidwood Staircase Specialists Ltd,Duncan,Braidwood,Staircase Specialist,Ltd,the Lothians around Edinburgh,Shopfitter
+W00094,Muirhead,Muirhead & Sons Joinery,Callum,Muirhead,Joiner,Partnership,the Lothians around Edinburgh,Shopfitter
+W00095,Ross,Ross Shopfitting Services Ltd,Andrew,Ross,Shopfitter,Ltd,the Lothians around Edinburgh,Shopfitter
+W00096,Craig,Craig Boat Builders,Ewan,Craig,Boat Builder,Partnership,the Lothians around Edinburgh,Shopfitter
+W00097,Lumsden,Lumsden Shopfitters Ltd,Niall,Lumsden,Shopfitter,Ltd,the Lothians around Edinburgh,Shopfitter
+W00098,Fairbairn,Fairbairn Cabinet Making LLP,Clara,Fairbairn,Cabinet Maker,LLP,the Lothians around Edinburgh,Shopfitter
+W00099,Gallacher,Gallacher & Sons Shopfitting,Ian,Gallacher,Shopfitter,Partnership,the Lothians around Edinburgh,Shopfitter
+W00100,Westerley,Westerley Carpentry Ltd,Graham,Westerley,Carpenter,Ltd,the Lothians around Edinburgh,Shopfitter
+W00101,Tait,Tait Staircase Specialists,Fergus,Tait,Staircase Specialist,Sole Trader,the Lothians around Edinburgh,Shopfitter
+W00102,Montgomery,Montgomery Shopfitting Ltd,Philip,Montgomery,Shopfitter,Ltd,the Lothians around Edinburgh,Shopfitter
+W00103,Sutherland,Sutherland Wood Turner LLP,Alistair,Sutherland,Wood Turner,LLP,the Lothians around Edinburgh,Shopfitter
+W00104,Blackwood,Blackwood & Sons Joinery,Geoffrey,Blackwood,Joiner,Partnership,the Lothians around Edinburgh,Shopfitter
+W00105,Innes,Innes Boat Building Ltd,Lachlan,Innes,Boat Builder,Ltd,the Lothians around Edinburgh,Shopfitter
+W00106,Crawford,Crawford Shopfitter,Derek,Crawford,Shopfitter,Sole Trader,the Lothians around Edinburgh,Shopfitter
+W00107,Sinclair,Sinclair Cabinet Makers Ltd,Fiona,Sinclair,Cabinet Maker,Ltd,the Lothians around Edinburgh,Shopfitter
+W00108,paisley,Paisley French Polisher,Arthur,Paisley,French Polisher,Sole Trader,the Lothians around Edinburgh,Shopfitter
+W00109,MacLeod,MacLeod Shopfitting LLP,Angus,MacLeod,Shopfitter,LLP,the Lothians around Edinburgh,Shopfitter
+W00110,Bevan,Bevan & Sons Cabinet Makers,Gareth,Bevan,Cabinet Maker,Partnership,South Wales,Cabinet Maker
+W00111,Llewellyn,Llewellyn Cabinet Maker,Owain,Llewellyn,Cabinet Maker,Sole Trader,South Wales,Cabinet Maker
+W00112,Penrose,Penrose Woodturning Ltd,Sian,Penrose,Wood Turner,Ltd,South Wales,Cabinet Maker
+W00113,Davies,Davies & Sons Joinery,Rhys,Davies,Joiner,Partnership,South Wales,Cabinet Maker
+W00114,Gwynne,Gwynne Fine Cabinetry LLP,Alun,Gwynne,Cabinet Maker,LLP,South Wales,Cabinet Maker
+W00115,Meredith,Meredith Staircase Specialists,Iwan,Meredith,Staircase Specialist,Sole Trader,South Wales,Cabinet Maker
+W00116,Vaughan,Vaughan Shopfitting Ltd,Cliff,Vaughan,Shopfitter,Ltd,South Wales,Cabinet Maker
+W00117,Pritchard,Pritchard & Sons Cabinet Makers,Dylan,Pritchard,Cabinet Maker,Partnership,South Wales,Cabinet Maker
+W00118,Howell,Howell Carpentry,Mark,Howell,Carpenter,Sole Trader,South Wales,Cabinet Maker
+W00119,Tudor,Tudor French Polishing Ltd,Helen,Tudor,French Polisher,Ltd,South Wales,Cabinet Maker
+W00120,Morgan,Morgan Boat Building LLP,Trevor,Morgan,Boat Builder,LLP,South Wales,Cabinet Maker
+W00121,Rhys,Rhys Cabinet Making,Euros,Rhys,Cabinet Maker,Sole Trader,South Wales,Cabinet Maker
+W00122,Jenkins,Jenkins Joiners Ltd,Huw,Jenkins,Joiner,Ltd,South Wales,Cabinet Maker
+W00123,Bowers,Bowers Staircase Specialists,Glyn,Bowers,Staircase Specialist,Sole Trader,South Wales,Cabinet Maker
+W00124,Price,Price & Sons Shopfitting,Geraint,Price,Shopfitter,Partnership,South Wales,Cabinet Maker
+W00125,Griffiths,Griffiths Cabinet Maker Ltd,Dai,Griffiths,Cabinet Maker,Ltd,South Wales,Cabinet Maker
+W00126,Watkins,Watkins Wood Turning,Lowri,Watkins,Wood Turner,Sole Trader,South Wales,Cabinet Maker
+W00127,Hedges,Hedges Boat Builders LLP,Sion,Hedges,Boat Builder,LLP,South Wales,Cabinet Maker
+W00128,Lloyd,Lloyd & Sons Carpentry,Phillip,Lloyd,Carpenter,Partnership,South Wales,Cabinet Maker
+W00129,Palmer,Palmer French Polishing,Angharad,Palmer,French Polisher,Sole Trader,South Wales,Cabinet Maker
+W00130,Rees,Rees Cabinetry Ltd,Myfanwy,Rees,Cabinet Maker,Ltd,South Wales,Cabinet Maker
+W00131,Gwilym,Gwilym Joinery LLP,Hywel,Gwilym,Joiner,LLP,South Wales,Cabinet Maker
+W00132,Powell,Powell & Sons Cabinet Makers,Alistair,Powell,Cabinet Maker,Partnership,South Wales,Cabinet Maker
+W00133,Tate,Tate Shopfitting,Barry,Tate,Shopfitter,Sole Trader,South Wales,Cabinet Maker
+W00134,Sewell,Sewell Staircase Specialists Ltd,Kirsty,Sewell,Staircase Specialist,Ltd,South Wales,Cabinet Maker
+W00135,Wormley,Wormley Woodturning LLP,Sian,Wormley,Wood Turner,LLP,Norfolk,Staircase Specialist
+W00136,Batten,Batten Shopfitting Ltd,Clive,Batten,Shopfitter,Ltd,Norfolk,Staircase Specialist
+W00137,Sutter,Sutter Fine French Polishing,Julian,Sutter,French Polisher,Sole Trader,Norfolk,Staircase Specialist
+W00138,Kestle,Kestle Boat Builders LLP,Ian,Kestle,Boat Builder,LLP,Norfolk,Staircase Specialist
+W00139,Merrick,Merrick Staircases Ltd,Owen,Merrick,Staircase Specialist,Ltd,Norfolk,Staircase Specialist
+W00140,Dax,Dax Carpentry,Leo,Dax,Carpenter,Sole Trader,Norfolk,Staircase Specialist
+W00141,Lowe,Lowe & Sons Boat Builders,Gordon,Lowe,Boat Builder,Partnership,Norfolk,Staircase Specialist
+W00142,Tiller,Tiller Woodturning Ltd,Simon,Tiller,Wood Turner,Ltd,Norfolk,Staircase Specialist
+W00143,Finch,Finch Shopfitting LLP,Rupert,Finch,Shopfitter,LLP,Norfolk,Staircase Specialist
+W00144,Wray,Wray Carpentry & Sons,Thomas,Wray,Carpenter,Partnership,Norfolk,Staircase Specialist
+W00145,Brost,Brost Staircase Specialists,Karl,Brost,Staircase Specialist,Sole Trader,Norfolk,Staircase Specialist
+W00146,Hume,Hume Cabinet Makers Ltd,Reginald,Hume,Cabinet Maker,Ltd,Norfolk,Staircase Specialist
+W00147,Gorse,Gorse Joiners LLP,Franklin,Gorse,Joiner,LLP,Norfolk,Staircase Specialist
+W00148,Sedge,Sedge & Sons Staircases,Bernard,Sedge,Staircase Specialist,Partnership,Norfolk,Staircase Specialist
+W00149,Winter,Winter Boat Building,Elliot,Winter,Boat Builder,Sole Trader,Norfolk,Staircase Specialist
+W00150,Pike,Pike Shopfitters Ltd,Graham,Pike,Shopfitter,Ltd,Norfolk,Staircase Specialist
+W00151,Kelynack,Kelynack Carpentry,Marcus,Kelynack,Carpenter,Sole Trader,Cornwall,Joiner
+W00152,Pascoe,Pascoe Staircase Specialist LLP,Derek,Pascoe,Staircase Specialist,LLP,Cornwall,Joiner
+W00153,Trevithick,Trevithick Joinery Ltd,Gareth,Trevithick,Joiner,Ltd,Cornwall,Joiner
+W00154,Rosse,Rosse Wood Turner,Simon,Rosse,Wood Turner,Sole Trader,Cornwall,Joiner
+W00155,Tremayne,Tremayne Boat Builder Partnership,Alun,Tremayne,Boat Builder,Partnership,Cornwall,Joiner
+W00156,Carland,Carland French Polisher,Victor,Carland,French Polisher,Sole Trader,Cornwall,Joiner
+W00157,Gribble,Gribble Shopfitter Ltd,Nigel,Gribble,Shopfitter,Ltd,Cornwall,Joiner
+W00158,Poldarky,Poldarky Joiners & Sons,Geoffrey,Poldarky,Joiner,Partnership,Cornwall,Joiner
+W00159,Trelawny,Trelawny Cabinet Maker LLP,Hugo,Trelawny,Cabinet Maker,LLP,Cornwall,Joiner
+W00160,Chilton,Chilton Joinery,Philip,Chilton,Joiner,Sole Trader,Cornwall,Joiner
+W00161,Menhenick,Menhenick Carpentry Ltd,Terence,Menhenick,Carpenter,Ltd,Cornwall,Joiner
+W00162,Warne,Warne Wood Turner & Sons,Clive,Warne,Wood Turner,Partnership,Cornwall,Joiner
+W00163,Tregaskins,Tregaskins Joinery Ltd,Miles,Tregaskins,Joiner,Ltd,Cornwall,Joiner
+W00164,Pentreath,Pentreath Boat Builder,Ewan,Pentreath,Boat Builder,Sole Trader,Cornwall,Joiner
+W00165,Godolphin,Godolphin Shopfitter LLP,Rupert,Godolphin,Shopfitter,LLP,Cornwall,Joiner
+W00166,St Aubyn,St Aubyn French Polisher Ltd,Lawrence,St Aubyn,French Polisher,Ltd,Cornwall,Joiner
+W00167,Blewitt,Blewitt Staircase Specialist,Graham,Blewitt,Staircase Specialist,Sole Trader,Cornwall,Joiner
+W00168,Nuttall,Nuttall Joinery & Sons,Reginald,Nuttall,Joiner,Partnership,Cornwall,Joiner
+W00169,Trevail,Trevail Carpenter Ltd,Owen,Trevail,Carpenter,Ltd,Cornwall,Joiner
+W00170,Polglaze,Polglaze Cabinet Maker,Heath,Polglaze,Cabinet Maker,Sole Trader,Cornwall,Joiner
+W00171,Kitteridge,Kitteridge Joinery LLP,Brendan,Kitteridge,Joiner,LLP,Cornwall,Joiner
+W00172,Sandoe,Sandoe Wood Turner Ltd,Perry,Sandoe,Wood Turner,Ltd,Cornwall,Joiner
+W00173,Towan,Towan Boat Builder Partnership,Crispin,Towan,Boat Builder,Partnership,Cornwall,Joiner
+W00174,Wellington,Wellington Woodwork Ltd,Simon,Wellington,Shopfitter,Ltd,Cheshire,Shopfitter
+W00175,Oakes,Oakes the Joiner,Terence,Oakes,Joiner,Sole Trader,Cheshire,Shopfitter
+W00176,Butterworth,Butterworth & Son Staircase Specialists,Derek,Butterworth,Staircase Specialist,Partnership,Cheshire,Shopfitter
+W00177,Fairhurst,Fairhurst Shopfitting LLP,Clive,Fairhurst,Shopfitter,LLP,Cheshire,Shopfitter
+W00178,Molyneux,Molyneux Carpentry Ltd,Stephen,Molyneux,Carpenter,Ltd,Cheshire,Shopfitter
+W00179,Kershaw,Kershaw & Sons Cabinet Makers,Philip,Kershaw,Cabinet Maker,Partnership,Cheshire,Shopfitter
+W00180,Radcliffe,Radcliffe Boat Building Ltd,Lawrence,Radcliffe,Boat Builder,Ltd,Cheshire,Shopfitter
+W00181,Cholmondeley,Cholmondeley Joinery LLP,Hugh,Cholmondeley,Joiner,LLP,Cheshire,Shopfitter
+W00182,Standish,Standish Shopfitter,Barry,Standish,Shopfitter,Sole Trader,Cheshire,Shopfitter
+W00183,Billington,Billington & Sons Joinery Ltd,Keith,Billington,Joiner,Ltd,Cheshire,Shopfitter
+W00184,Yate,Yate Staircase Specialists LLP,Nigel,Yate,Staircase Specialist,LLP,Cheshire,Shopfitter
+W00185,Lathrop,Lathrop Carpentry Partnership,David,Lathrop,Carpenter,Partnership,Cheshire,Shopfitter
+W00186,Winstanley,Winstanley Shopfitting Ltd,Paul,Winstanley,Shopfitter,Ltd,Cheshire,Shopfitter
+W00187,Heywood,Heywood's Cabinetry,Gordon,Heywood,Cabinet Maker,Sole Trader,Cheshire,Shopfitter
+W00188,Drinkwater,Drinkwater Wood Turner Ltd,Roger,Drinkwater,Wood Turner,Ltd,Cheshire,Shopfitter
+W00189,Prescott,Prescott French Polishing Ltd,Miles,Prescott,French Polisher,Ltd,Cheshire,Shopfitter
+W00190,Belton,Belton Shopfitting Ltd,Marcus,Belton,Shopfitter,Ltd,Tyne and Wear,Shopfitter
+W00191,Kelson,Kelson Cabinet Maker,Derek,Kelson,Cabinet Maker,Sole Trader,Tyne and Wear,Shopfitter
+W00192,Muttitt,Muttitt Woodturning Ltd,Geoffrey,Muttitt,Wood Turner,Ltd,Tyne and Wear,Shopfitter
+W00193,Fenwick,Fenwick Shopfitting & Sons,Alan,Fenwick,Shopfitter,Partnership,Tyne and Wear,Shopfitter
+W00194,Drayton,Drayton Carpentry Ltd,Simon,Drayton,Carpenter,Ltd,Tyne and Wear,Shopfitter
+W00195,Hadley,Hadley French Polishing,Philip,Hadley,French Polisher,Sole Trader,Tyne and Wear,Shopfitter
+W00196,Trotter,Trotter Shopfitting Ltd,Kevin,Trotter,Shopfitter,Ltd,Tyne and Wear,Shopfitter
+W00197,Gisburn,Gisburn Boat Building LLP,Lawrence,Gisburn,Boat Builder,LLP,Tyne and Wear,Shopfitter
+W00198,Paine,Paine Joinery Ltd,Stephen,Paine,Joiner,Ltd,Tyne and Wear,Shopfitter
+W00199,Hestor,Hestor Shopfitting LLP,Timothy,Hestor,Shopfitter,LLP,Tyne and Wear,Shopfitter
+W00200,Gant,Gant Staircase Specialist,Nigel,Gant,Staircase Specialist,Sole Trader,Tyne and Wear,Shopfitter
+W00201,Callum,Callum Shopfitting Ltd,David,Callum,Shopfitter,Ltd,Tyne and Wear,Shopfitter
+W00202,Broadley,Broadley & Sons Wood Turner,Keith,Broadley,Wood Turner,Partnership,Tyne and Wear,Shopfitter
+W00203,Stanton,Stanton Boat Builders Ltd,Miles,Stanton,Boat Builder,Ltd,Tyne and Wear,Shopfitter
+W00204,Preston,Preston Shopfitting,Graham,Preston,Shopfitter,Sole Trader,Tyne and Wear,Shopfitter
+W00205,Moxon,Moxon Joinery & Sons,Ray,Moxon,Joiner,Partnership,Tyne and Wear,Shopfitter
+W00206,Weston,Weston Shopfitting LLP,Derek,Weston,Shopfitter,LLP,Bristol and the West Country,Carpenter
+W00207,Fairchild,Fairchild Joinery Ltd,Geoffrey,Fairchild,Joiner,Ltd,Bristol and the West Country,Carpenter
+W00208,Mallow,Mallow Wood Turning,Ian,Mallow,Wood Turner,Sole Trader,Bristol and the West Country,Carpenter
+W00209,Caldwell,Caldwell & Sons Boat Builders,Robert,Caldwell,Boat Builder,Partnership,Bristol and the West Country,Carpenter
+W00210,Sterndale,Sterndale French Polishing Ltd,Alastair,Sterndale,French Polisher,Ltd,Bristol and the West Country,Carpenter
+W00211,Langley,Langley Cabinet Makers,Piers,Langley,Cabinet Maker,Sole Trader,Bristol and the West Country,Carpenter
+W00212,Bridges,Bridges & Sons Joiners,Thomas,Bridges,Joiner,Partnership,Bristol and the West Country,Carpenter
+W00213,Wainwright,Wainwright Carpentry Ltd,Stuart,Wainwright,Carpenter,Ltd,Bristol and the West Country,Carpenter
+W00214,Tidewell,Tidewell Boat Building LLP,Hugo,Tidewell,Boat Builder,LLP,Bristol and the West Country,Carpenter
+W00215,Rydell,Rydell Joinery Ltd,Nigel,Rydell,Joiner,Ltd,Bristol and the West Country,Carpenter
+W00216,fennel,Fennel Carpentry,Oscar,Fennel,Carpenter,Sole Trader,Bristol and the West Country,Carpenter
+W00217,Grover,Grover Cabinet Making LLP,Basil,Grover,Cabinet Maker,LLP,Bristol and the West Country,Carpenter
+W00218,Middleton,Middleton & Sons Shopfitting,Harry,Middleton,Shopfitter,Partnership,Bristol and the West Country,Carpenter
+W00219,Sawyer,Sawyer Woodturning,Heath,Sawyer,Wood Turner,Sole Trader,Bristol and the West Country,Carpenter
+W00220,MacCallum,MacCallum & Sons Shopfitting Ltd,Alistair,MacCallum,Shopfitter,Ltd,the Scottish Highlands,Shopfitter
+W00221,Gunn,Gunn Shopfitting LLP,Hamish,Gunn,Shopfitter,LLP,the Scottish Highlands,Shopfitter
+W00222,Munro,Munro Joinery Ltd,Douglas,Munro,Joiner,Ltd,the Scottish Highlands,Shopfitter
+W00223,Fraser,Fraser the Shopfitter,Ian,Fraser,Shopfitter,Sole Trader,the Scottish Highlands,Shopfitter
+W00224,MacLean,MacLean Cabinet Makers LLP,Ewan,MacLean,Cabinet Maker,LLP,the Scottish Highlands,Shopfitter
+W00225,Gordon,Gordon Shopfitting Sole Trader,Lachlan,Gordon,Shopfitter,Sole Trader,the Scottish Highlands,Shopfitter
+W00226,MacPherson,MacPherson Wood Turner Partnership,Angus,MacPherson,Wood Turner,Partnership,the Scottish Highlands,Shopfitter
+W00227,Mackenzie,Mackenzie Shopfitting LLP,Roderick,Mackenzie,Shopfitter,LLP,the Scottish Highlands,Shopfitter
+W00228,Cameron,Cameron French Polishing Sole Trader,Neil,Cameron,French Polisher,Sole Trader,the Scottish Highlands,Shopfitter
+W00229,Grant,Grant Cabinet Maker Ltd,Keith,Grant,Cabinet Maker,Ltd,the Scottish Highlands,Shopfitter
+W00230,Forbes,Forbes Shopfitting Sole Trader,Donald,Forbes,Shopfitter,Sole Trader,the Scottish Highlands,Shopfitter
+W00231,MacDonald,MacDonald & Sons Shopfitting Ltd,Kenneth,MacDonald,Shopfitter,Ltd,the Scottish Highlands,Shopfitter
+W00232,Campbell,Campbell Carpentry Partnership,Iain,Campbell,Carpenter,Partnership,the Scottish Highlands,Shopfitter
+W00233,Rattray,Rattray Joinery Sole Trader,Malcolm,Rattray,Joiner,Sole Trader,the Scottish Highlands,Shopfitter
+W00234,MacKinnon,MacKinnon Boat Building Ltd,Gregor,MacKinnon,Boat Builder,Ltd,the Scottish Highlands,Shopfitter
+W00235,Stewart,Stewart Shopfitting LLP,Duncan,Stewart,Shopfitter,LLP,the Scottish Highlands,Shopfitter
+W00236,Wallace,Wallace Wood Turning Partnership,Ronald,Wallace,Wood Turner,Partnership,the Scottish Highlands,Shopfitter
+W00237,Buchanan,Buchanan French Polishing Ltd,Alistair,Buchanan,French Polisher,Ltd,the Scottish Highlands,Shopfitter
+W00238,MacNeil,MacNeil Shopfitters Sole Trader,Fergus,MacNeil,Shopfitter,Sole Trader,the Scottish Highlands,Shopfitter
+W00239,Ostler,Ostler & Sons Cabinet Maker Partnership,Reginald,Ostler,Cabinet Maker,Partnership,Hampshire,Boat Builder
+W00240,Sallow,Sallow Carpenter Ltd,Ian,Sallow,Carpenter,Ltd,Hampshire,Boat Builder
+W00241,Kerr,Kerr Shopfitter LLP,Nigel,Kerr,Shopfitter,LLP,Hampshire,Boat Builder
+W00242,Trestle,Trestle Boat Builder Partnership,Finn,Trestle,Boat Builder,Partnership,Hampshire,Boat Builder
+W00243,Orpington,Orpington Wood Turner Sole Trader,Basil,Orpington,Wood Turner,Sole Trader,Hampshire,Boat Builder
+W00244,Clutterbuck,Clutterbuck & Sons Joiner Ltd,Percy,Clutterbuck,Joiner,Ltd,Hampshire,Boat Builder
+W00245,Gresham,Gresham Boat Builders LLP,Hugo,Gresham,Boat Builder,LLP,Hampshire,Boat Builder
+W00246,Nelms,Nelms Carpenter Sole Trader,Rowan,Nelms,Carpenter,Sole Trader,Hampshire,Boat Builder
+W00247,Smythe,Smythe & Sons Cabinet Maker Ltd,Walter,Smythe,Cabinet Maker,Ltd,Hampshire,Boat Builder
+W00248,Thornton,Thornton Cabinet Maker Ltd,Alastair,Thornton,Cabinet Maker,Ltd,Shropshire,Joiner
+W00249,Thackeray,Thackeray Staircase Specialists Ltd,Miles,Thackeray,Staircase Specialist,Ltd,Shropshire,Joiner
+W00250,Lowry,Lowry & Sons Boat Builders,Terence,Lowry,Boat Builder,Partnership,Shropshire,Joiner
+W00251,Wakefield,Wakefield Joinery LLP,Clive,Wakefield,Joiner,LLP,Shropshire,Joiner
+W00252,Gough,Gough Wood Turning,Raymond,Gough,Wood Turner,Sole Trader,Shropshire,Joiner
+W00253,whitening,Whitening Carpentry Ltd,Stephen,Whitening,Carpenter,Ltd,Shropshire,Joiner
+W00254,Arkwright,Arkwright & Sons Joiners,Edward,Arkwright,Joiner,Partnership,Shropshire,Joiner
+W00255,Prestwich,Prestwich Joinery,Geoffrey,Prestwich,Joiner,Sole Trader,Shropshire,Joiner
+W00256,Holt,Holt Staircase Specialists,Francis,Holt,Staircase Specialist,Sole Trader,Shropshire,Joiner
+W00257,Belsham,Belsham Cabinet Makers Ltd,Julian,Belsham,Cabinet Maker,Ltd,Suffolk,Carpenter
+W00258,Wren,Wren Woodturning,Silas,Wren,Wood Turner,Sole Trader,Suffolk,Carpenter
+W00259,Harrow,Harrow Carpentry Services,Liam,Harrow,Carpenter,Sole Trader,Suffolk,Carpenter
+W00260,Toller,Toller Boat Building Partnership,Elias,Toller,Boat Builder,Partnership,Suffolk,Carpenter
+W00261,Fairfax,Fairfax Staircase Specialists Ltd,Hugo,Fairfax,Staircase Specialist,Ltd,Suffolk,Carpenter
+W00262,Moss,Moss Wood Turning,Terrence,Moss,Wood Turner,Sole Trader,Suffolk,Carpenter
+W00263,Gale,Gale & Sons Joinery,Philip,Gale,Joiner,Partnership,Suffolk,Carpenter
+W00264,Redmayne,Redmayne French Polisher Ltd,Felix,Redmayne,French Polisher,Ltd,Suffolk,Carpenter
+W00265,Dunlop,Dunlop Carpentry,Ian,Dunlop,Carpenter,Sole Trader,Suffolk,Carpenter
+W00266,Hawthorne,Hawthorne Cabinet Makers,Miles,Hawthorne,Cabinet Maker,Sole Trader,Suffolk,Carpenter
+W00267,Holden,Holden Shopfitting Ltd,Paul,Holden,Shopfitter,Ltd,Lancashire,French Polisher
+W00268,mossop,Mossop Boat Builders LLP,Graham,Mossop,Boat Builder,LLP,Lancashire,French Polisher
+W00269,rigby,Rigby Fine French Polishing Ltd,Colin,Rigby,French Polisher,Ltd,Lancashire,French Polisher
+W00270,Crowther,Crowther Joinery,Neil,Crowther,Joiner,Sole Trader,Lancashire,French Polisher
+W00271,Pickering,Pickering French Polisher,Sean,Pickering,French Polisher,Sole Trader,Lancashire,French Polisher
+W00272,Tatton,Tatton & Sons Staircase Specialists,Philip,Tatton,Staircase Specialist,Partnership,Lancashire,French Polisher
+W00273,Oates,Oates Boat Building,Barry,Oates,Boat Builder,Sole Trader,Lancashire,French Polisher
+W00274,Chadwick,Chadwick French Polishing LLP,Liam,Chadwick,French Polisher,LLP,Lancashire,French Polisher
+W00275,Warrington,Warrington Joinery & Sons,Stephen,Warrington,Joiner,Partnership,Lancashire,French Polisher
+W00276,Bottomley,Bottomley French Polisher Ltd,Gary,Bottomley,French Polisher,Ltd,Lancashire,French Polisher
+W00277,Shore,Shore & Sons Wood Turning,Victor,Shore,Wood Turner,Partnership,Lancashire,French Polisher
+W00278,Giles,Giles French Polisher,Terence,Giles,French Polisher,Sole Trader,Gloucestershire,French Polisher
+W00279,Keats,Keats French Polishing Services,Oliver,Keats,French Polisher,Sole Trader,Gloucestershire,French Polisher
+W00280,Bancroft,Bancroft Wood Turning Partnership,Hugo,Bancroft,Wood Turner,Partnership,Gloucestershire,French Polisher
+W00281,Archer,Archer Boat Building Ltd,Heath,Archer,Boat Builder,Ltd,Gloucestershire,French Polisher
+W00282,Harding,Harding & Sons Wood Turners,Clive,Harding,Wood Turner,Partnership,Gloucestershire,French Polisher
+W00283,Tregarthen,Tregarthen Cabinet Maker,Gareth,Tregarthen,Cabinet Maker,Sole Trader,Dorset,Joiner
+W00284,Lancing,Lancing Shopfitting Ltd,Derek,Lancing,Shopfitter,Ltd,Dorset,Joiner
+W00285,Baxley,Baxley & Sons Carpentry,George,Baxley,Carpenter,Partnership,Dorset,Joiner
+W00286,Rylance,Rylance Cabinet Making Ltd,Oliver,Rylance,Cabinet Maker,Ltd,Dorset,Joiner
+W00287,Pound,Pound & Sons Joiners,Reginald,Pound,Joiner,Partnership,Dorset,Joiner
+W00288,Stoker,Stoker Shopfitting,Kevin,Stoker,Shopfitter,Sole Trader,Dorset,Joiner
+W00289,Claridge,Claridge Joinery,Hugh,Claridge,Joiner,Sole Trader,Dorset,Joiner
+W00290,Nutt,Nutt & Sons Boat Building LLP,Wesley,Nutt,Boat Builder,LLP,Dorset,Joiner
+W00291,Hastings,Hastings French Polishing Ltd,Ian,Hastings,French Polisher,Ltd,Dorset,Joiner
+W00292,Tillinghast,Tillinghast Cabinet Maker Partnership,Leo,Tillinghast,Cabinet Maker,Partnership,Dorset,Joiner
+W00293,Westerman,Westerman Joinery,Alan,Westerman,Joiner,Sole Trader,Dorset,Joiner
+W00294,Gillespie,Gillespie Cabinet Maker Ltd,Ian,Gillespie,Cabinet Maker,Ltd,Aberdeenshire,Carpenter
+W00295,Farquharson,Farquharson Woodworking,Duncan,Farquharson,Carpenter,Sole Trader,Aberdeenshire,Carpenter
+W00296,Brodie,Brodie & Sons Shopfitting LLP,Callum,Brodie,Shopfitter,LLP,Aberdeenshire,Carpenter
+W00297,Kinnear,Kinnear Staircase Specialist,Robert,Kinnear,Staircase Specialist,Sole Trader,Aberdeenshire,Carpenter
+W00298,Leslie,Leslie Shopfitting Ltd,Marcus,Leslie,Shopfitter,Ltd,Aberdeenshire,Carpenter
+W00299,Yule,Yule Boat Builder Ltd,Peter,Yule,Boat Builder,Ltd,Aberdeenshire,Carpenter
+W00300,Mitchell,Mitchell & Sons Cabinet Maker,Derek,Mitchell,Cabinet Maker,Partnership,Aberdeenshire,Carpenter
+W00301,Ritchie,Ritchie Carpenter Ltd,Kevin,Ritchie,Carpenter,Ltd,Aberdeenshire,Carpenter
+W00302,Ballantyne,Ballantyne Shopfitter,Simon,Ballantyne,Shopfitter,Sole Trader,Aberdeenshire,Carpenter
+W00303,Lawson,Lawson Staircases LLP,Keith,Lawson,Staircase Specialist,LLP,Aberdeenshire,Carpenter
+W00304,Dunbar,Dunbar Carpenter & Sons,Philip,Dunbar,Carpenter,Partnership,Aberdeenshire,Carpenter
+W00305,Hopkins,Hopkins Cabinetry Ltd,Liam,Hopkins,Cabinet Maker,Ltd,Pembrokeshire,Cabinet Maker
+W00306,Bowen,Bowen Carpentry LLP,Geraint,Bowen,Carpenter,LLP,Pembrokeshire,Cabinet Maker
+W00307,Evans,Evans Woodwork & Cabinet Making,Dafydd,Evans,Cabinet Maker,Sole Trader,Pembrokeshire,Cabinet Maker
+W00308,Lewis,Lewis & Sons Staircases,Arwyn,Lewis,Staircase Specialist,Partnership,Pembrokeshire,Cabinet Maker
+W00309,Hughes,Hughes Shopfitting,Phillip,Hughes,Shopfitter,Sole Trader,Pembrokeshire,Cabinet Maker
+W00310,Morris,Morris Joiners Ltd,Craig,Morris,Joiner,Ltd,Pembrokeshire,Cabinet Maker
+W00311,Prosser,Prosser & Sons Wood Turner,Keith,Prosser,Wood Turner,Partnership,Pembrokeshire,Cabinet Maker
+W00312,Owens,Owens Cabinet Making,Iestyn,Owens,Cabinet Maker,Sole Trader,Pembrokeshire,Cabinet Maker
+W00313,Miles,Miles French Polishing Ltd,Derek,Miles,French Polisher,Ltd,Pembrokeshire,Cabinet Maker
+W00314,Davies-Jones,Davies-Jones Cabinet Makers,Myron,Davies-Jones,Cabinet Maker,Sole Trader,Pembrokeshire,Cabinet Maker
+W00315,Weldon,Weldon Boat Builders Ltd,Arthur,Weldon,Boat Builder,Ltd,Northumberland,Boat Builder
+W00316,Hallowes,Hallowes & Sons Boat Building,Geoffrey,Hallowes,Boat Builder,Partnership,Northumberland,Boat Builder
+W00317,Tressidder,Tressidder Boat Builder,Miles,Tressidder,Boat Builder,Sole Trader,Northumberland,Boat Builder
+W00318,Kettleburn,Kettleburn Marine Carpentry LLP,Sian,Kettleburn,Boat Builder,LLP,Northumberland,Boat Builder
+W00319,Pattison,Pattison's Boat Building Ltd,Ian,Pattison,Boat Builder,Ltd,Northumberland,Boat Builder
+W00320,Gilsland,Gilsland Boat Builders & Sons,Robert,Gilsland,Boat Builder,Partnership,Northumberland,Boat Builder
+W00321,Morpeth,Morpeth Woodcrafts (Boat Builder),Derek,Morpeth,Boat Builder,Sole Trader,Northumberland,Boat Builder
+W00322,Stott,Stott Boat Builders LLP,Alan,Stott,Boat Builder,LLP,Northumberland,Boat Builder
+W00323,Blyth,Blyth & Sons Staircase Specialists,Thomas,Blyth,Staircase Specialist,Partnership,Northumberland,Boat Builder
+W00324,Ridley,Ridley Wood Turner,Edward,Ridley,Wood Turner,Sole Trader,Northumberland,Boat Builder
+W00325,Clavering,Clavering French Polishing Ltd,Hugo,Clavering,French Polisher,Ltd,Northumberland,Boat Builder
+W00326,Hogg,Hogg & Sons Joinery,Philip,Hogg,Joiner,Partnership,Northumberland,Boat Builder
+W00327,Wetherby,Wetherby Carpenter Ltd,Julian,Wetherby,Carpenter,Ltd,Northumberland,Boat Builder
+W00328,Northumberland,Northumberland Staircase Specialists LLP,George,Northumberland,Staircase Specialist,LLP,Northumberland,Boat Builder
+W00329,Ellison,Ellison Wood Turner Ltd,Claire,Ellison,Wood Turner,Ltd,Northumberland,Boat Builder
+W00330,Westery,Westery Woodturning LLP,Simon,Westery,Wood Turner,LLP,Somerset,Joiner
+W00331,Halloway,Halloway & Sons Joiners,Marcus,Halloway,Joiner,Partnership,Somerset,Joiner
+W00332,Rookwood,Rookwood Staircase Specialists,Terrence,Rookwood,Staircase Specialist,Partnership,Somerset,Joiner
+W00333,Tidwell,Tidwell & Sons,Reginald,Tidwell,Joiner,Partnership,Somerset,Joiner
+W00334,Swinford,Swinford & Sons Ltd,Harold,Swinford,Joiner,Ltd,Somerset,Joiner
+W00335,Callow,Callow & Sons Staircase Specialists,Rupert,Callow,Staircase Specialist,Partnership,Somerset,Joiner
+W00336,Kenton,Kenton Cabinet Makers Ltd,Graham,Kenton,Cabinet Maker,Ltd,Somerset,Joiner
+W00337,Nash,Nash Carpentry LLP,Victor,Nash,Carpenter,LLP,Somerset,Joiner
+W00338,Hollis,Hollis Joinery,Peter,Hollis,Joiner,Sole Trader,Somerset,Joiner
+W00339,Mallowan,Mallowan French Polishing Ltd,Julian,Mallowan,French Polisher,Ltd,Yorkshire,French Polisher
+W00340,Hollingsworth,Hollingsworth French Polisher LLP,Miles,Hollingsworth,French Polisher,LLP,Yorkshire,French Polisher
+W00341,Uttley,Uttley Staircase Specialists,Norman,Uttley,Staircase Specialist,Sole Trader,Yorkshire,French Polisher
+W00342,Coldwell,Coldwell Carpentry Ltd,Ian,Coldwell,Carpenter,Ltd,Yorkshire,French Polisher
+W00343,Ellwood,Ellwood French Polishing,Sion,Ellwood,French Polisher,Sole Trader,Yorkshire,French Polisher
+W00344,Galloway,Galloway French Polishing Ltd,Peter,Galloway,French Polisher,Ltd,Yorkshire,French Polisher
+W00345,Tolson,Tolson Joinery & Sons,Bernard,Tolson,Joiner,Partnership,Yorkshire,French Polisher
+W00346,Dunwoody,Dunwoody French Polishing LLP,Lawrence,Dunwoody,French Polisher,LLP,Yorkshire,French Polisher
+W00347,Wickens,Wickens Cabinet Making Ltd,Marcus,Wickens,Cabinet Maker,Ltd,Devon,French Polisher
+W00348,Trelawney,Trelawney French Polisher LLP,Geoffrey,Trelawney,French Polisher,LLP,Devon,French Polisher
+W00349,Rowley,Rowley & Sons Joinery,George,Rowley,Joiner,Partnership,Devon,French Polisher
+W00350,Ashwell,Ashwell French Polisher,Clive,Ashwell,French Polisher,Sole Trader,Devon,French Polisher
+W00351,Mercer,Mercer Wood Turner,Hugo,Mercer,Wood Turner,Sole Trader,Devon,French Polisher
+W00352,Grendell,Grendell Shopfitting LLP,Philip,Grendell,Shopfitter,LLP,Devon,French Polisher
+W00353,Cousins,Cousins Carpentry Ltd,Leonard,Cousins,Carpenter,Ltd,Devon,French Polisher
+W00354,Yardley,Yardley French Polishing,Lawrence,Yardley,French Polisher,Sole Trader,Devon,French Polisher
+W00355,Saffron,Saffron Cabinet Makers Ltd,Julian,Saffron,Cabinet Maker,Ltd,Devon,French Polisher
+W00356,Perrin,Perrin Boat Builder,Alastair,Perrin,Boat Builder,Sole Trader,Kent,Joiner
+W00357,Lockhart,Lockhart Joinery,Philip,Lockhart,Joiner,Sole Trader,Kent,Joiner
+W00358,Nightingale,Nightingale Wood Turner Ltd,Oscar,Nightingale,Wood Turner,Ltd,Kent,Joiner
+W00359,Rowan,Rowan & Sons Joinery,Ian,Rowan,Joiner,Partnership,Kent,Joiner
+W00360,Crane,Crane Boat Builders LLP,Miles,Crane,Boat Builder,LLP,Kent,Joiner
+W00361,Beckett,Beckett Shopfitters Ltd,Lawrence,Beckett,Shopfitter,Ltd,Kent,Joiner
+W00362,Savage,Savage Carpentry & Joinery,Keith,Savage,Joiner,Sole Trader,Kent,Joiner
+W00363,Aldridge,Aldridge & Sons Cabinetry,Franklin,Aldridge,Cabinet Maker,Partnership,Kent,Joiner
+W00364,Garrett,Garrett Staircase Specialist Ltd,Timothy,Garrett,Staircase Specialist,Ltd,Kent,Joiner
+W00365,Grasmere,Grasmere Boat Builders,Arthur,Wainwright,Boat Builder,Partnership,Cumbria,Cabinet Maker
+W00366,Kirkbride,Kirkbride & Sons Cabinet Makers,Derek,Kirkbride,Cabinet Maker,Sole Trader,Cumbria,Cabinet Maker
+W00367,Ormerod,Ormerod Shopfitting Ltd,Nigel,Ormerod,Shopfitter,Ltd,Cumbria,Cabinet Maker
+W00368,Fairfield,Fairfield Wood Turning LLP,Clive,Fairfield,Wood Turner,LLP,Cumbria,Cabinet Maker
+W00369,Bowness,Bowness Joinery,Ian,Bowness,Joiner,Sole Trader,Cumbria,Cabinet Maker
+W00370,Kendal,Kendal Cabinetry Ltd,Philip,Kendal,Cabinet Maker,Ltd,Cumbria,Cabinet Maker
+W00371,Rawlinson,Rawlinson French Polishing,Timothy,Rawlinson,French Polisher,Sole Trader,Cumbria,Cabinet Maker
+W00372,Hutcheson,Hutcheson & Sons Carpentry,Robert,Hutcheson,Carpenter,Partnership,Cumbria,Cabinet Maker
+W00373,Crakehall,Crakehall Staircase Specialists,Graham,Crakehall,Staircase Specialist,Sole Trader,Cumbria,Cabinet Maker
+W00374,Appleby,Appleby Shopfitting LLP,Kevin,Appleby,Shopfitter,LLP,Cumbria,Cabinet Maker
+W00375,Ullswater,Ullswater Joinery Ltd,David,Ullswater,Joiner,Ltd,Cumbria,Cabinet Maker
+W00376,Scale,Scale Cabinet Makers Ltd,Peter,Scale,Cabinet Maker,Ltd,Cumbria,Cabinet Maker
+W00377,Ireton,Ireton Cabinet Makers LLP,Stuart,Ireton,Cabinet Maker,LLP,Cumbria,Cabinet Maker
+W00378,Mellor,Mellor Staircase Specialists Ltd,Anthony,Mellor,Staircase Specialist,Ltd,Cumbria,Cabinet Maker
+W00379,Menzies,Menzies French Polishing Ltd,Ewan,Menzies,French Polisher,Ltd,the Lothians around Edinburgh,Carpenter
+W00380,Lyle,Lyle Staircase Specialist,Niall,Lyle,Staircase Specialist,Sole Trader,the Lothians around Edinburgh,Carpenter
+W00381,Telford,Telford Boat Building LLP,Geoff,Telford,Boat Builder,LLP,the Lothians around Edinburgh,Carpenter
+W00382,Baxter,Baxter & Sons Joinery,Keith,Baxter,Joiner,Partnership,the Lothians around Edinburgh,Carpenter
+W00383,Greig,Greig Carpentry LLP,Cameron,Greig,Carpenter,LLP,the Lothians around Edinburgh,Carpenter
+W00384,Dalrymple,Dalrymple & Sons Staircase Specialists,Hugh,Dalrymple,Staircase Specialist,Partnership,the Lothians around Edinburgh,Carpenter
+W00385,Keir,Keir Joinery Ltd,Stuart,Keir,Joiner,Ltd,the Lothians around Edinburgh,Carpenter
+W00386,Moncrieff,Moncrieff Carpentry,Angus,Moncrieff,Carpenter,Sole Trader,the Lothians around Edinburgh,Carpenter
+W00387,Havard,Havard Shopfitting Ltd,Paul,Havard,Shopfitter,Ltd,South Wales,Boat Builder
+W00388,Owen,Owen Boat Building LLP,Steffan,Owen,Boat Builder,LLP,South Wales,Boat Builder
+W00389,Thomas,Thomas Boat Builders,Ivor,Thomas,Boat Builder,Partnership,South Wales,Boat Builder
+W00390,Benton,Benton & Sons Carpentry,Arthur,Benton,Carpenter,Partnership,Norfolk,Carpenter
+W00391,Prentice,Prentice Shopfitting Ltd,David,Prentice,Shopfitter,Ltd,Norfolk,Carpenter
+W00392,Rutter,Rutter & Sons Wood Turning,George,Rutter,Wood Turner,Partnership,Norfolk,Carpenter
+W00393,Colton,Colton Shopfitting,Ian,Colton,Shopfitter,Sole Trader,Norfolk,Carpenter
+W00394,Fairbanks,Fairbanks Carpentry Ltd,Derek,Fairbanks,Carpenter,Ltd,Norfolk,Carpenter
+W00395,Horton,Horton & Sons Joinery,Alan,Horton,Joiner,Partnership,Norfolk,Carpenter
+W00396,la Croix,la Croix Wood Turners LLP,Remy,la Croix,Wood Turner,LLP,Norfolk,Carpenter
+W00397,Pennance,Pennance & Sons Cabinet Makers,Geoffrey,Pennance,Cabinet Maker,Partnership,Cornwall,Wood Turner
+W00398,Vinnicombe,Vinnicombe French Polishing,Arthur,Vinnicombe,French Polisher,Sole Trader,Cornwall,Wood Turner
+W00399,Bleakley,Bleakley Shopfitting LLP,Derek,Bleakley,Shopfitter,LLP,Cornwall,Wood Turner
+W00400,Roscoe,Roscoe Wood Turning Ltd,Felix,Roscoe,Wood Turner,Ltd,Cornwall,Wood Turner
+W00401,Chivell,Chivell Carpentry,Hugo,Chivell,Carpenter,Sole Trader,Cornwall,Wood Turner
+W00402,Poldark,Poldark Cabinet Making Ltd,Rupert,Poldark,Cabinet Maker,Ltd,Cornwall,Wood Turner
+W00403,Fenby,Fenby Wood Turning Ltd,Oscar,Fenby,Wood Turner,Ltd,Cornwall,Wood Turner
+W00404,Trevelyan,Trevelyan Staircase Specialists,Miles,Trevelyan,Staircase Specialist,Sole Trader,Cornwall,Wood Turner
+W00405,Keigwin,Keigwin & Sons French Polishing,Randolph,Keigwin,French Polisher,Partnership,Cornwall,Wood Turner
+W00406,Nancarrow,Nancarrow Wood Turner LLP,Quentin,Nancarrow,Wood Turner,LLP,Cornwall,Wood Turner
+W00407,Tregenna,Tregenna Carpentry & Sons,Barry,Tregenna,Carpenter,Partnership,Cornwall,Wood Turner
+W00408,Jago,Jago Cabinet Maker,Cliff,Jago,Cabinet Maker,Sole Trader,Cornwall,Wood Turner
+W00409,Widden,Widden Joinery Ltd,Graham,Widden,Joiner,Ltd,Cornwall,Wood Turner
+W00410,Gedge,Gedge Boat Builders Ltd,Stuart,Gedge,Boat Builder,Ltd,Cornwall,Wood Turner
+W00411,Warington,Warington & Sons Joinery,Arthur,Warington,Joiner,Partnership,Cheshire,Staircase Specialist
+W00412,Brocklebank,Brocklebank Boat Builder Ltd,Stephen,Brocklebank,Boat Builder,Ltd,Cheshire,Staircase Specialist
+W00413,Winterbottom,Winterbottom Joinery LLP,Kevin,Winterbottom,Joiner,LLP,Cheshire,Staircase Specialist
+W00414,Dewhurst,Dewhurst Carpentry Ltd,Nigel,Dewhurst,Carpenter,Ltd,Cheshire,Staircase Specialist
+W00415,Kensington,Kensington Shopfitter,Miles,Kensington,Shopfitter,Sole Trader,Cheshire,Staircase Specialist
+W00416,Calloway,Calloway Boat Builders LLP,Hugh,Calloway,Boat Builder,LLP,Cheshire,Staircase Specialist
+W00417,Bramley,Bramley Staircase Specialists,Derek,Bramley,Staircase Specialist,Sole Trader,Tyne and Wear,Wood Turner
+W00418,Marlowe,Marlowe Wood Turner,Felix,Marlowe,Wood Turner,Sole Trader,Tyne and Wear,Wood Turner
+W00419,Lister,Lister Staircase Specialist,Graham,Lister,Staircase Specialist,Sole Trader,Tyne and Wear,Wood Turner
+W00420,Oakley,Oakley Wood Turner Ltd,Vernon,Oakley,Wood Turner,Ltd,Tyne and Wear,Wood Turner
+W00421,Paxman,Paxman Wood Turning Ltd,Clive,Paxman,Wood Turner,Ltd,Tyne and Wear,Wood Turner
+W00422,Thatcher,Thatcher Woodwork,Gareth,Thatcher,Carpenter,Sole Trader,Bristol and the West Country,Carpenter
+W00423,Grimm,Grimm Shopfitting LLP,Marcus,Grimm,Shopfitter,LLP,Bristol and the West Country,Carpenter
+W00424,Crowley,Crowley Carpenters Ltd,Derek,Crowley,Carpenter,Ltd,Bristol and the West Country,Carpenter
+W00425,Gisborne,Gisborne Staircases Ltd,Lawrence,Gisborne,Staircase Specialist,Ltd,Bristol and the West Country,Carpenter
+W00426,Hawkins,Hawkins Joinery Partnership,Bernard,Hawkins,Joiner,Partnership,Bristol and the West Country,Carpenter
+W00427,Stirling,Stirling Shopfitters Ltd,Graham,Stirling,Shopfitter,Ltd,Bristol and the West Country,Carpenter
+W00428,la Roche,la Roche French Polishing,Andre,la Roche,French Polisher,Sole Trader,Bristol and the West Country,Carpenter
+W00429,MacAlister,MacAlister Shopfitting Ltd,Alastair,MacAlister,Shopfitter,Ltd,the Scottish Highlands,Shopfitter
+W00430,Mackintosh,Mackintosh Shopfitting Ltd,Finlay,Mackintosh,Shopfitter,Ltd,the Scottish Highlands,Shopfitter
+W00431,Braid,Braid Carpenter Ltd,lauchlan,Braid,Carpenter,Ltd,the Scottish Highlands,Shopfitter
+W00432,Cunningham,Cunningham Boat Builder LLP,Keith,Cunningham,Boat Builder,LLP,the Scottish Highlands,Shopfitter
+W00433,Ramsay,Ramsay French Polisher,Gordon,Ramsay,French Polisher,Sole Trader,the Scottish Highlands,Shopfitter
+W00434,Tennant,Tennant French Polisher Partnership,Geoffrey,Tennant,French Polisher,Partnership,Hampshire,Joiner
+W00435,Sedgebrook,Sedgebrook Joiners Partnership,Alastair,Sedgebrook,Joiner,Partnership,Hampshire,Joiner
+W00436,Tallow,Tallow Staircases Ltd,Simon,Tallow,Staircase Specialist,Ltd,Shropshire,Wood Turner
+W00437,Hedgecote,Hedgecote Joiners Ltd,Nigel,Hedgecote,Joiner,Ltd,Shropshire,Wood Turner
+W00438,Grosvenor,Grosvenor Wood Turning Ltd,Miles,Grosvenor,Wood Turner,Ltd,Shropshire,Wood Turner
+W00439,Eldridge,Eldridge Boat Building Ltd,Clive,Eldridge,Boat Builder,Ltd,Shropshire,Wood Turner
+W00440,Marchant,Marchant Cabinet Makers,Leo,Marchant,Cabinet Maker,Sole Trader,Shropshire,Wood Turner
+W00441,Belrose,Belrose Carpentry LLP,Sacha,Belrose,Carpenter,LLP,Shropshire,Wood Turner
+W00442,Belcourt,Belcourt Staircase Specialist Ltd,Hugo,Belcourt,Staircase Specialist,Ltd,Suffolk,Joiner
+W00443,Ryder,Ryder Joinery Ltd,Simon,Ryder,Joiner,Ltd,Suffolk,Joiner
+W00444,Hardcastle,Hardcastle Joinery & Sons,George,Hardcastle,Joiner,Partnership,Suffolk,Joiner
+W00445,Grafton,Grafton Shopfitters LLP,Alistair,Grafton,Shopfitter,LLP,Suffolk,Joiner
+W00446,Ellington,Ellington Boat Building,Rupert,Ellington,Boat Builder,Sole Trader,Suffolk,Joiner
+W00447,Pemberton,Pemberton Joiners,Lawrence,Pemberton,Joiner,Sole Trader,Suffolk,Joiner
+W00448,Winston,Winston & Sons Joinery LLP,Oscar,Winston,Joiner,LLP,Suffolk,Joiner
+W00449,Thistlewood,Thistlewood Cabinet Maker Ltd,Alistair,Thistlewood,Cabinet Maker,Ltd,Lancashire,Joiner
+W00450,Langton,Langton & Sons Carpentry,Arthur,Langton,Carpenter,Partnership,Lancashire,Joiner
+W00451,Blackburn,Blackburn Shopfitter Ltd,Derek,Vane,Shopfitter,Ltd,Lancashire,Joiner
+W00452,Calder,Calder Boat Builder LLP,Ian,Calder,Boat Builder,LLP,Lancashire,Joiner
+W00453,Farrington,Farrington Wood Turner Ltd,Leo,Farrington,Wood Turner,Ltd,Lancashire,Joiner
+W00454,Birkby,Birkby Joinery Ltd,Stephen,Birkby,Joiner,Ltd,Lancashire,Joiner
+W00455,Lunn,Lunn Boat Builder,Terence,Lunn,Boat Builder,Sole Trader,Lancashire,Joiner
+W00456,Rotherham,Rotherham Staircase Specialist,Colin,Rotherham,Staircase Specialist,Sole Trader,Lancashire,Joiner
+W00457,Witherington,Witherington Joinery LLP,George,Witherington,Joiner,LLP,Lancashire,Joiner
+W00458,Trenchard,Trenchard Joinery Ltd,Reginald,Trenchard,Joiner,Ltd,Gloucestershire,Boat Builder
+W00459,Bridgeman,Bridgeman & Sons Carpentry Partnership,Rupert,Bridgeman,Carpenter,Partnership,Gloucestershire,Boat Builder
+W00460,Winterbourne,Winterbourne French Polishing,Percival,Winterbourne,French Polisher,Sole Trader,Gloucestershire,Boat Builder
+W00461,Ellerton,Ellerton Staircase Specialists Ltd,Graham,Ellerton,Staircase Specialist,Ltd,Gloucestershire,Boat Builder
+W00462,Pendergast,Pendergast & Sons Joiners,Geoffrey,Pendergast,Joiner,Partnership,Dorset,Cabinet Maker
+W00463,Gable,Gable Carpentry,Derek,Gable,Carpenter,Sole Trader,Dorset,Cabinet Maker
+W00464,Thorneley,Thorneley Wood Turning LLP,Ian,Thorneley,Wood Turner,LLP,Dorset,Cabinet Maker
+W00465,Vance,Vance French Polishing,Arthur,Vance,French Polisher,Sole Trader,Dorset,Cabinet Maker
+W00466,Bridger,Bridger Joinery Ltd,Philip,Bridger,Joiner,Ltd,Dorset,Cabinet Maker
+W00467,Quayle,Quayle Boat Building Ltd,Harrison,Quayle,Boat Builder,Ltd,Dorset,Cabinet Maker
+W00468,Gableman,Gableman Cabinet Maker,Rupert,Gableman,Cabinet Maker,Sole Trader,Dorset,Cabinet Maker
+W00469,Thornecroft,Thornecroft Staircase Specialists,Miles,Thornecroft,Staircase Specialist,Sole Trader,Dorset,Cabinet Maker
+W00470,Alder,Alder Wood Turning Ltd,Timothy,Alder,Wood Turner,Ltd,Dorset,Cabinet Maker
+W00471,Westmore,Westmore Cabinet Makers,Hugo,Westmore,Cabinet Maker,Sole Trader,Dorset,Cabinet Maker
+W00472,Gault,Gault & Sons Carpentry Ltd,Oscar,Gault,Carpenter,Ltd,Dorset,Cabinet Maker
+W00473,Driftwood,Driftwood Boat Builders,Soren,Driftwood,Boat Builder,Partnership,Dorset,Cabinet Maker
+W00474,Gablemont,Gablemont Shopfitting,Percy,Gablemont,Shopfitter,Sole Trader,Dorset,Cabinet Maker
+W00475,Arbuthnott,Arbuthnott Boat Building,Ewan,Arbuthnott,Boat Builder,Sole Trader,Aberdeenshire,Carpenter
+W00476,Moncreiffe,Moncreiffe & Sons Cabinet Makers,Lachlan,Moncreiffe,Cabinet Maker,Partnership,Aberdeenshire,Carpenter
+W00477,Farquhar,Farquhar Boat Builders LLP,Angus,Farquhar,Boat Builder,LLP,Aberdeenshire,Carpenter
+W00478,Gow,Gow Carpentry & Joinery,Fraser,Gow,Carpenter,Sole Trader,Aberdeenshire,Carpenter
+W00479,Blair,Blair French Polishing,Malcolm,Blair,French Polisher,Sole Trader,Aberdeenshire,Carpenter
+W00480,Strachan,Strachan Cabinet Making Ltd,Alistair,Strachan,Cabinet Maker,Ltd,Aberdeenshire,Carpenter
+W00481,Abercrombie,Abercrombie & Sons Carpentry,Donald,Abercrombie,Carpenter,Partnership,Aberdeenshire,Carpenter
+W00482,Logan,Logan Wood Turning Ltd,Craig,Logan,Wood Turner,Ltd,Aberdeenshire,Carpenter
+W00483,Manson,Manson Boat Building Ltd,Cameron,Manson,Boat Builder,Ltd,Aberdeenshire,Carpenter
+W00484,Pringle,Pringle Carpentry,RFC,Pringle,Carpenter,Sole Trader,Aberdeenshire,Carpenter
+W00485,Trevethan,Trevethan Cabinet Maker Ltd,Owen,Trevethan,Cabinet Maker,Ltd,Pembrokeshire,Carpenter
+W00486,Dyke,Dyke Staircase Specialists LLP,Simon,Dyke,Staircase Specialist,LLP,Pembrokeshire,Carpenter
+W00487,Ceredigion,Ceredigion Cabinet Making,Gwilym,Ceredigion,Cabinet Maker,Sole Trader,Pembrokeshire,Carpenter
+W00488,Wynne,Wynne Wood Turning Ltd,Geraint,Wynne,Wood Turner,Ltd,Pembrokeshire,Carpenter
+W00489,Ballard,Ballard Boat Building,Julian,Ballard,Boat Builder,Sole Trader,Pembrokeshire,Carpenter
+W00490,Gwilliam,Gwilliam Carpenter,Trystan,Gwilliam,Carpenter,Sole Trader,Pembrokeshire,Carpenter
+W00491,Penry,Penry Staircase Specialists,Emlyn,Penry,Staircase Specialist,Sole Trader,Pembrokeshire,Carpenter
+W00492,Langdon,Langdon Carpentry Ltd,Rupert,Langdon,Carpenter,Ltd,Pembrokeshire,Carpenter
+W00493,Hetherington,Hetherington Joinery Ltd,Geoffrey,Hetherington,Joiner,Ltd,Northumberland,Joiner
+W00494,Milburn,Milburn & Sons Joiners Partnership,Arthur,Milburn,Joiner,Partnership,Northumberland,Joiner
+W00495,Thirlwall,Thirlwall Staircase Specialist Ltd,Ian,Thirlwall,Staircase Specialist,Ltd,Northumberland,Joiner
+W00496,Ponsonby,Ponsonby French Polisher Ltd,Miles,Ponsonby,French Polisher,Ltd,Northumberland,Joiner
+W00497,Ardley,Ardley Wood Turner Sole Trader,Peter,Ardley,Wood Turner,Sole Trader,Northumberland,Joiner
+W00498,Widdrington,Widdrington & Sons Joinery Ltd,Philip,Widdrington,Joiner,Ltd,Northumberland,Joiner
+W00499,Elliot,Elliot Cabinet Maker LLP,Sarah,Elliot,Cabinet Maker,LLP,Northumberland,Joiner
+W00500,Beamish,Beamish Joiner Ltd,Gordon,Beamish,Joiner,Ltd,Northumberland,Joiner
+W00501,Morley,Morley Shopfitter Sole Trader,Kevin,Morley,Shopfitter,Sole Trader,Northumberland,Joiner
+W00502,North,North Joinery Ltd,Alan,North,Joiner,Ltd,Northumberland,Joiner
+W00503,Clough,Clough Joinery Sole Trader,Martin,Clough,Joiner,Sole Trader,Northumberland,Joiner
+W00504,Mereweather,Mereweather Wood Turning,Sampson,Mereweather,Wood Turner,Sole Trader,Somerset,French Polisher
+W00505,Costelow,Costelow Carpentry & Sons,Basil,Costelow,Carpenter,Partnership,Somerset,French Polisher
+W00506,Kelsey,Kelsey French Polishing Ltd,Nigel,Kelsey,French Polisher,Ltd,Somerset,French Polisher
+W00507,Haskins,Haskins & Sons Carpentry,Arthur,Haskins,Carpenter,Partnership,Yorkshire,Carpenter
+W00508,Pickles,Pickles Joiner & Sons,Gordon,Pickles,Joiner,Partnership,Yorkshire,Carpenter
+W00509,Redfern,Redfern Staircase Specialist,Keith,Redfern,Staircase Specialist,Sole Trader,Yorkshire,Carpenter
+W00510,Hirst,Hirst Wood Turner & Sons,Norman,Hirst,Wood Turner,Partnership,Yorkshire,Carpenter
+W00511,Baines,Baines Carpentry,Simon,Baines,Carpenter,Sole Trader,Yorkshire,Carpenter
+W00512,Booth,Booth & Sons Cabinet Maker Ltd,Robert,Booth,Cabinet Maker,Ltd,Yorkshire,Carpenter
+W00513,Swinburne,Swinburne Staircase Specialist LLP,Victor,Swinburne,Staircase Specialist,LLP,Yorkshire,Carpenter
+W00514,Wildman,Wildman Carpenter,Peter,Wildman,Carpenter,Sole Trader,Yorkshire,Carpenter
+W00515,Gerrick,Gerrick's Boat Building,Ian,Gerrick,Boat Builder,Sole Trader,Kent,Boat Builder
+W00516,Stapleton,Stapleton Shopfitters Ltd,Miles,Stapleton,Shopfitter,Ltd,Kent,Boat Builder
+W00517,Tilden,Tilden & Sons Boat Builders,Marcus,Tilden,Boat Builder,Partnership,Kent,Boat Builder
+W00518,Glasscock,Glasscock Wood Turning Ltd,Reginald,Glasscock,Wood Turner,Ltd,Kent,Boat Builder
+W00519,Tidman,Tidman & Sons Boat Builders,Albert,Tidman,Boat Builder,Partnership,Kent,Boat Builder
+W00520,Zouch,Zouch Boat Builders Ltd,Felix,Zouch,Boat Builder,Ltd,Kent,Boat Builder
+W00521,Kendal & Co,Kendal & Co Shopfitters Ltd,Marcus,Kendal,Shopfitter,Ltd,Cumbria,Shopfitter
+W00522,Staines,Staines Joinery Ltd,Philip,Staines,Joiner,Ltd,Cumbria,Shopfitter
+W00523,Lonsdale,Lonsdale Staircase Specialists,Victor,Lonsdale,Staircase Specialist,Sole Trader,Cumbria,Shopfitter
+W00524,Banks,Banks Shopfitting,Miles,Banks,Shopfitter,Sole Trader,Cumbria,Shopfitter
+W00525,Whitworth,Whitworth Cabinet Makers Ltd,Barry,Whitworth,Cabinet Maker,Ltd,Cumbria,Shopfitter
+W00526,McTavish,McTavish & Sons French Polishers,Alasdair,McTavish,French Polisher,Partnership,the Lothians around Edinburgh,French Polisher
+W00527,Muir,Muir Shopfitting Ltd,Robert,Muir,Shopfitter,Ltd,the Lothians around Edinburgh,French Polisher
+W00528,Baillie,Baillie & Sons Carpentry,Stuart,Baillie,Carpenter,Partnership,the Lothians around Edinburgh,French Polisher
+W00529,Young,Young & Sons Staircase Specialists,George,Young,Staircase Specialist,Partnership,the Lothians around Edinburgh,French Polisher
+W00530,Findlay,Findlay Wood Turner Ltd,Bruce,Findlay,Wood Turner,Ltd,the Lothians around Edinburgh,French Polisher
+W00531,Graham,Graham Shopfitting LLP,Peter,Graham,Shopfitter,LLP,the Lothians around Edinburgh,French Polisher
+W00532,Livingston,Livingston French Polishing Ltd,Hugh,Livingston,French Polisher,Ltd,the Lothians around Edinburgh,French Polisher
+W00533,Llewellyn & Sons,Llewellyn & Sons Joinery Ltd,Owain,Llewellyn,Joiner,Ltd,South Wales,Cabinet Maker
+W00534,Trewartha,Trewartha Cabinet Makers,Alun,Trewartha,Cabinet Maker,Partnership,South Wales,Cabinet Maker
+W00535,Bryn,Bryn Joinery & Carpentry LLP,Sion,Bryn,Joiner,LLP,South Wales,Cabinet Maker
+W00536,Davies & Sons,Davies & Sons Cabinet Makers,Geraint,Davies,Cabinet Maker,Partnership,South Wales,Cabinet Maker
+W00537,Rees & Sons,Rees & Sons Staircase Specialists Ltd,Ivor,Rees,Staircase Specialist,Ltd,South Wales,Cabinet Maker
+W00538,Hedgecoe,Hedgecoe Joiners LLP,Simon,Hedgecoe,Joiner,LLP,Norfolk,Carpenter
+W00539,Stout,Stout Carpentry,Gordon,Stout,Carpenter,Sole Trader,Norfolk,Carpenter
+W00540,Dunn,Dunn Shopfitting,Kevin,Dunn,Shopfitter,Sole Trader,Norfolk,Carpenter
+W00541,Norfolk,Norfolk Carpentry LLP,Graham,Norfolk,Carpenter,LLP,Norfolk,Carpenter
+W00542,Selwyn,Selwyn Staircase Specialists LLP,Oscar,Selwyn,Staircase Specialist,LLP,Norfolk,Carpenter
+W00543,Tregidgo,Tregidgo Staircase Specialists,Marcus,Tregidgo,Staircase Specialist,Sole Trader,Cornwall,Carpenter
+W00544,Chappell,Chappell & Sons Boat Builders,Derek,Chappell,Boat Builder,Partnership,Cornwall,Carpenter
+W00545,Vinken,Vinken Shopfitting LLP,Hendrik,Vinken,Shopfitter,LLP,Cornwall,Carpenter
+W00546,Rowse,Rowse Carpentry,Terence,Rowse,Carpenter,Sole Trader,Cornwall,Carpenter
+W00547,Glasson,Glasson & Son Cabinet Makers,Arthur,Glasson,Cabinet Maker,Partnership,Cornwall,Carpenter
+W00548,Pendennis,Pendennis Joinery LLP,Richard,Pendennis,Joiner,LLP,Cornwall,Carpenter
+W00549,Carthew,Carthew Cabinet Making Ltd,Norman,Carthew,Cabinet Maker,Ltd,Cornwall,Carpenter
+W00550,Tinne,Tinne Boat Builders Ltd,Lars,Tinne,Boat Builder,Ltd,Cornwall,Carpenter
+W00551,Hutchinson,Hutchinson & Sons Joinery Ltd,Robert,Hutchinson,Joiner,Ltd,Cheshire,Carpenter
+W00552,Kenyon,Kenyon Shopfitting Ltd,Alan,Kenyon,Shopfitter,Ltd,Cheshire,Carpenter
+W00553,Langford,Langford Joinery Partnership,Peter,Langford,Joiner,Partnership,Cheshire,Carpenter
+W00554,Caldecott,Caldecott French Polishing,Miles,Caldecott,French Polisher,Sole Trader,Cheshire,Carpenter
+W00555,Hadfield,Hadfield Carpentry Ltd,Timothy,Hadfield,Carpenter,Ltd,Cheshire,Carpenter
+W00556,Maitland,Maitland Shopfitting LLP,Claire,Maitland,Shopfitter,LLP,Tyne and Wear,Staircase Specialist
+W00557,Widdowson,Widdowson Boat Builders Ltd,Frank,Widdowson,Boat Builder,Ltd,Tyne and Wear,Staircase Specialist
+W00558,Herrick,Herrick Staircase Specialists LLP,Philip,Herrick,Staircase Specialist,LLP,Tyne and Wear,Staircase Specialist
+W00559,Trotman,Trotman & Sons Joinery,Barry,Trotman,Joiner,Partnership,Tyne and Wear,Staircase Specialist
+W00560,Dalton,Dalton Carpentry Ltd,Maurice,Dalton,Carpenter,Ltd,Tyne and Wear,Staircase Specialist
+W00561,Fairburn,Fairburn & Sons Staircase Specialists,Dennis,Fairburn,Staircase Specialist,Partnership,Tyne and Wear,Staircase Specialist
+W00562,Gorman,Gorman Boat Building Ltd,Toby,Gorman,Boat Builder,Ltd,Tyne and Wear,Staircase Specialist
+W00563,Sloan,Sloan Staircase Specialists,Alfred,Sloan,Staircase Specialist,Sole Trader,Tyne and Wear,Staircase Specialist
+W00564,Westcott,Westcott Shopfitting LLP,Simon,Westcott,Shopfitter,LLP,Bristol and the West Country,Joiner
+W00565,Croft,Croft French Polisher,Ian,Croft,French Polisher,Sole Trader,Bristol and the West Country,Joiner
+W00566,Braithwaite,Braithwaite Joiners LLP,Colin,Braithwaite,Joiner,LLP,Bristol and the West Country,Joiner
+W00567,Alderley,Alderley Shopfitter,Graham,Alderley,Shopfitter,Sole Trader,Bristol and the West Country,Joiner
+W00568,Hawthorn,Hawthorn Staircase Specialist Ltd,Peter,Hawthorn,Staircase Specialist,Ltd,Bristol and the West Country,Joiner
+W00569,Marston,Marston Boat Builder,Keith,Marston,Boat Builder,Sole Trader,Bristol and the West Country,Joiner
+W00570,Pye,Pye French Polishing Ltd,Reginald,Pye,French Polisher,Ltd,Bristol and the West Country,Joiner
+W00571,Ashbourne,Ashbourne Carpentry LLP,Miles,Ashbourne,Carpenter,LLP,Bristol and the West Country,Joiner
+W00572,Geary,Geary Shopfitter Ltd,Alan,Geary,Shopfitter,Ltd,Bristol and the West Country,Joiner
+W00573,Tregenza,Tregenza Staircase Specialists,Alistair,Tregenza,Staircase Specialist,Sole Trader,Lancashire,Staircase Specialist
+W00574,Trevellyan,Trevellyan French Polishing,Peregrine,Trevellyan,French Polisher,Sole Trader,Lancashire,Staircase Specialist
+W00575,Gleeson,Gleeson & Sons Staircase Specialists Ltd,Terrence,Gleeson,Staircase Specialist,Ltd,Lancashire,Staircase Specialist
+W00576,Pendery,Pendery Shopfitting,Cedric,Pendery,Shopfitter,Sole Trader,Lancashire,Staircase Specialist
+W00577,McIntyre,McIntyre & Sons Staircase Specialists,Duncan,McIntyre,Staircase Specialist,Partnership,Lancashire,Staircase Specialist
+W00578,Balfour,Balfour Carpentry Ltd,Alasdair,Balfour,Carpenter,Ltd,Lancashire,Staircase Specialist
+W00579,Bevis,Bevis French Polishing LLP,Lowell,Bevis,French Polisher,LLP,Lancashire,Staircase Specialist
+W00580,Kynaston,Kynaston Cabinet Making,Julian,Kynaston,Cabinet Maker,Sole Trader,Lancashire,Staircase Specialist
+W00581,MacTavish,MacTavish & Sons Carpentry Ltd,Angus,MacTavish,Carpenter,Ltd,Lancashire,Staircase Specialist
+W00582,Redmond,Redmond Joinery Ltd,Simon,Redmond,Joiner,Ltd,Hampshire,Shopfitter
+W00583,Norris,Norris & Sons Shopfitting,Kevin,Norris,Shopfitter,Partnership,Hampshire,Shopfitter
+W00584,Wilder,Wilder Carpentry Ltd,Heath,Wilder,Carpenter,Ltd,Hampshire,Shopfitter
+W00585,Ames,Ames Wood Turning,Peter,Ames,Wood Turner,Sole Trader,Hampshire,Shopfitter
+W00586,Bentley,Bentley & Sons Joinery,Arthur,Bentley,Joiner,Partnership,Shropshire,Joiner
+W00587,Kettle,Kettle Shopfitter LLP,Simon,Kettle,Shopfitter,LLP,Suffolk,Carpenter
+W00588,Stroud,Stroud Staircase Specialist Ltd,Gordon,Stroud,Staircase Specialist,Ltd,Suffolk,Carpenter
+W00589,Tidmarsh,Tidmarsh Shopfitting LLP,Lawrence,Tidmarsh,Shopfitter,LLP,Suffolk,Carpenter
+W00590,Barrow,Barrow Cabinet Maker Partnership,Keith,Barrow,Cabinet Maker,Partnership,Suffolk,Carpenter
+W00591,Thistle,Thistle Woodturning,Ian,Ross,Wood Turner,Sole Trader,Lancashire,Cabinet Maker
+W00592,Waring,Waring Cabinet Makers,Julian,Waring,Cabinet Maker,Sole Trader,Lancashire,Cabinet Maker
+W00593,Keighley,Keighley & Sons Joinery,Peter,Keighley,Joiner,Partnership,Lancashire,Cabinet Maker
+W00594,Rylands,Rylands Cabinetry LLP,Gordon,Rylands,Cabinet Maker,LLP,Lancashire,Cabinet Maker
+W00595,Sallows,Sallows French Polishing Ltd,Graham,Sallows,French Polisher,Ltd,Lancashire,Cabinet Maker
+W00596,Pennell,Pennell & Sons Shopfitters,Arthur,Pennell,Shopfitter,Partnership,Gloucestershire,Shopfitter
+W00597,Dyer,Dyer Boat Building,Hamish,Dyer,Boat Builder,Sole Trader,Gloucestershire,Shopfitter
+W00598,Fenton,Fenton & Sons Shopfitter,Reginald,Fenton,Shopfitter,Partnership,Gloucestershire,Shopfitter
+W00599,Haze,Haze Cabinet Makers,Toby,Haze,Cabinet Maker,Sole Trader,Gloucestershire,Shopfitter
+W00600,Oldfield,Oldfield & Sons Carpentry,Walter,Oldfield,Carpenter,Partnership,Gloucestershire,Shopfitter
+W00601,Trowbridge,Trowbridge Staircase Specialists Ltd,Alastair,Trowbridge,Staircase Specialist,Ltd,Gloucestershire,Shopfitter
+W00602,Orford,Orford French Polishing & Restorations,Cedric,Orford,French Polisher,Sole Trader,Dorset,French Polisher
+W00603,Kelvey,Kelvey Shopfitting,Derek,Kelvey,Shopfitter,Sole Trader,Dorset,French Polisher
+W00604,Glyn,Glyn Carpentry,Owen,Glyn,Carpenter,Sole Trader,Dorset,French Polisher
+W00605,Sturt,Sturt & Sons Staircase Specialists,Harvey,Sturt,Staircase Specialist,Partnership,Dorset,French Polisher
+W00606,Kincaid,Kincaid & Sons Joinery,Robert,Kincaid,Joiner,Partnership,Aberdeenshire,Staircase Specialist
+W00607,Mackay,Mackay Cabinet Makers,Angus,Mackay,Cabinet Maker,Sole Trader,Aberdeenshire,Staircase Specialist
+W00608,Keith,Keith Shopfitting LLP,Stuart,Keith,Shopfitter,LLP,Aberdeenshire,Staircase Specialist
+W00609,Urquhart,Urquhart Joinery Ltd,Ruari,Urquhart,Joiner,Ltd,Aberdeenshire,Staircase Specialist
+W00610,Burnett,Burnett & Sons Carpentry,Alistair,Burnett,Carpenter,Partnership,Aberdeenshire,Staircase Specialist
+W00611,Seton,Seton Staircase Specialists Ltd,Julian,Seton,Staircase Specialist,Ltd,Aberdeenshire,Staircase Specialist
+W00612,Mackie,Mackie Cabinet Maker,Fergus,Mackie,Cabinet Maker,Sole Trader,Aberdeenshire,Staircase Specialist
+W00613,Livingstone,Livingstone Wood Turner LLP,Geoff,Livingstone,Wood Turner,LLP,Aberdeenshire,Staircase Specialist
+W00614,O'Sullivan,O'Sullivan Boat Building Ltd,Liam,O'Sullivan,Boat Builder,Ltd,Pembrokeshire,Cabinet Maker
+W00615,Harries,Harries Joinery Ltd,Toby,Harries,Joiner,Ltd,Pembrokeshire,Cabinet Maker
+W00616,Carew,Carew Joinery LLP,Julian,Carew,Joiner,LLP,Pembrokeshire,Cabinet Maker
+W00617,Preece,Preece Cabinet Makers,Graham,Preece,Cabinet Maker,Sole Trader,Pembrokeshire,Cabinet Maker
+W00618,Huddleston,Huddleston Wood Turning,Arthur,Huddleston,Wood Turner,Sole Trader,Northumberland,Wood Turner
+W00619,Armstrong,Armstrong Joinery Partnership,Thomas,Armstrong,Joiner,Partnership,Northumberland,Wood Turner
+W00620,Donkin,Donkin Wood Turning LLP,Sarah,Donkin,Wood Turner,LLP,Northumberland,Wood Turner
+W00621,Crosland,Crosland & Sons Carpentry,William,Crosland,Carpenter,Partnership,Northumberland,Wood Turner
+W00622,Beaver,Beaver Shopfitting,Philip,Beaver,Shopfitter,Sole Trader,Northumberland,Wood Turner
+W00623,Blackett,Blackett Joiners LLP,Oliver,Blackett,Joiner,LLP,Northumberland,Wood Turner
+W00624,Siddle,Siddle Cabinet Making,Nigel,Siddle,Cabinet Maker,Sole Trader,Northumberland,Wood Turner
+W00625,Liddell,Liddell Boat Building LLP,Fiona,Liddell,Boat Builder,LLP,Northumberland,Wood Turner
+W00626,Pennyworth,Pennyworth Cabinet Maker Ltd,Alastair,Pennyworth,Cabinet Maker,Ltd,Somerset,Joiner
+W00627,Westerleigh,Westerleigh Staircase Specialist LLP,Julian,Westerleigh,Staircase Specialist,LLP,Somerset,Joiner
+W00628,Cotswold,Cotswold Carpenter & Sons,Ian,Cotswold,Carpenter,Partnership,Somerset,Joiner
+W00629,Bridgwater,Bridgwater Joiners LLP,Malcolm,Bridgwater,Joiner,LLP,Somerset,Joiner
+W00630,Worsley,Worsley Shopfitting Ltd,Simon,Worsley,Shopfitter,Ltd,Yorkshire,Carpenter
+W00631,Hollins,Hollins Joinery,Graham,Hollins,Joiner,Sole Trader,Yorkshire,Carpenter
+W00632,Tidswell,Tidswell Wood Turner,Philip,Tidswell,Wood Turner,Sole Trader,Yorkshire,Carpenter
+W00633,Murgatroyd,Murgatroyd Shopfitter LLP,Colin,Murgatroyd,Shopfitter,LLP,Yorkshire,Carpenter
+W00634,Edgecombe,Edgecombe Boat Builders,Nigel,Edgecombe,Boat Builder,Partnership,Yorkshire,Carpenter
+W00635,Taggart,Taggart Staircase Specialist,Liam,Taggart,Staircase Specialist,Sole Trader,Yorkshire,Carpenter
+W00636,Hoddinott,Hoddinott Shopfitting Ltd,Reginald,Hoddinott,Shopfitter,Ltd,Yorkshire,Carpenter
+W00637,Ridgeway,Ridgeway Staircase Specialist,Owen,Ridgeway,Staircase Specialist,Sole Trader,Devon,Wood Turner
+W00638,Wormwood,Wormwood Wood Turner LLP,Silas,Wormwood,Wood Turner,LLP,Devon,Wood Turner
+W00639,Northcott,Northcott & Sons Wood Turner LLP,Ian,Northcott,Wood Turner,LLP,Devon,Wood Turner
+W00640,Parris,Parris Joiners Ltd,Simon,Parris,Joiner,Ltd,Devon,Wood Turner
+W00641,Cullum,Cullum Carpentry LLP,Barnaby,Cullum,Carpenter,LLP,County Durham,Shopfitter
+W00642,Trevethick,Trevethick Wood Turner,Crispin,Trevethick,Wood Turner,Sole Trader,County Durham,Shopfitter
+W00643,Glanville,Glanville French Polisher,Quentin,Glanville,French Polisher,Sole Trader,County Durham,Shopfitter
+W00644,Sedgeley,Sedgeley & Sons Cabinet Makers,Mortimer,Sedgeley,Cabinet Maker,Partnership,County Durham,Shopfitter
+W00645,Thackray,Thackray Joiner,Digby,Thackray,Joiner,Sole Trader,County Durham,Shopfitter
+W00646,Crozier,Crozier Carpentry Ltd,Sylvester,Crozier,Carpenter,Ltd,County Durham,Shopfitter
+W00647,Gormley,Gormley Shopfitting & Sons,Terrence,Gormley,Shopfitter,Partnership,County Durham,Shopfitter
+W00648,Galbraith,Galbraith Carpentry LLP,Niall,Galbraith,Carpenter,LLP,County Durham,Shopfitter
+W00649,Crosbie,Crosbie Staircases,Hamish,Crosbie,Staircase Specialist,Sole Trader,North Wales,Joiner
+W00650,Gwyther,Gwyther & Sons Joiners Ltd,Rhys,Gwyther,Joiner,Ltd,North Wales,Joiner
+W00651,McGregor,McGregor Carpentry Partnership,Angus,McGregor,Carpenter,Partnership,North Wales,Joiner
+W00652,Blethyn,Blethyn Joinery,Huw,Blethyn,Joiner,Sole Trader,North Wales,Joiner
+W00653,Tremaine,Tremaine Polishing Ltd,Jago,Tremaine,French Polisher,Ltd,North Wales,Joiner
+W00654,Cadwallader,Cadwallader Cabinet Makers,Emyr,Cadwallader,Cabinet Maker,Sole Trader,North Wales,Joiner
+W00655,Madoc,Madoc Joinery Partnership,Iestyn,Madoc,Joiner,Partnership,North Wales,Joiner
+W00656,Talfourd,Talfourd Wood Turning Ltd,Quentin,Talfourd,Wood Turner,Ltd,North Wales,Joiner
+W00657,Price-Jones,Price-Jones Staircases,Owain,Price-Jones,Staircase Specialist,Sole Trader,North Wales,Joiner
+W00658,Kenefick,Kenefick French Polishing,Lowen,Kenefick,French Polisher,Sole Trader,North Wales,Joiner
+W00659,Myrddin,Myrddin Joinery,Trystan,Myrddin,Joiner,Sole Trader,North Wales,Joiner
+W00660,Pryce,Pryce & Sons Joinery,Alwyn,Pryce,Joiner,Partnership,the Isle of Wight,Joiner
+W00661,MacFarlane,MacFarlane Joiners LLP,Callum,MacFarlane,Joiner,LLP,the Isle of Wight,Joiner
+W00662,Smythe-Winslow,Smythe-Winslow French Polishing,Alistair,Smythe-Winslow,French Polisher,Sole Trader,the Isle of Wight,Joiner
+W00663,Trevor-Smith,Trevor-Smith Joinery Ltd,Julian,Trevor-Smith,Joiner,Ltd,the Isle of Wight,Joiner
+W00664,Winnifred,Winnifred Joinery,Tobias,Winnifred,Joiner,Sole Trader,the Isle of Wight,Joiner
+W00665,Osborne-Kent,Osborne-Kent & Sons Joiners,Leopold,Osborne-Kent,Joiner,Partnership,the Isle of Wight,Joiner
+W00666,Crichton,Crichton Carpentry LLP,Douglas,Crichton,Carpenter,LLP,the Isle of Wight,Joiner
+W00667,Tresidder,Tresidder Wood Turner Ltd,Lowen,Tresidder,Wood Turner,Ltd,Ayrshire,Joiner
+W00668,Higgins,Higgins Cabinet Maker LLP,Barnaby,Higgins,Cabinet Maker,LLP,Ayrshire,Joiner
+W00669,Knaresborn,Knaresborn Shopfitting,Hugo,Knaresborn,Shopfitter,Sole Trader,the Scottish Borders,Joiner
+W00670,Gwyn,Gwyn & Sons Carpentry,Iwan,Gwyn,Carpenter,Partnership,the Scottish Borders,Joiner
+W00671,MacAulay,MacAulay Boat Building Ltd,Hamish,MacAulay,Boat Builder,Ltd,the Scottish Borders,Joiner
+W00672,Swithin,Swithin French Polishing,Percy,Swithin,French Polisher,Sole Trader,the Scottish Borders,Joiner
+W00673,Talfryn,Talfryn & Sons Cabinet Makers,Owain,Talfryn,Cabinet Maker,Partnership,the Scottish Borders,Joiner
+W00674,Mael,Mael Boat Builders LLP,Dafydd,Mael,Boat Builder,LLP,the Scottish Borders,Joiner
+W00675,Gresley,Gresley & Sons Joiners,Felix,Gresley,Joiner,Partnership,the Scottish Borders,Joiner
+W00676,Pendeen,Pendeen Staircase Specialists,Jowan,Pendeen,Staircase Specialist,Sole Trader,the Scottish Borders,Joiner
+W00677,Gwendoline,Gwendoline Joinery,Sian,Gwendoline,Joiner,Sole Trader,Fife,Carpenter
+W00678,Murdock,Murdock French Polishing Ltd,Angus,Murdock,French Polisher,Ltd,Fife,Carpenter
+W00679,Glen,Glen Staircases Ltd,Iain,Glen,Staircase Specialist,Ltd,Fife,Carpenter
+W00680,Sweeny,Sweeny & Sons Joiners,Callum,Sweeny,Joiner,Partnership,Antrim,Joiner
+W00681,Trevelean,Trevelean Boat Building,Julian,Trevelean,Boat Builder,Sole Trader,Antrim,Joiner
+W00682,Pennefather,Pennefather Cabinet Making Ltd,Quentin,Pennefather,Cabinet Maker,Ltd,Antrim,Joiner
+W00683,MacIntyre,MacIntyre Joiners LLP,Finlay,MacIntyre,Joiner,LLP,Antrim,Joiner
+W00684,Rescurik,Rescurik Carpentry Partnership,Dominic,Rescurik,Carpenter,Partnership,Antrim,Joiner
+W00685,Gallagher,Gallagher & Sons Joinery Ltd,Seamus,Gallagher,Joiner,Ltd,Antrim,Joiner
+W00686,Tregillian,Tregillian Boat Builders LLP,Percival,Tregillian,Boat Builder,LLP,Antrim,Joiner
+W00687,Gwendolen,Gwendolen French Polishing,Myfanwy,Gwendolen,French Polisher,Sole Trader,Antrim,Joiner
+W00688,Hennessey,Hennessey & Sons Carpentry,Kieran,Hennessey,Carpenter,Partnership,Antrim,Joiner
+W00689,Pennant,Pennant Shopfitters LLP,Rhys,Pennant,Shopfitter,LLP,County Down,Shopfitter
+W00690,Keziah,Keziah Boat Builders,Malachy,Keziah,Boat Builder,Partnership,County Down,Shopfitter
+W00691,Wilde,Wilde & Sons Shopfitting,Cedric,Wilde,Shopfitter,Partnership,County Down,Shopfitter
+W00692,Tansley,Tansley & Sons Joinery,Reginald,Tansley,Joiner,Partnership,County Down,Shopfitter
+W00693,Morwenna,Morwenna Shopfitting,Piran,Morwenna,Shopfitter,Sole Trader,County Down,Shopfitter
+W00694,O'Shea,O'Shea Shopfitting Ltd,Brendan,O'Shea,Shopfitter,Ltd,County Down,Shopfitter
+W00695,Dunraven,Dunraven Joinery Ltd,Percival,Dunraven,Joiner,Ltd,County Down,Shopfitter
+W00696,Kezwick,Kezwick Shopfitting Ltd,Barnaby,Kezwick,Shopfitter,Ltd,Staffordshire,Carpenter
+W00697,Oswald,Oswald Joinery,Terrence,Oswald,Joiner,Sole Trader,Staffordshire,Carpenter
+W00698,Tressillian,Tressillian & Sons Carpentry,Ignatius,Tressillian,Carpenter,Partnership,Staffordshire,Carpenter
+W00699,Haverstock,Haverstock Carpentry Ltd,Wilfred,Haverstock,Carpenter,Ltd,Staffordshire,Carpenter
+W00700,Channing,Channing Shopfitter,Leopold,Channing,Shopfitter,Sole Trader,Staffordshire,Carpenter
+W00701,Killpatrick,Killpatrick Staircase Specialist,Fergus,Killpatrick,Staircase Specialist,Sole Trader,Staffordshire,Carpenter
+W00702,Smythe-Browne,Smythe-Browne French Polisher LLP,Crispin,Smythe-Browne,French Polisher,LLP,Staffordshire,Carpenter
+W00703,Trenoweth,Trenoweth Boat Builder Ltd,Jago,Trenoweth,Boat Builder,Ltd,Staffordshire,Carpenter
+W00704,St John,St John Carpentry,Phineas,St John,Carpenter,Sole Trader,Staffordshire,Carpenter
+W00705,Driscoll,Driscoll Shopfitting Ltd,Brendan,Driscoll,Shopfitter,Ltd,Nottinghamshire,Cabinet Maker
+W00706,Kittredge,Kittredge Carpenter Ltd,Sylvester,Kittredge,Carpenter,Ltd,Nottinghamshire,Cabinet Maker
+W00707,Cuthbertson,Cuthbertson Cabinet Maker,Alistair,Cuthbertson,Cabinet Maker,Sole Trader,Nottinghamshire,Cabinet Maker
+W00708,Passmore,Passmore Boat Builder Partnership,Tristram,Passmore,Boat Builder,Partnership,Nottinghamshire,Cabinet Maker
+W00709,Struthers,Struthers Woodturning Ltd,Hamish,Struthers,Wood Turner,Ltd,Leicestershire,Joiner
+W00710,Drewe,Drewe Joinery & Sons,Percival,Drewe,Joiner,Partnership,Leicestershire,Joiner
+W00711,Porthill,Porthill Shopfitting Ltd,Toby,Porthill,Shopfitter,Ltd,Leicestershire,Joiner
+W00712,Mainwaring,Mainwaring Joinery Partnership,Quentin,Mainwaring,Joiner,Partnership,Leicestershire,Joiner
+W00713,Falkiner,Falkiner Wood Turner,Basil,Falkiner,Wood Turner,Sole Trader,Leicestershire,Joiner
+W00714,Kinnock,Kinnock Staircase Specialists Partnership,Geraint,Kinnock,Staircase Specialist,Partnership,Leicestershire,Joiner
+W00715,Smythe-Wickham,Smythe-Wickham Cabinet Making,Percival,Smythe-Wickham,Cabinet Maker,Sole Trader,Yorkshire,Cabinet Maker
+W00716,Golightly,Golightly Joinery LLP,Sylvester,Golightly,Joiner,LLP,Yorkshire,Cabinet Maker
+W00717,Arbuthnot,Arbuthnot Boat Builders Ltd,Fergus,Arbuthnot,Boat Builder,Ltd,Yorkshire,Cabinet Maker
+W00718,Treloggan,Treloggan & Sons Joiners,Gareth,Treloggan,Joiner,Partnership,Devon,Joiner
+W00719,Vennel,Vennel Cabinet Making Ltd,Alastair,Vennel,Cabinet Maker,Ltd,Devon,Joiner
+W00720,Menevan,Menevan Boat Building,Cedric,Menevan,Boat Builder,Sole Trader,Devon,Joiner
+W00721,Kilman,Kilman Shopfitting Ltd,Rupert,Kilman,Shopfitter,Ltd,Devon,Joiner
+W00722,Halsell,Halsell Boat Builders LLP,Tristan,Halsell,Boat Builder,LLP,Devon,Joiner
+W00723,Smyly,Smyly & Sons Joinery,Wilfred,Smyly,Joiner,Partnership,Devon,Joiner
+W00724,Winncott,Winncott Wood Turning Ltd,Everard,Winncott,Wood Turner,Ltd,Devon,Joiner
+W00725,Gwennap,Gwennap Carpentry,Tamsin,Gwennap,Carpenter,Sole Trader,Devon,Joiner
+W00726,Cornford,Cornford Cabinet Making LLP,Reginald,Cornford,Cabinet Maker,LLP,Devon,Joiner
+W00727,Blythwood,Blythwood Boat Building Ltd,Osmond,Blythwood,Boat Builder,Ltd,Devon,Joiner
+W00728,Trevillian,Trevillian Joinery,Llewellyn,Trevillian,Joiner,Sole Trader,Devon,Joiner
+W00729,Vane-Tempest,Vane-Tempest & Sons Carpentry,Alastair,Vane-Tempest,Carpenter,Partnership,Kent,Carpenter
+W00730,Treloar,Treloar Cabinet Maker,Gideon,Treloar,Cabinet Maker,Sole Trader,Kent,Carpenter
+W00731,Quilter,Quilter Joinery LLP,Percival,Quilter,Joiner,LLP,Kent,Carpenter
+W00732,Skeffington,Skeffington & Sons Staircase Specialists,Rupert,Skeffington,Staircase Specialist,Partnership,Kent,Carpenter
+W00733,Havergal,Havergal French Polisher Ltd,Cedric,Havergal,French Polisher,Ltd,Kent,Carpenter
+W00734,Oddie,Oddie & Sons Joiners,Barnaby,Oddie,Joiner,Partnership,Kent,Carpenter
+W00735,Llewellyot,Llewellyot Wood Turner,Iwan,Llewellyot,Wood Turner,Sole Trader,Kent,Carpenter
+W00736,Pendarvis,Pendarvis Boat Builder Ltd,Lowen,Pendarvis,Boat Builder,Ltd,Kent,Carpenter
+W00737,Upton,Upton French Polisher,Sylvester,Upton,French Polisher,Sole Trader,Kent,Carpenter
+W00738,Courtenay,Courtenay Cabinet Maker LLP,Tristan,Courtenay,Cabinet Maker,LLP,Kent,Carpenter
+W00739,Gwenllian,Gwenllian Joinery Ltd,Rhys,Gwenllian,Joiner,Ltd,Kent,Carpenter
+W00740,Haldane,Haldane Carpentry & Sons,Malcolm,Haldane,Carpenter,Partnership,Kent,Carpenter
+W00741,Halsall,Halsall French Polishing Ltd,Terence,Halsall,French Polisher,Ltd,Cumbria,Shopfitter
+W00742,Treweek,Treweek Shopfitters,Lowen,Treweek,Shopfitter,Sole Trader,Cumbria,Shopfitter
+W00743,Kinloch,Kinloch Staircase Specialists,Angus,Kinloch,Staircase Specialist,Sole Trader,Cumbria,Shopfitter
+W00744,Porth,Porth Boat Building,Crispin,Porth,Boat Builder,Sole Trader,Cumbria,Shopfitter
+W00745,Stansfield,Stansfield Shopfitting LLP,Miles,Stansfield,Shopfitter,LLP,Cumbria,Shopfitter
+W00746,Glynne,Glynne Joinery LLP,Owain,Glynne,Joiner,LLP,the Lothians around Edinburgh,Staircase Specialist
+W00747,Montrose,Montrose Shopfitting LLP,Lachlan,Montrose,Shopfitter,LLP,the Lothians around Edinburgh,Staircase Specialist
+W00748,Trescott,Trescott Wood Turner,Barnaby,Trescott,Wood Turner,Sole Trader,the Lothians around Edinburgh,Staircase Specialist
+W00749,Curnow,Curnow French Polisher Ltd,Jago,Curnow,French Polisher,Ltd,the Lothians around Edinburgh,Staircase Specialist
+W00750,Tavener,Tavener Shopfitting LLP,Rupert,Tavener,Shopfitter,LLP,the Lothians around Edinburgh,Staircase Specialist
+W00751,Dunlevy,Dunlevy French Polishing Ltd,Ciaran,Dunlevy,French Polisher,Ltd,South Wales,Cabinet Maker
+W00752,Vickers,Vickers Shopfitting Ltd,Miles,Vickers,Shopfitter,Ltd,South Wales,Cabinet Maker
+W00753,MacInnis,MacInnis Cabinet Maker,Alasdair,MacInnis,Cabinet Maker,Sole Trader,Norfolk,Joiner
+W00754,Trewhella,Trewhella Joinery Ltd,Jago,Trewhella,Joiner,Ltd,Norfolk,Joiner
+W00755,Kesterton,Kesterton & Sons Joiners,Barnaby,Kesterton,Joiner,Partnership,Norfolk,Joiner
+W00756,Gwyne,Gwyne Wood Turner LLP,Iwan,Gwyne,Wood Turner,LLP,Norfolk,Joiner
+W00757,Cormack,Cormack Cabinet Maker,Fergus,Cormack,Cabinet Maker,Sole Trader,Norfolk,Joiner
+W00758,Myfanwy,Myfanwy Wood Turner,Rhiannon,Myfanwy,Wood Turner,Sole Trader,Norfolk,Joiner
+W00759,Kellaway,Kellaway Boat Builder,Toby,Kellaway,Boat Builder,Sole Trader,Norfolk,Joiner
+W00760,Waverly,Waverly French Polisher LLP,Julian,Waverly,French Polisher,LLP,Norfolk,Joiner
+W00761,Swithland,Swithland Shopfitting LLP,Alistair,Swithland,Shopfitter,LLP,Norfolk,Joiner
+W00762,Channell,Channell Shopfitting,Rupert,Channell,Shopfitter,Sole Trader,Cornwall,Joiner
+W00763,Residue,Residue French Polishing,Quentin,Residue,French Polisher,Sole Trader,Cornwall,Joiner
+W00764,Blewett,Blewett & Sons Ltd,Jasper,Blewett,Joiner,Ltd,Cornwall,Joiner
+W00765,Poldrake,Poldrake Staircases,Wendell,Poldrake,Staircase Specialist,Sole Trader,Cornwall,Joiner
+W00766,Griffith,Griffith Joinery Partnership,Ewan,Griffith,Joiner,Partnership,Cornwall,Joiner
+W00767,Sutcliffe-May,Sutcliffe-May Wood Turner Ltd,Crispin,Sutcliffe-May,Wood Turner,Ltd,Cornwall,Joiner
+W00768,Carne,Carne & Sons Joiners,Arthur,Carne,Joiner,Partnership,Cornwall,Joiner
+W00769,Hext,Hext Cabinet Maker,Benedict,Hext,Cabinet Maker,Sole Trader,Cornwall,Joiner
+W00770,Trevisick,Trevisick Carpenter & Sons,Lowell,Trevisick,Carpenter,Partnership,Cornwall,Joiner
+W00771,Gevinson,Gevinson Cabinet Maker,Mortimer,Gevinson,Cabinet Maker,Sole Trader,Cheshire,Joiner
+W00772,Cromwell,Cromwell Carpentry LLP,Gideon,Cromwell,Carpenter,LLP,Cheshire,Joiner
+W00773,Yorvik,Yorvik Wood Turner,Osric,Yorvik,Wood Turner,Sole Trader,Cheshire,Joiner
+W00774,Strathmore,Strathmore Cabinet Maker,Ewan,Strathmore,Cabinet Maker,Sole Trader,Cheshire,Joiner
+W00775,Kestlecomb,Kestlecomb & Sons Joinery,Aubrey,Kestlecomb,Joiner,Partnership,Cheshire,Joiner
+W00776,Vavasour,Vavasour Shopfitter LLP,Leopold,Vavasour,Shopfitter,LLP,Cheshire,Joiner
+W00777,Mountebank,Mountebank Wood Turner,Felix,Mountebank,Wood Turner,Sole Trader,Cheshire,Joiner
+W00778,Kempthorne,Kempthorne Shopfitting LLP,Reginald,Kempthorne,Shopfitter,LLP,Tyne and Wear,Carpenter
+W00779,Gowan,Gowan Staircase Specialists,Ewan,Gowan,Staircase Specialist,Sole Trader,Tyne and Wear,Carpenter
+W00780,Hargrave,Hargrave Shopfitting Ltd,Julian,Hargrave,Shopfitter,Ltd,Tyne and Wear,Carpenter
+W00781,Pennard,Pennard Shopfitting Ltd,Gareth,Pennard,Shopfitter,Ltd,Bristol and the West Country,Shopfitter
+W00782,Quillian,Quillian Joinery,Elias,Quillian,Joiner,Sole Trader,Bristol and the West Country,Shopfitter
+W00783,St Clere,St Clere Staircase Specialists Ltd,Percival,St Clere,Staircase Specialist,Ltd,Bristol and the West Country,Shopfitter
+W00784,Tregarth,Tregarth Shopfitting LLP,Sion,Tregarth,Shopfitter,LLP,Bristol and the West Country,Shopfitter
+W00785,Cresswell,Cresswell & Sons Cabinet Makers,Felix,Cresswell,Cabinet Maker,Partnership,Bristol and the West Country,Shopfitter
+W00786,Trelawny-Smith,Trelawny-Smith Staircase Specialists,Barnaby,Trelawny-Smith,Staircase Specialist,Sole Trader,Bristol and the West Country,Shopfitter
+W00787,Kensale,Kensale Shopfitting Ltd,Hugo,Kensale,Shopfitter,Ltd,Bristol and the West Country,Shopfitter
+W00788,Ardglass,Ardglass Carpentry,Fergus,Ardglass,Carpenter,Sole Trader,the Scottish Highlands,Joiner
+W00789,Tregarron,Tregarron Cabinet Makers,Crispin,Tregarron,Cabinet Maker,Sole Trader,the Scottish Highlands,Joiner
+W00790,Colquhoun,Colquhoun Wood Turning,Gregor,Colquhoun,Wood Turner,Sole Trader,the Scottish Highlands,Joiner
+W00791,Cardigan,Cardigan French Polishing,Huw,Cardigan,French Polisher,Sole Trader,the Scottish Highlands,Joiner
+W00792,Gittins,Gittins Carpentry Ltd,Reginald,Gittins,Carpenter,Ltd,Hampshire,Joiner
+W00793,Prichard,Prichard Joinery,Iwan,Prichard,Joiner,Sole Trader,Hampshire,Joiner
+W00794,Mordecai,Mordecai Staircase Specialists Ltd,Silas,Mordecai,Staircase Specialist,Ltd,Hampshire,Joiner
+W00795,Gower,Gower Cabinetry Ltd,Jasper,Gower,Cabinet Maker,Ltd,Hampshire,Joiner
+W00796,Quigley,Quigley Boat Building Sole Trader,Hamish,Quigley,Boat Builder,Sole Trader,Shropshire,Boat Builder
+W00797,Deverell,Deverell Boat Building LLP,Julian,Deverell,Boat Builder,LLP,Shropshire,Boat Builder
+W00798,Haverford,Haverford & Sons Carpentry LLP,Tobias,Haverford,Carpenter,LLP,Shropshire,Boat Builder
+W00799,Helyer,Helyer Boat Builders Ltd,Sebastian,Helyer,Boat Builder,Ltd,Shropshire,Boat Builder
+W00800,Abernathy,Abernathy & Sons Joiners,Hamish,Abernathy,Joiner,Partnership,Suffolk,Boat Builder
+W00801,Pevensley,Pevensley Wood Turning Ltd,Rupert,Pevensley,Wood Turner,Ltd,Suffolk,Boat Builder
+W00802,Weatherby,Weatherby Shopfitting,Barnaby,Weatherby,Shopfitter,Sole Trader,Suffolk,Boat Builder
+W00803,Glendining,Glendining Wood Turner Ltd,Alistair,Glendining,Wood Turner,Ltd,Suffolk,Boat Builder
+W00804,Windle,Windle & Sons Joinery Ltd,Cecil,Windle,Joiner,Ltd,Suffolk,Boat Builder
+W00805,Gyllenhaal,Gyllenhaal Cabinet Makers Ltd,Magnus,Gyllenhaal,Cabinet Maker,Ltd,Suffolk,Boat Builder
+W00806,Crawshay,Crawshay Joinery LLP,Osian,Crawshay,Joiner,LLP,Suffolk,Boat Builder
+W00807,Mactaggart,Mactaggart Shopfitting,Duncan,Mactaggart,Shopfitter,Sole Trader,Suffolk,Boat Builder
+W00808,Llewellyn-Jones,Llewellyn-Jones Staircase Specialists,Owain,Llewellyn-Jones,Staircase Specialist,Partnership,Lancashire,Staircase Specialist
+W00809,Challenor,Challenor Cabinet Makers Ltd,Rupert,Challenor,Cabinet Maker,Ltd,Lancashire,Staircase Specialist
+W00810,Tregonnen,Tregonnen Boat Building,Elowen,Tregonnen,Boat Builder,Sole Trader,Lancashire,Staircase Specialist
+W00811,St. Maur,St. Maur French Polishing,Julian,St. Maur,French Polisher,Sole Trader,Lancashire,Staircase Specialist
+W00812,Kinsella,Kinsella Staircase Specialist,Brendan,Kinsella,Staircase Specialist,Sole Trader,Gloucestershire,Carpenter
+W00813,Cardew,Cardew Wood Turner,Julian,Cardew,Wood Turner,Sole Trader,Gloucestershire,Carpenter
+W00814,Pendray,Pendray French Polisher,Quentin,Pendray,French Polisher,Sole Trader,Gloucestershire,Carpenter
+W00815,Wycherly,Wycherly Cabinet Makers,Sebastian,Wycherly,Cabinet Maker,Sole Trader,Gloucestershire,Carpenter
+W00816,Tunnell,Tunnell Staircase Specialist LLP,Dominic,Tunnell,Staircase Specialist,LLP,Gloucestershire,Carpenter
+W00817,Kellogg,Kellogg Woodturning LLP,Simeon,Kellogg,Wood Turner,LLP,Dorset,Cabinet Maker
+W00818,chiltern,Chiltern Cabinet Maker & Sons,Quentin,Chiltern,Cabinet Maker,Partnership,Dorset,Cabinet Maker
+W00819,MacInnes,MacInnes Wood Turner Ltd,Douglas,MacInnes,Wood Turner,Ltd,Dorset,Cabinet Maker
+W00820,Porthcawen,Porthcawen French Polishing Ltd,Trystan,Porthcawen,French Polisher,Ltd,Dorset,Cabinet Maker
+W00821,Boulter,Boulter & Sons Woodturning,Wilfred,Boulter,Wood Turner,Partnership,Dorset,Cabinet Maker
+W00822,Kilpatrick,Kilpatrick Joinery Partnership,Gordon,Kilpatrick,Joiner,Partnership,Aberdeenshire,Staircase Specialist
+W00823,Cornwallis,Cornwallis Cabinet Makers,Miles,Cornwallis,Cabinet Maker,Sole Trader,Aberdeenshire,Staircase Specialist
+W00824,Llewelyn,Llewelyn Staircase Specialists LLP,Rhys,Llewelyn,Staircase Specialist,LLP,Aberdeenshire,Staircase Specialist
+W00825,St Clair,St Clair Shopfitting Ltd,Alistair,St Clair,Shopfitter,Ltd,Aberdeenshire,Staircase Specialist
+W00826,Penderyn,Penderyn Boat Builders,Owain,Penderyn,Boat Builder,Sole Trader,Pembrokeshire,Cabinet Maker
+W00827,Llywelyn,Llywelyn & Sons Joiners,Emrys,Llywelyn,Joiner,Partnership,Pembrokeshire,Cabinet Maker
+W00828,Kevell,Kevell Shopfitting Ltd,Sion,Kevell,Shopfitter,Ltd,Pembrokeshire,Cabinet Maker
+W00829,Rhosemor,Rhosemor Cabinetry,Alistair,Rhosemor,Cabinet Maker,Sole Trader,Pembrokeshire,Cabinet Maker
+W00830,Jenkin,Jenkin & Sons Carpentry,Euros,Jenkin,Carpenter,Partnership,Pembrokeshire,Cabinet Maker
+W00831,Emyr,Emyr Woodturnery LLP,Bryn,Emyr,Wood Turner,LLP,Pembrokeshire,Cabinet Maker
+W00832,Bodwell,Bodwell Joinery Partnership,Clive,Bodwell,Joiner,Partnership,Pembrokeshire,Cabinet Maker
+W00833,Morello,Morello & Sons Cabinetry Ltd,Florian,Morello,Cabinet Maker,Ltd,Pembrokeshire,Cabinet Maker
+W00834,St. John,St. John Boat Builders,Crispin,St. John,Boat Builder,Sole Trader,Pembrokeshire,Cabinet Maker
+W00835,Maclellan,Maclellan Joiner,Ewan,Maclellan,Joiner,Sole Trader,Northumberland,Cabinet Maker
+W00836,Smeathman,Smeathman Cabinet Maker LLP,Cedric,Smeathman,Cabinet Maker,LLP,Northumberland,Cabinet Maker
+W00837,Keneale,Keneale Wood Turner Ltd,Barnaby,Keneale,Wood Turner,Ltd,Northumberland,Cabinet Maker
+W00838,Rhys-Evans,Rhys-Evans Cabinet Maker,Dafydd,Rhys-Evans,Cabinet Maker,Sole Trader,Northumberland,Cabinet Maker
+W00839,Tannock,Tannock Staircase Specialist LLP,Quentin,Tannock,Staircase Specialist,LLP,Northumberland,Cabinet Maker
+W00840,St. Aubyn,St. Aubyn Wood Turning LLP,Peregrine,St. Aubyn,Wood Turner,LLP,Somerset,Joiner
+W00841,Throckmorton,Throckmorton Joinery & Co,Archibald,Throckmorton,Joiner,Partnership,Somerset,Joiner
+W00842,MacCready,MacCready Shopfitting,Lachlan,MacCready,Shopfitter,Sole Trader,Somerset,Joiner
+W00843,Penhaligon-Smythe,Penhaligon-Smythe French Polishers,Alistair,Penhaligon-Smythe,French Polisher,Sole Trader,Somerset,Joiner
+W00844,Mallowes,Mallowes & Sons Joiners,Quentin,Mallowes,Joiner,Partnership,Somerset,Joiner
+W00845,Kinniston,Kinniston & Sons Shopfitting,Ewan,Kinniston,Shopfitter,Partnership,Essex,Joiner
+W00846,Caldwell-Smythe,Caldwell-Smythe Shopfitter Ltd,Rupert,Caldwell-Smythe,Shopfitter,Ltd,Essex,Joiner
+W00847,Stradling,Stradling Carpentry LLP,Gareth,Stradling,Carpenter,LLP,Surrey,Carpenter
+W00848,Pryce-Jones,Pryce-Jones Cabinet Making,Iwan,Pryce-Jones,Cabinet Maker,Sole Trader,Surrey,Carpenter
+W00849,Rowland,Rowland & Sons Joinery,Cedric,Rowland,Joiner,Partnership,Surrey,Carpenter
+W00850,Glynn,Glynn Staircase Specialists,Rhys,Glynn,Staircase Specialist,Sole Trader,Surrey,Carpenter

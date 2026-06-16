@@ -102,6 +102,45 @@ test_that("search_candidates() works with data.frame inputs and returns a data.f
 })
 
 
+# ── Exact_Strategy on tibble / data.frame containers ──────────────────────────
+
+exact_strat <- function(...) {
+  exact_strategy(name ~ normalize_text() + word_tokens(), ...)
+}
+
+test_that("detect_duplicates() with Exact_Strategy works on tibble + data.frame", {
+  out_tbl <- detect_duplicates(base_tbl(), "id", exact_strat())
+  expect_true(tibble::is_tibble(out_tbl))
+  expect_true(all(c("duplicate_group", "id", "score", "rank") %in% names(out_tbl)))
+  expect_true(all(out_tbl$score == 1.0))            # exact links are score 1.0
+
+  out_df <- detect_duplicates(base_df(), "id", exact_strat())
+  expect_true(is.data.frame(out_df))
+  expect_false(data.table::is.data.table(out_df))
+})
+
+test_that("search_candidates() with Exact_Strategy works on tibble + data.frame", {
+  out_tbl <- search_candidates(base_tbl(), target_tbl(), "id", "id", exact_strat())
+  expect_true(tibble::is_tibble(out_tbl))
+  expect_true(all(c("match_id", "score", "source", "id", "rank") %in% names(out_tbl)))
+  expect_true(all(out_tbl$score == 1.0))
+
+  out_df <- search_candidates(base_df(), target_df(), "id", "id", exact_strat())
+  expect_true(is.data.frame(out_df))
+  expect_false(tibble::is_tibble(out_df))
+})
+
+test_that("Exact_Strategy containment guard threads through the tibble wrapper", {
+  # forward containment: base tokens a subset of target tokens
+  base <- tibble::tibble(id = c("A"), name = "alpha beta")
+  targ <- tibble::tibble(id = c("X"), name = "alpha beta gamma")
+  out <- search_candidates(base, targ, "id", "id",
+                           exact_strat(containment = "forward"))
+  expect_true(tibble::is_tibble(out))
+  expect_true(any(out$id == "A") && any(out$id == "X"))
+})
+
+
 # ── extract_unmatched ─────────────────────────────────────────────────────────
 
 test_that("extract_unmatched() works with tibble + tibble matches", {
@@ -118,6 +157,23 @@ test_that("extract_unmatched() works with data.frame + data.frame matches", {
   out <- extract_unmatched(base_df(), "id", base_matches)
   expect_true(is.data.frame(out))
   expect_false(tibble::is_tibble(out))
+})
+
+
+# ── materialize_records ───────────────────────────────────────────────────────
+
+test_that("materialize_records() works with tibble input and returns a tibble", {
+  out <- materialize_records(base_tbl(), "id", c("A", "C"))
+  expect_true(tibble::is_tibble(out))
+  expect_setequal(out$id, c("A", "C"))
+})
+
+test_that("materialize_records() works with data.frame input and returns a data.frame", {
+  out <- materialize_records(base_df(), "id", c("A", "C"))
+  expect_true(is.data.frame(out))
+  expect_false(tibble::is_tibble(out))
+  expect_false(data.table::is.data.table(out))
+  expect_setequal(out$id, c("A", "C"))
 })
 
 

@@ -8,5 +8,5 @@
 ^localwip$
 ^pkgdown$
 ^Rplots\.pdf$
-^claude\.md$
+^CLAUDE\.md$
 ^data-raw$

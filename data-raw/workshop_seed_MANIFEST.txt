@@ -1,0 +1,9 @@
+# workshop seed -- frozen LLM artifact for joinery example data
+generated: 2026-06-16 13:41:48.582674
+model: google/gemma-4-31b-it  fallbacks: google/gemma-4-26b-a4b-it  (OpenRouter)
+entities: 850  (data-raw/workshop_seed_entities.csv)
+variants: 600  (data-raw/workshop_seed_variants.csv)
+
+Consumed by data-raw/generate_workshop_example.R (Stage 2, seeded + offline).
+Regenerate by deleting workshop_seed_cache/ and the two CSVs, then re-running
+data-raw/llm_workshop_seed.R with OPENROUTER_API_KEY set.

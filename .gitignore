@@ -8,3 +8,5 @@ localwip/
 notes/
 .positai
 .DS_Store
+.claude/
+data-raw/workshop_seed_cache/
