@@ -34,51 +34,61 @@ method(
     sep = strategy@collapse_sep
   )
 
-  batch_size <- strategy@batch_size
   n_records <- nrow(assembled)
+  pnum      <- function(x) prettyNum(x, big.mark = ",", scientific = FALSE)
 
-  # Define batch indices
-  batch_starts <- seq.int(1L, n_records, by = batch_size)
-  batch_ends   <- pmin(batch_starts + batch_size - 1L, n_records)
+  # Reuse: look up raw (pre-normalization) vectors keyed by (model, content-hash).
+  model_key <- .embedding_model_key(strategy@embedding_model)
+  keys      <- .embedding_keys(assembled$text, model_key)
+  cached    <- .embedding_cache_get(keys)
 
-  batches <- map2(
-    batch_starts,
-    batch_ends,
-    function(start, end) {
-      list(
-        ids  = assembled$id[start:end],
-        text = assembled$text[start:end]
-      )
-    }
-  )
+  miss <- map_lgl(cached, is.null)
+  n_new    <- sum(miss)
+  n_reused <- n_records - n_new
 
-  pnum <- function(x) prettyNum(x, big.mark = ",", scientific = FALSE)
-  total_batches <- length(batches)
-  cli::cli_alert_info(
-    "Computing Embeddings for {pnum(n_records)} records in {pnum(total_batches)} batches:"
-  )
+  # Embed only the cache misses, in batches; store the raw vectors.
+  if (n_new > 0L) {
+    miss_idx  <- which(miss)
+    miss_text <- assembled$text[miss_idx]
 
-  batch_results <- imap(
-    batches,
-    function(batch,index) {
+    batch_size    <- strategy@batch_size
+    batch_starts  <- seq.int(1L, n_new, by = batch_size)
+    batch_ends    <- pmin(batch_starts + batch_size - 1L, n_new)
+    total_batches <- length(batch_starts)
+
+    cli::cli_alert_info(
+      "Computing Embeddings for {pnum(n_new)} records in {pnum(total_batches)} batches ({pnum(n_reused)} reused):"
+    )
+
+    miss_vecs <- vector("list", n_new)
+    for (b in seq_along(batch_starts)) {
+      start <- batch_starts[[b]]
+      end   <- batch_ends[[b]]
+
       embeddings_tbl <- tidyllm::embed(
-        batch$text,
+        miss_text[start:end],
         strategy@embedding_model
       )
 
-      cli::cli_alert_info(
-        "Embedding Batch {pnum(index)}/{pnum(total_batches)}"
-      )
-
-      data.table::data.table(
-        id = batch$ids,
-        embedding = embeddings_tbl$embeddings
-      )
+      cli::cli_alert_info("Embedding Batch {pnum(b)}/{pnum(total_batches)}")
+      miss_vecs[start:end] <- embeddings_tbl$embeddings
     }
+
+    .embedding_cache_put(keys[miss_idx], miss_vecs)
+    cached[miss_idx] <- miss_vecs
+  } else {
+    cli::cli_alert_info(
+      "Computing Embeddings for {pnum(n_records)} records ({pnum(n_reused)} reused, 0 new)."
+    )
+  }
+
+  result <- data.table::data.table(
+    id        = assembled$id,
+    embedding = cached
   )
 
-  result <- data.table::rbindlist(batch_results)
-
+  # Normalize on read: the cache holds raw vectors, so normalize = TRUE/FALSE
+  # share one cache and the returned values are unchanged from before.
   if (strategy@normalize) {
     result[, embedding := map(embedding, function(vec) {
       norm <- sqrt(sum(vec^2))

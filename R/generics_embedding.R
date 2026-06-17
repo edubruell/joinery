@@ -9,6 +9,14 @@
 #' This is a backend-specific generic that handles data retrieval,
 #' text assembly, and embedding computation via tidyllm.
 #'
+#' Embedding is the expensive part of a vector match, so each record is embedded
+#' once and the vector is reused on later calls. The data.table and tibble
+#' backends keep a per-session cache keyed by model and record content; the
+#' DuckDB backend reuses through its persisted `embeddings` column. Reuse is
+#' controlled by the `joinery.embedding_reuse` and `joinery.embedding_cache_dir`
+#' options (see `joinery` package options) and can be cleared with
+#' [clear_embedding_cache()].
+#'
 #' @param data A data.frame / tibble / data.table (or db table in other backends).
 #' @param id Character scalar naming the ID column in `data`.
 #' @param strategy An `Embedding_Strategy` object specifying columns,
@@ -17,6 +25,8 @@
 #'
 #' @return A backend-specific table with columns: `id` and `embedding`
 #'   (where `embedding` contains numeric vectors).
+#'
+#' @seealso [clear_embedding_cache()]
 #'
 #' @export
 compute_embeddings <- new_generic(

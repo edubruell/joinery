@@ -33,6 +33,12 @@ Recovers the same entity across different geographic blocks (movers, name drift,
 * **Per-column `min_containment_tokens`** on `exact_strategy()`: a per-column minimum number of tokens the base record must contribute to a match for it to count as a containment hit. Prevents a single shared hub token from triggering a false-positive containment link when the base record has very few tokens.
 * **Feedback framing improvements**: the feedback term in the exact-strategy scoring is now framed consistently with the token-scoring kernel so contributions are comparable between exact and fuzzy stages in a multi-stage workflow.
 
+### Embedding reuse
+
+* **Embed once, reuse on later calls**: the data.table and tibble backends now keep a per-session cache of embedding vectors, so a multi-stage run no longer re-embeds the same record on every stage (embedding is roughly 2000x more expensive than the retrieval it feeds). The cache is keyed by model and record content, so a record whose text changed re-embeds on its own. This brings the in-memory backends in line with the DuckDB backend, which already reused through its persisted `embeddings` column.
+* **Two new package options**: `joinery.embedding_reuse` (default `TRUE`; set `FALSE` to embed fresh every time) and `joinery.embedding_cache_dir` (unset by default; set a path to persist the cache across R sessions). See `?joinery` for the full description.
+* **`clear_embedding_cache(disk = FALSE)`**: new exported helper to empty the in-session cache, and optionally the on-disk cache.
+
 ### New and improved preparers
 
 * **`drop_short_tokens(min_nchar = 2)`**: new preparer. Drops tokens shorter than `min_nchar` characters from a token list-column. Useful after phonetic encoding (encoders can produce short codes that act as hub tokens) or to strip uninformative single-character tokens.

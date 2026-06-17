@@ -138,6 +138,7 @@ reference:
     contents:
       - compute_embeddings
       - score_embeddings
+      - clear_embedding_cache
 
   - title: "DuckDB backend control"
     desc: >

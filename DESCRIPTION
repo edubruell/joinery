@@ -46,6 +46,7 @@ Collate:
     'methods_datatable_search.R'
     'methods_datatable_multistage.R'
     'methods_datatable_inspect.R'
+    'embedding_cache.R'
     'embedding_methods_datatable.R'
     'exact_methods_datatable.R'
     'methods_tibble.R'

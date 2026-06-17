@@ -24,4 +24,15 @@ A backend-specific table with columns: \code{id} and \code{embedding}
 Compute embedding vectors for records using an \code{Embedding_Strategy}.
 This is a backend-specific generic that handles data retrieval,
 text assembly, and embedding computation via tidyllm.
+
+Embedding is the expensive part of a vector match, so each record is embedded
+once and the vector is reused on later calls. The data.table and tibble
+backends keep a per-session cache keyed by model and record content; the
+DuckDB backend reuses through its persisted \code{embeddings} column. Reuse is
+controlled by the \code{joinery.embedding_reuse} and \code{joinery.embedding_cache_dir}
+options (see \code{joinery} package options) and can be cleared with
+\code{\link[=clear_embedding_cache]{clear_embedding_cache()}}.
+}
+\seealso{
+\code{\link[=clear_embedding_cache]{clear_embedding_cache()}}
 }
