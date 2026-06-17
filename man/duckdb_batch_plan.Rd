@@ -15,7 +15,7 @@ duckdb_batch_plan(
 )
 }
 \arguments{
-\item{db_tbl}{A DuckDB table reference (result of `dplyr::tbl(con, "table_name")`)}
+\item{db_tbl}{A DuckDB table reference (result of \code{dplyr::tbl(con, "table_name")})}
 
 \item{id}{Character. Column name(s) to use as record identifier(s). Not used for batching
 but validated to exist in the table.}
@@ -26,28 +26,30 @@ Default: 1e6 (1 million rows).}
 \item{min_batch_size}{Positive integer. Minimum table size to trigger batching.
 If total rows < min_batch_size, returns single batch. Default: 1e5 (100k rows).}
 
-\item{chunk_strategy}{Character. One of `"even"`, `"block_first"`, or `"block_consolidated"`.
-Default: `"block_consolidated"`.}
+\item{chunk_strategy}{Character. One of \code{"even"}, \code{"block_first"}, or \code{"block_consolidated"}.
+Default: \code{"block_consolidated"}.}
 
 \item{block_by}{Optional character vector. Column name(s) to use for semantic blocking.
 If specified, batches respect block boundaries. Supports multiple columns (e.g., c("region", "year")).}
 
-\item{atomic_blocks}{Logical. When `FALSE` (default) the planner may sub-split
-a block larger than `target_batch_size` into row-number windows - correct
-for *preprocess* batching, where token generation is per-row independent.
-When `TRUE` (the *scoring* path) a block is treated as **indivisible**: small
+\item{atomic_blocks}{Logical. When \code{FALSE} (default) the planner may sub-split
+a block larger than \code{target_batch_size} into row-number windows - correct
+for \emph{preprocess} batching, where token generation is per-row independent.
+When \code{TRUE} (the \emph{scoring} path) a block is treated as \strong{indivisible}: small
 blocks are consolidated under the budget but a large block is kept whole as a
-single chunk (flagged `oversized = TRUE`), never sub-split - because a match
-pair only forms *within* a block, so splitting one would silently drop
-cross-pairs. Requires `block_by`; rejects `chunk_strategy = "even"`.}
+single chunk (flagged \code{oversized = TRUE}), never sub-split - because a match
+pair only forms \emph{within} a block, so splitting one would silently drop
+cross-pairs. Requires \code{block_by}; rejects \code{chunk_strategy = "even"}.}
 }
 \value{
-A `data.table` with columns:
-  - `batch_id`: integer, sequential batch identifier (1, 2, 3, ...)
-  - `row_count`: integer, number of rows in this batch
-  - `row_start`: integer (or NA), window start for row-number-based batches; NA for block-based
-  - `row_end`: integer (or NA), window end for row-number-based batches; NA for block-based
-  - Additional columns (if `block_by` specified): one per blocking variable, containing block values
+A \code{data.table} with columns:
+\itemize{
+\item \code{batch_id}: integer, sequential batch identifier (1, 2, 3, ...)
+\item \code{row_count}: integer, number of rows in this batch
+\item \code{row_start}: integer (or NA), window start for row-number-based batches; NA for block-based
+\item \code{row_end}: integer (or NA), window end for row-number-based batches; NA for block-based
+\item Additional columns (if \code{block_by} specified): one per blocking variable, containing block values
+}
 }
 \description{
 Analyzes a DuckDB table and generates a batch plan (data.table) that defines
@@ -57,24 +59,25 @@ identifiers (if blocking is used).
 }
 \details{
 The function supports three chunking strategies:
-- `"even"`: Simple row-number chunking, ignores blocks
-- `"block_first"`: Each batch = one block (or sub-chunks if block > target_batch_size)
-- `"block_consolidated"`: Consolidates small blocks to minimize batch count (default)
+\itemize{
+\item \code{"even"}: Simple row-number chunking, ignores blocks
+\item \code{"block_first"}: Each batch = one block (or sub-chunks if block > target_batch_size)
+\item \code{"block_consolidated"}: Consolidates small blocks to minimize batch count (default)
+}
 
-
-**Small tables**: If total rows < `min_batch_size`, returns a single batch regardless
+\strong{Small tables}: If total rows < \code{min_batch_size}, returns a single batch regardless
 of strategy. With blocking, still respects blocks.
 
-**Row-number windows**: For unblocked or large-block sub-chunking, `row_start` and
-`row_end` define window boundaries (1-based, inclusive). For block-based batches
+\strong{Row-number windows}: For unblocked or large-block sub-chunking, \code{row_start} and
+\code{row_end} define window boundaries (1-based, inclusive). For block-based batches
 (small blocks), these are NA.
 
-**Consolidation**: `"block_consolidated"` (default) combines multiple small blocks
-into single batches up to `target_batch_size` to reduce overhead. Each batch may
+\strong{Consolidation}: \code{"block_consolidated"} (default) combines multiple small blocks
+into single batches up to \code{target_batch_size} to reduce overhead. Each batch may
 contain zero, one, or multiple blocks (depending on sizes and consolidation).
 
-**Row ordering**: To ensure `row_start` and `row_end` windows are consecutive and
-can be reliably sliced from the DB, the function sorts by the `id` column before
+\strong{Row ordering}: To ensure \code{row_start} and \code{row_end} windows are consecutive and
+can be reliably sliced from the DB, the function sorts by the \code{id} column before
 computing row numbers. This ensures reproducible, deterministic batch boundaries.
 }
 \examples{

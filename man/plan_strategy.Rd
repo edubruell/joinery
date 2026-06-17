@@ -20,40 +20,40 @@ plan_strategy(
 \arguments{
 \item{base}{A data.frame / tibble / data.table (or backend table).}
 
-\item{strategy}{A `Search_Strategy` supplying the tokenization to plan
+\item{strategy}{A \code{Search_Strategy} supplying the tokenization to plan
 against.}
 
-\item{target}{Optional second table. `NULL` (default) plans a dedup;
-non-`NULL` plans a cross-table search.}
+\item{target}{Optional second table. \code{NULL} (default) plans a dedup;
+non-\code{NULL} plans a cross-table search.}
 
-\item{block_candidates}{Named list of candidate `block_by` specs to compare
-(e.g. `list(plz2 = "plz2", plz5_wz = c("plz5", "wz08_3"))`).}
+\item{block_candidates}{Named list of candidate \code{block_by} specs to compare
+(e.g. \code{list(plz2 = "plz2", plz5_wz = c("plz5", "wz08_3"))}).}
 
-\item{base_id}{Character scalar naming the id column in `base` (required).}
+\item{base_id}{Character scalar naming the id column in \code{base} (required).}
 
-\item{target_id}{Character scalar naming the id column in `target`
-(defaults to `base_id`).}
+\item{target_id}{Character scalar naming the id column in \code{target}
+(defaults to \code{base_id}).}
 
-\item{n_offenders}{Number of top-`df` "offender" tokens (the fan-out drivers)
-to report per column. Defaults to `20`.}
+\item{n_offenders}{Number of top-\code{df} "offender" tokens (the fan-out drivers)
+to report per column. Defaults to \code{20}.}
 
-\item{min_rarity_grid}{Optional numeric vector of `min_rarity` cut points for
-the cost curve. `NULL` (default) picks a grid from the rarity distribution.}
+\item{min_rarity_grid}{Optional numeric vector of \code{min_rarity} cut points for
+the cost curve. \code{NULL} (default) picks a grid from the rarity distribution.}
 
-\item{containment}{Logical. When `TRUE`, adds the per-column containment
+\item{containment}{Logical. When \code{TRUE}, adds the per-column containment
 share, the one read that performs a bounded structural join. Defaults to
-`FALSE`, which keeps `plan_strategy()` scoring-free.}
+\code{FALSE}, which keeps \code{plan_strategy()} scoring-free.}
 
-\item{...}{Backend-specific arguments, such as `sample_n` (DuckDB).}
+\item{...}{Backend-specific arguments, such as \code{sample_n} (DuckDB).}
 }
 \value{
-A `Strategy_Plan` object.
+A \code{Strategy_Plan} object.
 }
 \description{
 Helps you choose a blocking before you run anything. Where
-[audit_strategy()] grades a strategy you have already settled on, and
-[rarity_distribution()] reads one column's token distribution,
-`plan_strategy()` compares several candidate blockings side by side and
+\code{\link[=audit_strategy]{audit_strategy()}} grades a strategy you have already settled on, and
+\code{\link[=rarity_distribution]{rarity_distribution()}} reads one column's token distribution,
+\code{plan_strategy()} compares several candidate blockings side by side and
 shows the trade-off between how many comparisons each one costs and how many
 true matches it would keep together.
 
@@ -61,17 +61,17 @@ It never builds the pair set, so it is safe to run on a full corpus. For
 each candidate blocking it reports: how many blocks it makes and how big
 they are, an estimate of how many record comparisons it implies, and the
 share of identical-token records that stay in the same block (the recall it
-would cost you). It also reports how much an [exact_strategy()] front stage
+would cost you). It also reports how much an \code{\link[=exact_strategy]{exact_strategy()}} front stage
 would absorb, the shape of the leftover records, and how discriminative each
 column is, including a warning when a column that is often empty puts a
 ceiling on achievable scores.
 
 The strategy you pass supplies only the column preparation steps; its own
-`block_by` is ignored, since the blocking is exactly what you are choosing
+\code{block_by} is ignored, since the blocking is exactly what you are choosing
 here.
 }
 \seealso{
-[audit_strategy()] to grade a chosen strategy,
-  [rarity_distribution()] for one column's distribution,
-  [exact_strategy()] for the front stage it sizes.
+\code{\link[=audit_strategy]{audit_strategy()}} to grade a chosen strategy,
+\code{\link[=rarity_distribution]{rarity_distribution()}} for one column's distribution,
+\code{\link[=exact_strategy]{exact_strategy()}} for the front stage it sizes.
 }

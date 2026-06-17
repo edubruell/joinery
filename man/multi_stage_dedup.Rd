@@ -10,42 +10,44 @@ multi_stage_dedup(table, id, strategies, ...)
 \item{table}{A data.frame, tibble, data.table, or backend table to
 deduplicate.}
 
-\item{id}{Character scalar naming the ID column in `table`.}
+\item{id}{Character scalar naming the ID column in \code{table}.}
 
 \item{strategies}{Named, ordered list of strategies to apply in turn. Each
-element is an [exact_strategy()], [search_strategy()], or
-[embedding_strategy()].}
+element is an \code{\link[=exact_strategy]{exact_strategy()}}, \code{\link[=search_strategy]{search_strategy()}}, or
+\code{\link[=embedding_strategy]{embedding_strategy()}}.}
 
 \item{...}{Further arguments to the staged run:
-  * `rep_by`: optional character scalar naming a priority column on `table`
-    used to choose each group's representative (passed to
-    [resolve_entities()]: smallest `rep_by` wins, ties broken by smallest
-    id).
-  * `edge_filter`: optional callback `function(edges, stage_name)` applied to
-    each pass's links before they are accumulated (for example a domain rule
-    that drops implausible matches). The links carry `from`, `to`, `score`,
-    and `stage`.
+\itemize{
+\item \code{rep_by}: optional character scalar naming a priority column on \code{table}
+used to choose each group's representative (passed to
+\code{\link[=resolve_entities]{resolve_entities()}}: smallest \code{rep_by} wins, ties broken by smallest
+id).
+\item \code{edge_filter}: optional callback \verb{function(edges, stage_name)} applied to
+each pass's links before they are accumulated (for example a domain rule
+that drops implausible matches). The links carry \code{from}, \code{to}, \code{score},
+and \code{stage}.
+}
 
-  Backend methods may accept additional arguments.}
+Backend methods may accept additional arguments.}
 }
 \value{
-The standard dedup result: `duplicate_group | id | score | rank`
-  plus the original columns of `table`, and a `stage` column recording which
-  pass first linked each record.
+The standard dedup result: \code{duplicate_group | id | score | rank}
+plus the original columns of \code{table}, and a \code{stage} column recording which
+pass first linked each record.
 }
 \description{
 Deduplicate a single table in increasingly tolerant passes. A typical run
-starts with a cheap [exact_strategy()] pass that catches the clean
-duplicates, then applies looser [search_strategy()] passes (often with
+starts with a cheap \code{\link[=exact_strategy]{exact_strategy()}} pass that catches the clean
+duplicates, then applies looser \code{\link[=search_strategy]{search_strategy()}} passes (often with
 wider blocking) to the records still unmatched. All the links found across
 the passes are grouped into duplicate groups at the end, so a record linked
-to `B` in an early pass and `B` linked to `C` in a later one all land in the
+to \code{B} in an early pass and \code{B} linked to \code{C} in a later one all land in the
 same group.
 
-For linking across two tables or several sources, use [multi_stage_search()].
+For linking across two tables or several sources, use \code{\link[=multi_stage_search]{multi_stage_search()}}.
 }
 \seealso{
-[multi_stage_search()] for the cross-table version,
-  [detect_duplicates()] for a single pass, [resolve_entities()] for the
-  grouping step.
+\code{\link[=multi_stage_search]{multi_stage_search()}} for the cross-table version,
+\code{\link[=detect_duplicates]{detect_duplicates()}} for a single pass, \code{\link[=resolve_entities]{resolve_entities()}} for the
+grouping step.
 }

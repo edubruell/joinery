@@ -7,8 +7,8 @@
 recommendations(x, ...)
 }
 \arguments{
-\item{x}{A diagnostic result object (`Strategy_Audit`,
-`Match_Overview`, `Calibrated_Matches`, `Filter_Calibration`).}
+\item{x}{A diagnostic result object (\code{Strategy_Audit},
+\code{Match_Overview}, \code{Calibrated_Matches}, \code{Filter_Calibration}).}
 
 \item{...}{Reserved for future methods.}
 }
@@ -17,12 +17,12 @@ A character vector.
 }
 \description{
 Accessor returning the recommendations strings stored on a
-diagnostic result object. Returns `character(0)` when no
+diagnostic result object. Returns \code{character(0)} when no
 recommendations fired. The same strings are surfaced inline by the
-object's `print()` method.
+object's \code{print()} method.
 
 Methods for individual classes live alongside those classes -
-diagnostic classes (`Match_Overview`, `Strategy_Audit`) in
-`diagnostic_classes.R`; calibration classes (`Calibrated_Matches`,
-`Filter_Calibration`) in `calibration_classes.R`.
+diagnostic classes (\code{Match_Overview}, \code{Strategy_Audit}) in
+\code{diagnostic_classes.R}; calibration classes (\code{Calibrated_Matches},
+\code{Filter_Calibration}) in \code{calibration_classes.R}.
 }

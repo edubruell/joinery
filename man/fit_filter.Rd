@@ -14,33 +14,33 @@ fit_filter(
 )
 }
 \arguments{
-\item{features}{A [`Match_Features`] object.}
+\item{features}{A \code{\link{Match_Features}} object.}
 
-\item{labels}{A `data.table` / `data.frame` with the matches schema
-plus an integer `equal` column (`0L` / `1L`). Typically produced by
-[import_labels()].}
+\item{labels}{A \code{data.table} / \code{data.frame} with the matches schema
+plus an integer \code{equal} column (\code{0L} / \code{1L}). Typically produced by
+\code{\link[=import_labels]{import_labels()}}.}
 
-\item{model}{Character scalar (default `"logistic"`) selecting the
-baseline `glm()` path. Future M6 work will accept a fitted parsnip
+\item{model}{Character scalar (default \code{"logistic"}) selecting the
+baseline \code{glm()} path. Future M6 work will accept a fitted parsnip
 / workflow object here.}
 
-\item{class_weighted}{Logical scalar. When `TRUE`, fit `glm` with
-inverse-class-frequency `weights =`, useful for imbalanced
-training sets. Default `FALSE`.}
+\item{class_weighted}{Logical scalar. When \code{TRUE}, fit \code{glm} with
+inverse-class-frequency \verb{weights =}, useful for imbalanced
+training sets. Default \code{FALSE}.}
 
 \item{na_fill}{Numeric scalar used to impute predictor NAs. Default
-`0` (sensible for aIP slot columns where NA means "no token").}
+\code{0} (sensible for aIP slot columns where NA means "no token").}
 
 \item{...}{Reserved for future expansion.}
 }
 \value{
-A [`Filter_Model`] object.
+A \code{Filter_Model} object.
 }
 \description{
 Fit a baseline classifier to predict whether each scored pair is a
-true match (`equal == 1L`) or a false positive (`equal == 0L`).
-The baseline path uses `stats::glm` with the logit link and no
+true match (\code{equal == 1L}) or a false positive (\code{equal == 0L}).
+The baseline path uses \code{stats::glm} with the logit link and no
 external dependencies. The features object is the input from
-[match_features()]; labels carry the `equal` column produced by
-[import_labels()].
+\code{\link[=match_features]{match_features()}}; labels carry the \code{equal} column produced by
+\code{\link[=import_labels]{import_labels()}}.
 }

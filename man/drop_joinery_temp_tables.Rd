@@ -21,9 +21,9 @@ A character vector of removed table names, invisibly.
 }
 \description{
 Removes ephemeral tables generated during batch preprocessing steps
-(for example token tables created by `prepare_search_data()`).
+(for example token tables created by \code{prepare_search_data()}).
 These tables follow a reserved prefix convention (such as
-`"_joinery_tokens_"` or `"_joinery_tmp_"`) and are safe to delete.
+\code{"_joinery_tokens_"} or \code{"_joinery_tmp_"}) and are safe to delete.
 }
 \details{
 This function does not touch user tables. Only tables whose names

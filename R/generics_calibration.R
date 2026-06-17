@@ -15,7 +15,7 @@
 #' registry over the *auxiliary* (search / target) side of a linkage
 #' task. Together with the base-side registry produced by
 #' [compute_rarity()], it feeds the absolute identification potential
-#' (`aIP`) used by [compute_aip()] and the forthcoming
+#' (`aIP`) used by `compute_aip()` and the forthcoming
 #' `match_features()` verb.
 #'
 #' Unlike [compute_rarity()], the auxiliary registry is **block-agnostic
@@ -97,13 +97,13 @@ match_features <- new_generic(
 #'
 #' @description
 #' High-level Q5 verb. Builds features via [match_features()], fits a
-#' [`Filter_Model`] via [fit_filter()], and applies it via
-#' [apply_filter()] to return a [`Calibrated_Matches`] object enriched
+#' `Filter_Model` via [fit_filter()], and applies it via
+#' [apply_filter()] to return a `Calibrated_Matches` object enriched
 #' with `tp_prob` / `predicted_tp`. Dispatches on the strategy class.
 #'
 #' @param matches Match output table (data.table / tibble / data.frame
 #'   / DuckDB lazy `tbl`).
-#' @param strategy The [`Search_Strategy`] or [`Embedding_Strategy`]
+#' @param strategy The [search_strategy()] or [embedding_strategy()]
 #'   used to produce `matches`.
 #' @param ... Method-specific arguments. Required: `labels` (manually
 #'   labelled rows produced by [import_labels()]), `base`, and `id`.
@@ -112,7 +112,7 @@ match_features <- new_generic(
 #'   [match_features()] tuning knobs (`top_n`, `include_string_sim`,
 #'   `include_block_stats`, `method`).
 #'
-#' @return A [`Calibrated_Matches`] object.
+#' @return A `Calibrated_Matches` object.
 #'
 #' @export
 calibrate_matches <- new_generic(
@@ -125,7 +125,7 @@ calibrate_matches <- new_generic(
 #'
 #' @description
 #' Compute calibration diagnostics for a fitted false-positive filter on
-#' a labelled evaluation set. Returns a [`Filter_Calibration`] carrying
+#' a labelled evaluation set. Returns a `Filter_Calibration` carrying
 #' the reliability table, Brier score, log-loss, per-class confusion
 #' matrix, and a threshold sweep curve.
 #'
@@ -133,10 +133,10 @@ calibrate_matches <- new_generic(
 #'   * `calibrate(calibrated_matches, labels)` - evaluate on labels held
 #'      out from the training fit.
 #'   * `calibrate(calibrated_matches)` - evaluate on the training labels
-#'      stored on the [`Filter_Model`] (sanity-check view; do not use
+#'      stored on the `Filter_Model` (sanity-check view; do not use
 #'      for model selection).
 #'
-#' @param x A [`Calibrated_Matches`] object from [apply_filter()] /
+#' @param x A `Calibrated_Matches` object from [apply_filter()] /
 #'   [calibrate_matches()].
 #' @param labels Optional labels `data.table` (typically from
 #'   [import_labels()]) for held-out evaluation.
@@ -144,7 +144,7 @@ calibrate_matches <- new_generic(
 #'   reliability table. Default `10`.
 #' @param ... Reserved for future expansion.
 #'
-#' @return A [`Filter_Calibration`] object.
+#' @return A `Filter_Calibration` object.
 #'
 #' @export
 calibrate <- new_generic(

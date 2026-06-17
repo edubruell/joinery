@@ -16,66 +16,67 @@ multi_stage_search(
 \arguments{
 \item{base_table}{The left table in the linkage.}
 
-\item{target_table}{The right table. Pass `base_table` again with
-`self = TRUE` to search a single pooled table against itself.}
+\item{target_table}{The right table. Pass \code{base_table} again with
+\code{self = TRUE} to search a single pooled table against itself.}
 
-\item{base_id}{Character scalar naming the ID column in `base_table`.}
+\item{base_id}{Character scalar naming the ID column in \code{base_table}.}
 
-\item{target_id}{Character scalar naming the ID column in `target_table`.}
+\item{target_id}{Character scalar naming the ID column in \code{target_table}.}
 
 \item{strategies}{Named, ordered list of strategies to apply in turn. Each
-element is an [exact_strategy()], [search_strategy()], or
-[embedding_strategy()].}
+element is an \code{\link[=exact_strategy]{exact_strategy()}}, \code{\link[=search_strategy]{search_strategy()}}, or
+\code{\link[=embedding_strategy]{embedding_strategy()}}.}
 
 \item{...}{Further arguments controlling the staged run:
-  * `self`: logical; `TRUE` searches `base_table` against itself (for
-    example, pooling several years into one table and linking across them).
-  * `source_by`: optional character vector naming the column(s) that record
-    where each row came from (for example `"year"` or `"register"`). When
-    set, every link is tagged as within-source or cross-source, and the
-    result reports each entity's `source` and `covered_sources`.
-  * `collapse`: what happens between stages. `"none"` only carries the
-    still-unmatched records forward, while `"rep"` also collapses each group
-    found so far to a single representative, shrinking the search space for
-    the looser passes that follow.
-  * `rep_rule`: rule for choosing each group's representative.
-  * `rebind`: how the next stage's two sides are formed from the
-    representatives and the residual: `"explicit"`, `"self"`, or
-    `"accumulate"` (the path for incremental panel updates).
-  * `direction`: which way each pass searches: `"forward"`, `"backward"`, or
-    `"bidirectional"`.
-  * `edge_filter`: optional callback `function(edges, stage_name)` applied to
-    each pass's links before they are accumulated (for example a domain rule
-    that drops implausible matches).
-  * `rep_by`: optional priority column for choosing representatives (passed
-    to [resolve_entities()]).
+\itemize{
+\item \code{self}: logical; \code{TRUE} searches \code{base_table} against itself (for
+example, pooling several years into one table and linking across them).
+\item \code{source_by}: optional character vector naming the column(s) that record
+where each row came from (for example \code{"year"} or \code{"register"}). When
+set, every link is tagged as within-source or cross-source, and the
+result reports each entity's \code{source} and \code{covered_sources}.
+\item \code{collapse}: what happens between stages. \code{"none"} only carries the
+still-unmatched records forward, while \code{"rep"} also collapses each group
+found so far to a single representative, shrinking the search space for
+the looser passes that follow.
+\item \code{rep_rule}: rule for choosing each group's representative.
+\item \code{rebind}: how the next stage's two sides are formed from the
+representatives and the residual: \code{"explicit"}, \code{"self"}, or
+\code{"accumulate"} (the path for incremental panel updates).
+\item \code{direction}: which way each pass searches: \code{"forward"}, \code{"backward"}, or
+\code{"bidirectional"}.
+\item \code{edge_filter}: optional callback \verb{function(edges, stage_name)} applied to
+each pass's links before they are accumulated (for example a domain rule
+that drops implausible matches).
+\item \code{rep_by}: optional priority column for choosing representatives (passed
+to \code{\link[=resolve_entities]{resolve_entities()}}).
+}
 
-  Backend methods may accept additional arguments.}
+Backend methods may accept additional arguments.}
 }
 \value{
 One row per pooled record describing its entity:
-  `entity | id | rep | rank | score | source | covered_sources |
-  n_in_entity | stage`. The full list of links found, with the stage and
-  direction of each, is attached as the `ledger` attribute and read with
-  `attr(result, "ledger")`.
+\code{entity | id | rep | rank | score | source | covered_sources | n_in_entity | stage}. The full list of links found, with the stage and
+direction of each, is attached as the \code{ledger} attribute and read with
+\code{attr(result, "ledger")}.
 }
 \description{
 Link the same real-world entity across two tables, or across several
 datasets or vintages of one dataset, by running an ordered list of
 strategies as successive search passes. Each pass adds the links it finds to
-a running record of every match (the `ledger`), and at the end all the links
+a running record of every match (the \code{ledger}), and at the end all the links
 are grouped into entities, one row per record showing which entity it
 belongs to.
 
-A typical run starts with a cheap [exact_strategy()] pass to catch the clean
-matches, then applies one or more looser [search_strategy()] passes to the
+A typical run starts with a cheap \code{\link[=exact_strategy]{exact_strategy()}} pass to catch the clean
+matches, then applies one or more looser \code{\link[=search_strategy]{search_strategy()}} passes to the
 records still unmatched. Use this when the two sides are not interchangeable:
 for example one record may carry only part of another's information, so it
 matters which side is searched against which. For finding duplicates within
-a single table, use [multi_stage_dedup()] instead.
+a single table, use \code{\link[=multi_stage_dedup]{multi_stage_dedup()}} instead.
 }
 \seealso{
-[multi_stage_dedup()] for the within-one-table version,
-  [resolve_entities()] for the grouping step, [exact_strategy()] for the
-  usual front stage.
+\code{\link[=multi_stage_dedup]{multi_stage_dedup()}} for the within-one-table version,
+\code{\link[=resolve_entities]{resolve_entities()}} for the grouping step, \code{\link[=exact_strategy]{exact_strategy()}} for the
+usual front stage.
 }

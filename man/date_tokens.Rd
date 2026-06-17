@@ -15,32 +15,34 @@ date_tokens(
 \item{x}{A character or Date vector containing dates to tokenize.}
 
 \item{components}{Character vector specifying which date components to extract.
-Can include `"year"`, `"month"`, and/or `"day"`. Defaults to all three.}
+Can include \code{"year"}, \code{"month"}, and/or \code{"day"}. Defaults to all three.}
 
-\item{format}{Optional format string for parsing (passed to `as.Date()`).
-If `NULL` (default), attempts automatic parsing via lubridate.}
+\item{format}{Optional format string for parsing (passed to \code{as.Date()}).
+If \code{NULL} (default), attempts automatic parsing via lubridate.}
 
 \item{orders}{Optional character vector of lubridate order specifications
-(e.g., `c("dmy", "mdy", "ymd")`). Used when `format = NULL`.
-Defaults to `c("ymd", "dmy", "mdy")`.}
+(e.g., \code{c("dmy", "mdy", "ymd")}). Used when \code{format = NULL}.
+Defaults to \code{c("ymd", "dmy", "mdy")}.}
 }
 \value{
 A list of character vectors, one per input element. Each vector
-  contains the requested date components as strings. Unparseable dates
-  return an empty character vector with a warning.
+contains the requested date components as strings. Unparseable dates
+return an empty character vector with a warning.
 }
 \description{
-`date_tokens()` parses dates and extracts specified components (year, month, day)
+\code{date_tokens()} parses dates and extracts specified components (year, month, day)
 as separate tokens. This is useful for flexible date matching where you want to
 match on specific date parts rather than full dates.
 }
 \details{
 Components are returned as zero-padded strings:
-* `"year"` -- 4-digit year (e.g., `"2023"`)
-* `"month"` -- 2-digit month (e.g., `"01"`, `"12"`)
-* `"day"` -- 2-digit day (e.g., `"05"`, `"31"`)
+\itemize{
+\item \code{"year"} -- 4-digit year (e.g., \code{"2023"})
+\item \code{"month"} -- 2-digit month (e.g., \code{"01"}, \code{"12"})
+\item \code{"day"} -- 2-digit day (e.g., \code{"05"}, \code{"31"})
+}
 
-The order of tokens in the output follows the order of `components`.
+The order of tokens in the output follows the order of \code{components}.
 }
 \examples{
 date_tokens("2023-12-31")
@@ -57,8 +59,8 @@ date_tokens(c("2023-01-15", "15.06.2023"))
 
 }
 \seealso{
-[normalize_date()] to match whole dates, [approximate_date()] to
-  match on coarser periods.
+\code{\link[=normalize_date]{normalize_date()}} to match whole dates, \code{\link[=approximate_date]{approximate_date()}} to
+match on coarser periods.
 
 Other date preparers: 
 \code{\link{approximate_date}()},

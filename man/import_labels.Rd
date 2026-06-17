@@ -10,15 +10,15 @@ import_labels(file)
 \item{file}{Path to the CSV file to read.}
 }
 \value{
-A `data.table` with the same rows as the original sample plus
-  a fully populated `equal` column (`0L` / `1L`).
+A \code{data.table} with the same rows as the original sample plus
+a fully populated \code{equal} column (\code{0L} / \code{1L}).
 }
 \description{
-Read a CSV written by [export_for_labelling()] (optionally edited by a
-user), propagate the block-default `equal` value from each header row
+Read a CSV written by \code{\link[=export_for_labelling]{export_for_labelling()}} (optionally edited by a
+user), propagate the block-default \code{equal} value from each header row
 onto unmarked rows in that block, validate the schema, and return a
-`data.table` ready for `fit_filter()` / `calibrate_matches()`.
+\code{data.table} ready for \code{fit_filter()} / \code{calibrate_matches()}.
 }
 \seealso{
-[export_for_labelling()]
+\code{\link[=export_for_labelling]{export_for_labelling()}}
 }

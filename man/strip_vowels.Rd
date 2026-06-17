@@ -15,9 +15,9 @@ A character vector with vowels removed, upper-cased and ASCII-folded.
 \description{
 Reduces text to its consonant skeleton by removing vowels (A, E, I, O, U,
 including accented variants). Two spellings that differ only in their vowels,
-such as `"MEYER"` and `"MAYER"` or `"MUELLER"` and `"MULLER"`, collapse to the
+such as \code{"MEYER"} and \code{"MAYER"} or \code{"MUELLER"} and \code{"MULLER"}, collapse to the
 same skeleton, so they match despite the difference. It is a lighter-weight
-alternative to the phonetic encoders ([as_soundex()], [as_metaphone()]) when
+alternative to the phonetic encoders (\code{\link[=as_soundex]{as_soundex()}}, \code{\link[=as_metaphone]{as_metaphone()}}) when
 you only want to ignore vowel variation.
 }
 \details{
@@ -30,7 +30,7 @@ strip_vowels(c("Anna", "Peter"))
 
 }
 \seealso{
-[as_soundex()] and [as_metaphone()] for full phonetic encoding.
+\code{\link[=as_soundex]{as_soundex()}} and \code{\link[=as_metaphone]{as_metaphone()}} for full phonetic encoding.
 
 Other text normalizers: 
 \code{\link{normalize_street}()},

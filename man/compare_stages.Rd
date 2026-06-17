@@ -7,19 +7,19 @@
 compare_stages(matches, ...)
 }
 \arguments{
-\item{matches}{Multi-stage match table with a `stage` column.}
+\item{matches}{Multi-stage match table with a \code{stage} column.}
 
 \item{...}{Method-specific arguments. The data.table method will
-accept `base` and `target` for coverage.}
+accept \code{base} and \code{target} for coverage.}
 }
 \value{
-A `Stage_Comparison` object.
+A \code{Stage_Comparison} object.
 }
 \description{
 Multi-stage diagnostic. Produces per-stage
-[`Match_Overview`]s, marginal coverage per stage, and overlaid
-per-stage score distributions. Note that [summarise_matches()] does
-**not** auto-detect a `stage` column - users explicitly call this
+\code{Match_Overview} objects, marginal coverage per stage, and overlaid
+per-stage score distributions. Note that \code{\link[=summarise_matches]{summarise_matches()}} does
+\strong{not} auto-detect a \code{stage} column - users explicitly call this
 verb when they want per-stage analysis (see
-`notes/diagnostics_design.md`).
+\code{notes/diagnostics_design.md}).
 }

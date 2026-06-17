@@ -8,45 +8,45 @@ match_features(matches, strategy, ...)
 }
 \arguments{
 \item{matches}{A match result table (data.table / tibble / data.frame
-/ DuckDB lazy `tbl`) from [detect_duplicates()] or
-[search_candidates()].}
+/ DuckDB lazy \code{tbl}) from \code{\link[=detect_duplicates]{detect_duplicates()}} or
+\code{\link[=search_candidates]{search_candidates()}}.}
 
-\item{strategy}{The [`Search_Strategy`] or [`Embedding_Strategy`]
-used to produce `matches`.}
+\item{strategy}{The \code{\link{Search_Strategy}} or \code{\link{Embedding_Strategy}}
+used to produce \code{matches}.}
 
 \item{...}{Method-specific arguments. Both strategy methods accept:
-`base` (the base table used as input to matching), `id` (character
-scalar naming the ID column in `base`), `target` (optional target
-table for cross-table candidate matches), `target_id` (ID column
-in `target`, defaults to `id`), `include_string_sim` (logical;
-when `TRUE` (default) emits `sim_sf_<col>` / `sim_fs_<col>`
-per column via `stringdist::stringsim()` - requires the
-`stringdist` suggested package), `method` (stringdist method:
-a scalar applied to every column (default `"jw"`), or a named
+\code{base} (the base table used as input to matching), \code{id} (character
+scalar naming the ID column in \code{base}), \code{target} (optional target
+table for cross-table candidate matches), \code{target_id} (ID column
+in \code{target}, defaults to \code{id}), \code{include_string_sim} (logical;
+when \code{TRUE} (default) emits \verb{sim_sf_<col>} / \verb{sim_fs_<col>}
+per column via \code{stringdist::stringsim()} - requires the
+\code{stringdist} suggested package), \code{method} (stringdist method:
+a scalar applied to every column (default \code{"jw"}), or a named
 character vector selecting a per-column method - a scalar is the
-degenerate single-element case), and `include_block_stats` (logical; whether to
-compute `cnt` / `icnt` / `ipos`). The [`Search_Strategy`] method
-additionally accepts `top_n` (named integer / list controlling
-per-column top-N counts for the `m_/f_/s_` columns; use a
-`default` entry as fallback; set a column to 0 to suppress its
-set). The [`Embedding_Strategy`] method emits `cosine_sim`
-(pass-through of `score`) and `embedding_norm_s` /
-`embedding_norm_f` (L2 norms of the **pre-normalization**
+degenerate single-element case), and \code{include_block_stats} (logical; whether to
+compute \code{cnt} / \code{icnt} / \code{ipos}). The \code{\link{Search_Strategy}} method
+additionally accepts \code{top_n} (named integer / list controlling
+per-column top-N counts for the \code{m_/f_/s_} columns; use a
+\code{default} entry as fallback; set a column to 0 to suppress its
+set). The \code{\link{Embedding_Strategy}} method emits \code{cosine_sim}
+(pass-through of \code{score}) and \code{embedding_norm_s} /
+\code{embedding_norm_f} (L2 norms of the \strong{pre-normalization}
 embeddings, recomputed only over the matched record subset).}
 }
 \value{
-A [`Match_Features`] object wrapping a wide feature
-  `data.table`.
+A \code{\link{Match_Features}} object wrapping a wide feature
+\code{data.table}.
 }
 \description{
-Computes a wide, one-row-per-pair feature `data.table` from a joinery
+Computes a wide, one-row-per-pair feature \code{data.table} from a joinery
 match result, suitable for downstream calibration / false-positive
 filtering. The schema is documented in
-`notes/calibration_design.md` and treated as the public API.
+\code{notes/calibration_design.md} and treated as the public API.
 Additions are allowed; reorders or renames are not.
 
-Dispatches on `(matches, strategy)`. A [`Search_Strategy`] returns
+Dispatches on \verb{(matches, strategy)}. A \code{\link{Search_Strategy}} returns
 the full token schema (core + token-side columns + string similarity).
-An [`Embedding_Strategy`] returns the reduced "embedding" schema
-(core columns + string similarity + `cosine_sim` + embedding norms).
+An \code{\link{Embedding_Strategy}} returns the reduced "embedding" schema
+(core columns + string similarity + \code{cosine_sim} + embedding norms).
 }

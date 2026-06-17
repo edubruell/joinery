@@ -7,16 +7,16 @@
 score_embeddings(base_embeddings, target_embeddings, strategy, ...)
 }
 \arguments{
-\item{base_embeddings}{A table with columns: `id` and `embedding`.}
+\item{base_embeddings}{A table with columns: \code{id} and \code{embedding}.}
 
-\item{target_embeddings}{A table with columns: `id` and `embedding`.}
+\item{target_embeddings}{A table with columns: \code{id} and \code{embedding}.}
 
-\item{strategy}{An `Embedding_Strategy` object (used for normalization settings).}
+\item{strategy}{An \code{Embedding_Strategy} object (used for normalization settings).}
 
 \item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
-A backend-specific table with columns: `base_id`, `target_id`, `score`.
+A backend-specific table with columns: \code{base_id}, \code{target_id}, \code{score}.
 }
 \description{
 Compute cosine similarity scores between base and target embeddings.

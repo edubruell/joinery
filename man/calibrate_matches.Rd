@@ -8,24 +8,24 @@ calibrate_matches(matches, strategy, ...)
 }
 \arguments{
 \item{matches}{Match output table (data.table / tibble / data.frame
-/ DuckDB lazy `tbl`).}
+/ DuckDB lazy \code{tbl}).}
 
-\item{strategy}{The [`Search_Strategy`] or [`Embedding_Strategy`]
-used to produce `matches`.}
+\item{strategy}{The \code{\link[=search_strategy]{search_strategy()}} or \code{\link[=embedding_strategy]{embedding_strategy()}}
+used to produce \code{matches}.}
 
-\item{...}{Method-specific arguments. Required: `labels` (manually
-labelled rows produced by [import_labels()]), `base`, and `id`.
-Optional: `target`, `target_id` (forwarded to [match_features()]),
-`model`, `class_weighted`, `na_fill`, `threshold`, plus all
-[match_features()] tuning knobs (`top_n`, `include_string_sim`,
-`include_block_stats`, `method`).}
+\item{...}{Method-specific arguments. Required: \code{labels} (manually
+labelled rows produced by \code{\link[=import_labels]{import_labels()}}), \code{base}, and \code{id}.
+Optional: \code{target}, \code{target_id} (forwarded to \code{\link[=match_features]{match_features()}}),
+\code{model}, \code{class_weighted}, \code{na_fill}, \code{threshold}, plus all
+\code{\link[=match_features]{match_features()}} tuning knobs (\code{top_n}, \code{include_string_sim},
+\code{include_block_stats}, \code{method}).}
 }
 \value{
-A [`Calibrated_Matches`] object.
+A \code{Calibrated_Matches} object.
 }
 \description{
-High-level Q5 verb. Builds features via [match_features()], fits a
-[`Filter_Model`] via [fit_filter()], and applies it via
-[apply_filter()] to return a [`Calibrated_Matches`] object enriched
-with `tp_prob` / `predicted_tp`. Dispatches on the strategy class.
+High-level Q5 verb. Builds features via \code{\link[=match_features]{match_features()}}, fits a
+\code{Filter_Model} via \code{\link[=fit_filter]{fit_filter()}}, and applies it via
+\code{\link[=apply_filter]{apply_filter()}} to return a \code{Calibrated_Matches} object enriched
+with \code{tp_prob} / \code{predicted_tp}. Dispatches on the strategy class.
 }

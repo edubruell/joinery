@@ -117,7 +117,7 @@ format.Filter_Model <- new_external_generic("base", "format", "x")
 #' @slot matches `data.table`. The original matches table with two new
 #'   columns: `tp_prob` (predicted probability of being a true match)
 #'   and `predicted_tp` (integer 0/1 from `tp_prob >= threshold`).
-#' @slot filter_model The [`Filter_Model`] used to produce the
+#' @slot filter_model The `Filter_Model` used to produce the
 #'   predictions.
 #' @slot threshold Numeric scalar. Decision threshold applied.
 #' @slot threshold_method Character. How `threshold` was chosen
@@ -339,7 +339,7 @@ method(
 #'
 #' @description
 #' Returned by [calibrate()]. Quality / calibration diagnostics for a
-#' fitted [`Filter_Model`] evaluated either on its training fold or on
+#' fitted `Filter_Model` evaluated either on its training fold or on
 #' an independently labelled evaluation set.
 #'
 #' @slot reliability `data.table`. Bin-wise mean predicted probability vs.

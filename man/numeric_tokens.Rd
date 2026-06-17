@@ -10,14 +10,14 @@ numeric_tokens(text, keep_letters = TRUE, destructive = FALSE)
 \item{text}{Character vector of numeric or address fields.}
 
 \item{keep_letters}{Logical. If TRUE, retains letter suffixes like "12A".
-Only applies when `destructive = FALSE`.}
+Only applies when \code{destructive = FALSE}.}
 
 \item{destructive}{Logical. If TRUE, removes all non-digit characters
 except whitespace. If FALSE (default), preserves letters alongside digits.}
 }
 \value{
 A list of character vectors, one per input element. Each vector
-  contains numeric tokens, with ranges expanded into sequences.
+contains numeric tokens, with ranges expanded into sequences.
 }
 \description{
 Turns numeric/house-number-like text into a list of tokens.
@@ -37,8 +37,8 @@ numeric_tokens("House 5", destructive = TRUE)
 
 }
 \seealso{
-[drop_numeric_tokens()], its inverse, to discard numbers from a
-  token column instead.
+\code{\link[=drop_numeric_tokens]{drop_numeric_tokens()}}, its inverse, to discard numbers from a
+token column instead.
 
 Other token generators: 
 \code{\link{generate_ngrams}()},

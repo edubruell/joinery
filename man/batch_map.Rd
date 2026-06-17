@@ -7,9 +7,9 @@
 batch_map(plan, con, input_table, fn, persist = TRUE, output_table = NULL)
 }
 \arguments{
-\item{plan}{A batch plan produced by `duckdb_batch_plan()`. Must include
-columns `batch_id` and `row_count`, plus either row-number windows
-(`row_start`, `row_end`), block identifier columns, or a `blocks`
+\item{plan}{A batch plan produced by \code{duckdb_batch_plan()}. Must include
+columns \code{batch_id} and \code{row_count}, plus either row-number windows
+(\code{row_start}, \code{row_end}), block identifier columns, or a \code{blocks}
 list-column for consolidated batches.}
 
 \item{con}{A DuckDB connection.}
@@ -19,17 +19,19 @@ list-column for consolidated batches.}
 \item{fn}{A function applied to each batch. Receives a data.frame and
 must return a data.frame.}
 
-\item{persist}{Logical. If `TRUE`, results of each batch are appended
-to `output_table` inside DuckDB and a lazy table reference is returned.
-If `FALSE`, returns a list of batch results as data.frames.}
+\item{persist}{Logical. If \code{TRUE}, results of each batch are appended
+to \code{output_table} inside DuckDB and a lazy table reference is returned.
+If \code{FALSE}, returns a list of batch results as data.frames.}
 
 \item{output_table}{Optional DuckDB table name where results are stored
-when `persist = TRUE`. If omitted, a random temporary table name is
-generated. Ignored when `persist = FALSE`.}
+when \code{persist = TRUE}. If omitted, a random temporary table name is
+generated. Ignored when \code{persist = FALSE}.}
 }
 \value{
-- If `persist = TRUE`: A `tbl_duckdb_connection` pointing to the output table.
-- If `persist = FALSE`: A list of data.frames, one per batch.
+\itemize{
+\item If \code{persist = TRUE}: A \code{tbl_duckdb_connection} pointing to the output table.
+\item If \code{persist = FALSE}: A list of data.frames, one per batch.
+}
 }
 \description{
 Streams a DuckDB table through a batch plan and applies a user-defined

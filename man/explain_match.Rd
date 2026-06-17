@@ -9,19 +9,19 @@ explain_match(matches, x, ...)
 \arguments{
 \item{matches}{Match output table.}
 
-\item{x}{Either a [`Search_Strategy`] (ergonomic form) or a tokens
-table with `rarity` (power-user form).}
+\item{x}{Either a \code{\link{Search_Strategy}} (ergonomic form) or a tokens
+table with \code{rarity} (power-user form).}
 
 \item{...}{Backend-specific arguments. For the ergonomic form:
-`base`, `target`, `match_id`.}
+\code{base}, \code{target}, \code{match_id}.}
 }
 \value{
-A `Match_Explanation` object.
+A \code{Match_Explanation} object.
 }
 \description{
 Attribution diagnostic (Q3). Reconstructs per-column and
 per-token contributions to a single match score. Dispatches on the
-second positional argument: a [`Search_Strategy`] triggers
+second positional argument: a \code{\link{Search_Strategy}} triggers
 reconstruction from raw inputs; a tokens-shaped table is used
 directly.
 }

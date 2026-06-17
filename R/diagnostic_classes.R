@@ -56,7 +56,7 @@ Strategy_Audit <- new_class(
 #'
 #' @description
 #' Result of [audit_strategy()] (Q1, pre-match) when called on
-#' an [`Embedding_Strategy`]. A separate class from [`Strategy_Audit`]
+#' an `Embedding_Strategy`. A separate class from `Strategy_Audit`
 #' because the diagnostic surface is different: no per-column token /
 #' rarity statistics, but a coverage rate, embedding-norm distribution,
 #' and a sampled pairwise cosine similarity distribution.
@@ -72,7 +72,7 @@ Strategy_Audit <- new_class(
 #'   `similarity`) or `NULL`. Pairwise cosine similarities from a random
 #'   subsample, computed eagerly.
 #' @slot block_summary `list` or `NULL`. Same structure as on
-#'   [`Strategy_Audit`] when `block_by` is set on the strategy.
+#'   `Strategy_Audit` when `block_by` is set on the strategy.
 #' @slot est_comparisons Numeric scalar. Estimated number of pairwise
 #'   comparisons given blocking.
 #' @slot recommendations Character. Strings from the recommendations catalog.

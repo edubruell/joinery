@@ -9,28 +9,28 @@ rarity_distribution(data, id, strategy, ...)
 \arguments{
 \item{data}{A data.frame / tibble / data.table (or backend-specific table).}
 
-\item{id}{Character scalar naming the ID column in `data`.}
+\item{id}{Character scalar naming the ID column in \code{data}.}
 
-\item{strategy}{A `Search_Strategy` object.}
+\item{strategy}{A \code{Search_Strategy} object.}
 
-\item{...}{Additional backend-specific arguments. Notably `n_offenders`
-(integer; how many top-df tokens to list, default 20) and `sample_n`
+\item{...}{Additional backend-specific arguments. Notably \code{n_offenders}
+(integer; how many top-df tokens to list, default 20) and \code{sample_n}
 (DuckDB: rows to pull before delegating; default all).}
 }
 \value{
-A `Rarity_Distribution` object.
+A \code{Rarity_Distribution} object.
 }
 \description{
 A pre-match read of how token rarity is distributed in your data. For each
 column (and block, when the strategy blocks) it reports the spread of token
 document frequency and rarity, plus an offender list: the most common tokens,
-the ones that drive a match to balloon. Use it to set `min_rarity` and
-`max_token_df` from what is actually in the data instead of guessing.
+the ones that drive a match to balloon. Use it to set \code{min_rarity} and
+\code{max_token_df} from what is actually in the data instead of guessing.
 
 It never builds the pair set: it only tokenizes and measures rarity, so it
 is cheap enough to run on a full corpus before committing to a strategy.
 }
 \seealso{
-[search_strategy()] for the `min_rarity` / `max_token_df` levers
-  this verb informs; [audit_strategy()] for the broader pre-match audit.
+\code{\link[=search_strategy]{search_strategy()}} for the \code{min_rarity} / \code{max_token_df} levers
+this verb informs; \code{\link[=audit_strategy]{audit_strategy()}} for the broader pre-match audit.
 }

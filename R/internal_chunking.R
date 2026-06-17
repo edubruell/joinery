@@ -179,7 +179,7 @@
 
 #' Drop tables created since a snapshot, except a keep-set
 #'
-#' The cleanup complement of [.list_duck_tables()]: drop every table that
+#' The cleanup complement of `.list_duck_tables()`: drop every table that
 #' appeared after `before` was taken, minus `keep` (the accumulator the chunk
 #' loop must preserve across iterations). Run on a chunk's error path so the
 #' partial `_joinery_*` / prepare temps a failed `run_core` left behind don't

@@ -24,17 +24,17 @@ normalization. Must be non negative.}
 Must be strictly positive.}
 }
 \value{
-An object inheriting from [Smoothing] that can be passed to
-  the `smoothing` argument of [search_strategy()].
+An object inheriting from \code{Smoothing} that can be passed to
+the \code{smoothing} argument of \code{\link[=search_strategy]{search_strategy()}}.
 }
 \description{
-Helper functions that construct S7 `Smoothing` objects used by
-[search_strategy()] to control how relative identification potential (rIP)
+Helper functions that construct S7 \code{Smoothing} objects used by
+\code{\link[=search_strategy]{search_strategy()}} to control how relative identification potential (rIP)
 is smoothed before scoring.
 
 All helpers are pure configuration; they do not perform any computation
-by themselves. Backend methods for `detect_duplicates()` and
-`search_candidates()` interpret the resulting `Smoothing` object.
+by themselves. Backend methods for \code{detect_duplicates()} and
+\code{search_candidates()} interpret the resulting \code{Smoothing} object.
 }
 \details{
 rIP Smoothing Helpers
@@ -45,16 +45,16 @@ rIP Smoothing Helpers
 standard per record normalization). This is the default.
 
 \item \code{smooth_rip_log()}: Logarithmic rIP smoothing.
-Backends typically apply `log1p(rIP)` and then renormalize within
+Backends typically apply \code{log1p(rIP)} and then renormalize within
 each record and column.
 
 \item \code{smooth_rip_offset()}: Offset based rIP smoothing with a constant offset
-`alpha` that is added to all rIP values before renormalization.
+\code{alpha} that is added to all rIP values before renormalization.
 
 \item \code{smooth_rip_softmax()}: Softmax style rIP smoothing with a temperature
 parameter that controls how sharp or flat the transformed distribution is.
 
 }}
 \seealso{
-[search_strategy()], [Smoothing]
+\code{\link[=search_strategy]{search_strategy()}}
 }

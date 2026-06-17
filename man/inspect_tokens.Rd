@@ -9,18 +9,18 @@ inspect_tokens(data, id, strategy, column)
 \arguments{
 \item{data}{A data.frame / tibble / data.table (or db table in other backends).}
 
-\item{id}{Character scalar naming the ID column in `data`.}
+\item{id}{Character scalar naming the ID column in \code{data}.}
 
-\item{strategy}{A `Search_Strategy` object defining preprocessing steps.}
+\item{strategy}{A \code{Search_Strategy} object defining preprocessing steps.}
 
-\item{column}{<[`data-masked`][rlang::args_data_masking]> The column to inspect.}
+\item{column}{<\code{\link[rlang:args_data_masking]{data-masked}}> The column to inspect.}
 }
 \value{
 A backend-specific table showing the tokens generated for the
-  specified column.
+specified column.
 }
 \description{
 Extract and examine the tokens generated for a specific column
-after applying the preprocessing steps defined in a `Search_Strategy`.
+after applying the preprocessing steps defined in a \code{Search_Strategy}.
 Useful for debugging and understanding how text is tokenized.
 }

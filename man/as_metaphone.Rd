@@ -8,18 +8,18 @@ as_metaphone(text)
 }
 \arguments{
 \item{text}{A character string or vector to encode, or a token list-column
-(one character vector of tokens per row) when the encoder is placed *after*
+(one character vector of tokens per row) when the encoder is placed \emph{after}
 a token generator -- each token is then encoded in place.}
 }
 \value{
 A character vector of Metaphone keys, one per input element.
 }
 \description{
-Names that sound alike are often spelled differently: `"Smith"` and
-`"Smyth"`, `"Meyer"` and `"Maier"`. Metaphone encodes text by how it sounds,
+Names that sound alike are often spelled differently: \code{"Smith"} and
+\code{"Smyth"}, \code{"Meyer"} and \code{"Maier"}. Metaphone encodes text by how it sounds,
 so those variants share one key and match even though the letters differ.
 Best on single-word fields such as surnames or company names; it is tuned for
-English pronunciation (for German, see [as_cologne()]).
+English pronunciation (for German, see \code{\link[=as_cologne]{as_cologne()}}).
 }
 \details{
 Runs on either side of a token generator: ahead of one (on a text column), or

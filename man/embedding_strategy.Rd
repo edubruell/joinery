@@ -19,10 +19,10 @@ embedding_strategy(
 to use all non-id character-like columns.}
 
 \item{embedding_model}{A tidyllm provider object (e.g.,
-`ollama(.model = "mxbai-embed-large")`). This is passed directly to
-tidyllm's `embed()` function.}
+\code{ollama(.model = "mxbai-embed-large")}). This is passed directly to
+tidyllm's \code{embed()} function.}
 
-\item{threshold}{Numeric scalar in [0, 1]. Cosine similarity threshold for
+\item{threshold}{Numeric scalar in (0, 1). Cosine similarity threshold for
 filtering matches.}
 
 \item{collapse_sep}{Character scalar. Separator used when joining multiple
@@ -38,18 +38,20 @@ when computing embeddings. Default is 1000.}
 When specified, comparisons are only made within matching blocks.}
 }
 \value{
-An `Embedding_Strategy` S7 object.
+An \code{Embedding_Strategy} S7 object.
 }
 \description{
-Construct an `Embedding_Strategy` object for semantic matching using
+Construct an \code{Embedding_Strategy} object for semantic matching using
 embeddings. This is a distinct strategy type from token-based strategies
-created with `search_strategy()`.
+created with \code{search_strategy()}.
 
 Embedding strategies:
-- Represent entire records as embedding vectors
-- Use cosine similarity for scoring
-- Support blocking variables to restrict comparisons
-- Require the tidyllm package for embedding computation
+\itemize{
+\item Represent entire records as embedding vectors
+\item Use cosine similarity for scoring
+\item Support blocking variables to restrict comparisons
+\item Require the tidyllm package for embedding computation
+}
 }
 \examples{
 \dontrun{

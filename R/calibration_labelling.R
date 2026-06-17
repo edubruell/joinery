@@ -79,7 +79,7 @@
 #' [detect_duplicates()]), the header is the rank-1 row and the
 #' remaining records in the duplicate group inherit its default.
 #'
-#' @param sample A [`Match_Sample`] object or a `data.table` / `data.frame`
+#' @param sample A `Match_Sample` object or a `data.table` / `data.frame`
 #'   with the matches schema.
 #' @param file Path to the CSV file to write.
 #' @param default_label Integer scalar (default `1L`) used as the

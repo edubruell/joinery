@@ -4,6 +4,8 @@ Title: Heuristic Index-Based Record Linkage in R
 Version: 0.9.0
 Authors@R: person("Eduard", "Brüll", email = "eduard.bruell@zew.de", role = c("aut", "cre"))
 Description: Index-based heuristic record linkage for R.
+URL: https://edubruell.github.io/joinery/, https://github.com/edubruell/joinery
+BugReports: https://github.com/edubruell/joinery/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Imports:
@@ -84,10 +86,12 @@ Collate:
     'calibration_recipe.R'
     'diagnostic_plots.R'
     'data.R'
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends:
     R (>= 4.1.0)
 LazyData: true
+VignetteBuilder: knitr
 Suggests:
     duckdb,
     DBI,
@@ -103,4 +107,6 @@ Suggests:
     yardstick,
     probably,
     testthat (>= 3.0.0),
-    withr
+    withr,
+    knitr,
+    rmarkdown

@@ -10,20 +10,20 @@ word_tokens(text, min_nchar = 0)
 \item{text}{A character vector to split into words.}
 
 \item{min_nchar}{Minimum token length to keep. Tokens shorter than this are
-dropped. Defaults to `0` (keep everything).}
+dropped. Defaults to \code{0} (keep everything).}
 }
 \value{
 A list of character vectors, one per input element, each holding that
-  element's word tokens.
+element's word tokens.
 }
 \description{
 The workhorse tokenizer. It splits each string on whitespace into a vector of
 words, the tokens joinery matches on. It almost always follows
-[normalize_text()], which strips punctuation and case first so the split is
-clean: `name ~ normalize_text() + word_tokens()`.
+\code{\link[=normalize_text]{normalize_text()}}, which strips punctuation and case first so the split is
+clean: \code{name ~ normalize_text() + word_tokens()}.
 }
 \details{
-Set `min_nchar` to drop very short tokens (single initials, stray letters)
+Set \code{min_nchar} to drop very short tokens (single initials, stray letters)
 that match too easily and add noise.
 }
 \examples{
@@ -32,8 +32,8 @@ word_tokens("this is an example", min_nchar = 3)  # drops "is", "an"
 
 }
 \seealso{
-[normalize_text()], the usual preceding step;
-  [filter_stopwords()] to drop common words by name.
+\code{\link[=normalize_text]{normalize_text()}}, the usual preceding step;
+\code{\link[=filter_stopwords]{filter_stopwords()}} to drop common words by name.
 
 Other token generators: 
 \code{\link{generate_ngrams}()},

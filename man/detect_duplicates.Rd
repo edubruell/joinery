@@ -10,26 +10,26 @@ detect_duplicates(base_table, id, strategy, ...)
 \item{base_table}{A data.frame, tibble, data.table, or backend table to
 deduplicate.}
 
-\item{id}{Character scalar naming the ID column in `base_table`.}
+\item{id}{Character scalar naming the ID column in \code{base_table}.}
 
-\item{strategy}{A `Search_Strategy` (or `Exact_Strategy`) describing how to
+\item{strategy}{A \code{Search_Strategy} (or \code{Exact_Strategy}) describing how to
 tokenize each column, how to block, and the matching threshold.}
 
 \item{...}{Additional arguments passed to backend-specific methods. The
-most useful are `threshold` (override the strategy's threshold) and
-`weights` (a named numeric vector overriding the strategy's column
+most useful are \code{threshold} (override the strategy's threshold) and
+\code{weights} (a named numeric vector overriding the strategy's column
 weights).}
 }
 \value{
 A table with one row per record that belongs to a duplicate group:
 \describe{
-  \item{duplicate_group}{Group label shared by all records that are
-    duplicates of one another.}
-  \item{id}{The record ID.}
-  \item{score}{The record's match score within its group.}
-  \item{rank}{Rank within the group; rank 1 is the representative kept by
-    [deduplicate_table()].}
-  \item{<original columns>}{Every other column from `base_table`.}
+\item{duplicate_group}{Group label shared by all records that are
+duplicates of one another.}
+\item{id}{The record ID.}
+\item{score}{The record's match score within its group.}
+\item{rank}{Rank within the group; rank 1 is the representative kept by
+\code{\link[=deduplicate_table]{deduplicate_table()}}.}
+\item{\if{html}{\out{<original columns>}}}{Every other column from \code{base_table}.}
 }
 }
 \description{
@@ -39,8 +39,8 @@ they share (not by character-level edit distance), every pair is scored,
 and any pair scoring at or above the threshold is linked. Records that link
 directly or transitively form one duplicate group.
 
-Pass a [search_strategy()] for fuzzy, scored matching, or an
-[exact_strategy()] to group only records whose token sets are identical.
+Pass a \code{\link[=search_strategy]{search_strategy()}} for fuzzy, scored matching, or an
+\code{\link[=exact_strategy]{exact_strategy()}} to group only records whose token sets are identical.
 }
 \examples{
 data(base_example)
@@ -58,6 +58,6 @@ head(dups)
 
 }
 \seealso{
-[deduplicate_table()] to collapse the groups, [search_candidates()]
-  for the cross-table version, [multi_stage_dedup()] for staged passes.
+\code{\link[=deduplicate_table]{deduplicate_table()}} to collapse the groups, \code{\link[=search_candidates]{search_candidates()}}
+for the cross-table version, \code{\link[=multi_stage_dedup]{multi_stage_dedup()}} for staged passes.
 }

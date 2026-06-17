@@ -7,30 +7,30 @@
 export_for_labelling(sample, file, default_label = 1L)
 }
 \arguments{
-\item{sample}{A [`Match_Sample`] object or a `data.table` / `data.frame`
+\item{sample}{A \code{Match_Sample} object or a \code{data.table} / \code{data.frame}
 with the matches schema.}
 
 \item{file}{Path to the CSV file to write.}
 
-\item{default_label}{Integer scalar (default `1L`) used as the
-block-default `equal` value on header rows. `0L` for the inverse
+\item{default_label}{Integer scalar (default \code{1L}) used as the
+block-default \code{equal} value on header rows. \code{0L} for the inverse
 workflow.}
 }
 \value{
-Invisibly returns `file`.
+Invisibly returns \code{file}.
 }
 \description{
-Write a sampled set of matches to a CSV pre-filled with an `equal`
+Write a sampled set of matches to a CSV pre-filled with an \code{equal}
 column on block-header rows. Users edit the CSV in any spreadsheet,
 marking only exceptions (e.g. false positives) and leaving the rest
 as defaults.
 
 Block definition follows the matches schema: for candidate matches
-(from [search_candidates()]), the header is the base-side row and
+(from \code{\link[=search_candidates]{search_candidates()}}), the header is the base-side row and
 candidate rows inherit its default. For duplicate matches (from
-[detect_duplicates()]), the header is the rank-1 row and the
+\code{\link[=detect_duplicates]{detect_duplicates()}}), the header is the rank-1 row and the
 remaining records in the duplicate group inherit its default.
 }
 \seealso{
-[import_labels()]
+\code{\link[=import_labels]{import_labels()}}
 }

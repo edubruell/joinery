@@ -7,30 +7,32 @@
 calibrate(x, labels = NULL, bins = 10L, ...)
 }
 \arguments{
-\item{x}{A [`Calibrated_Matches`] object from [apply_filter()] /
-[calibrate_matches()].}
+\item{x}{A \code{Calibrated_Matches} object from \code{\link[=apply_filter]{apply_filter()}} /
+\code{\link[=calibrate_matches]{calibrate_matches()}}.}
 
-\item{labels}{Optional labels `data.table` (typically from
-[import_labels()]) for held-out evaluation.}
+\item{labels}{Optional labels \code{data.table} (typically from
+\code{\link[=import_labels]{import_labels()}}) for held-out evaluation.}
 
 \item{bins}{Integer. Number of equal-width probability bins for the
-reliability table. Default `10`.}
+reliability table. Default \code{10}.}
 
 \item{...}{Reserved for future expansion.}
 }
 \value{
-A [`Filter_Calibration`] object.
+A \code{Filter_Calibration} object.
 }
 \description{
 Compute calibration diagnostics for a fitted false-positive filter on
-a labelled evaluation set. Returns a [`Filter_Calibration`] carrying
+a labelled evaluation set. Returns a \code{Filter_Calibration} carrying
 the reliability table, Brier score, log-loss, per-class confusion
 matrix, and a threshold sweep curve.
 
 Two call shapes:
-  * `calibrate(calibrated_matches, labels)` - evaluate on labels held
-     out from the training fit.
-  * `calibrate(calibrated_matches)` - evaluate on the training labels
-     stored on the [`Filter_Model`] (sanity-check view; do not use
-     for model selection).
+\itemize{
+\item \code{calibrate(calibrated_matches, labels)} - evaluate on labels held
+out from the training fit.
+\item \code{calibrate(calibrated_matches)} - evaluate on the training labels
+stored on the \code{Filter_Model} (sanity-check view; do not use
+for model selection).
+}
 }

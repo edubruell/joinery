@@ -8,18 +8,18 @@ as_cologne(text)
 }
 \arguments{
 \item{text}{A character string or vector to encode, or a token list-column
-(one character vector of tokens per row) when the encoder is placed *after*
+(one character vector of tokens per row) when the encoder is placed \emph{after}
 a token generator -- each token is then encoded in place.}
 }
 \value{
 A character vector of Cologne phonetic keys (digit strings), one per
-  input element.
+input element.
 }
 \description{
 The Cologne phonetic procedure (Koelner Phonetik) is the German-language
 counterpart to Soundex. It maps text to a digit string by German
-pronunciation rules, so variants like `"Meier"`, `"Maier"`, and `"Mayer"`
-share one key. Reach for this over [as_soundex()] or [as_metaphone()] when the
+pronunciation rules, so variants like \code{"Meier"}, \code{"Maier"}, and \code{"Mayer"}
+share one key. Reach for this over \code{\link[=as_soundex]{as_soundex()}} or \code{\link[=as_metaphone]{as_metaphone()}} when the
 data is German.
 }
 \details{

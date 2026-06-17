@@ -1,0 +1,145 @@
+url: https://edubruell.github.io/joinery/
+
+development:
+  mode: auto
+
+template:
+  bootstrap: 5
+  bootswatch: litera
+  assets:
+    css: ["extra.scss"]
+
+reference:
+  - title: "Strategies"
+    desc: >
+      Declare how matching works. A strategy holds preparation pipelines,
+      blocking, weights, and a threshold; it runs nothing itself.
+    contents:
+      - search_strategy
+      - exact_strategy
+      - embedding_strategy
+      - block_on_tokens
+      - smooth_rip_identity
+      - smooth_rip_log
+      - smooth_rip_offset
+      - smooth_rip_softmax
+
+  - title: "Text preparation"
+    desc: >
+      Turn a column's text into tokens. Used inside a strategy formula
+      (column ~ step1 + step2).
+    contents:
+      - normalize_text
+      - normalize_street
+      - normalize_date
+      - approximate_date
+      - word_tokens
+      - numeric_tokens
+      - date_tokens
+      - fuzzy_tokens
+      - generate_ngrams
+      - token_shapes
+      - extract_initials
+      - as_metaphone
+      - as_soundex
+      - as_cologne
+      - strip_vowels
+      - filter_stopwords
+      - find_stopwords
+      - drop_numeric_tokens
+      - drop_short_tokens
+      - use_dictionary
+
+  - title: "Matching"
+    desc: >
+      Find duplicates within a table, candidates across tables, resolve
+      pairs into entities, and stage passes together.
+    contents:
+      - detect_duplicates
+      - deduplicate_table
+      - search_candidates
+      - extract_unmatched
+      - materialize_records
+      - resolve_entities
+      - multi_stage_dedup
+      - multi_stage_search
+      - prepare_search_data
+      - compute_rarity
+
+  - title: "Diagnostics"
+    desc: >
+      Check a strategy before you run it, and inspect what it found.
+    contents:
+      - inspect_tokens
+      - plan_strategy
+      - audit_strategy
+      - rarity_distribution
+      - summarise_matches
+      - explain_match
+      - sample_matches
+      - compare_stages
+      - recommendations
+
+  - title: "Plots"
+    desc: >
+      Visualise a diagnostic result. Each verb returns data; these draw it.
+      The default plot() method of each diagnostic class calls the most useful
+      one of these.
+    contents:
+      - score_histogram
+      - score_density
+      - coverage_plot
+      - cluster_size_plot
+      - ambiguity_plot
+      - top_gap_density
+      - rarity_histogram
+      - token_frequency_plot
+      - block_size_plot
+      - vocab_overlap_plot
+      - similarity_histogram
+      - norm_plot
+      - contribution_plot
+      - token_contribution_plot
+      - stage_coverage_plot
+      - stage_score_plot
+      - frontier_plot
+
+  - title: "Calibration"
+    desc: >
+      Train and evaluate a false-positive filter on labelled pairs.
+    contents:
+      - export_for_labelling
+      - import_labels
+      - match_features
+      - fit_filter
+      - apply_filter
+      - calibrate_matches
+      - calibrate
+      - joinery_recipe
+
+  - title: "Embeddings"
+    desc: >
+      Vector-based matching for the embedding strategy.
+    contents:
+      - compute_embeddings
+      - score_embeddings
+
+  - title: "DuckDB backend control"
+    desc: >
+      Tuning for the out-of-core DuckDB backend.
+    contents:
+      - duckdb_control
+      - duckdb_batch_plan
+      - batch_map
+      - drop_joinery_temp_tables
+
+  - title: "Example data"
+    desc: >
+      Synthetic datasets used throughout the documentation.
+    contents:
+      - base_example
+      - target_example
+      - workshop_register
+      - workshop_listings
+      - street_types
+      - street_stopwords

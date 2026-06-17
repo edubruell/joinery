@@ -13,7 +13,7 @@ Duck_tbl <- new_S3_class("tbl_duckdb_connection")
 #' (rarity-metric floor) and `max_token_df` (raw document-frequency cap), or
 #' `NULL` when both are off. Applied to the token table *before* the
 #' `(src_column, token, block)` equi-join - never after scoring. The DuckDB
-#' mirror of [.rarity_prefilter_dt()]; the two predicates must stay identical
+#' mirror of `.rarity_prefilter_dt()`; the two predicates must stay identical
 #' so both backends thin the same tokens.
 #' @noRd
 .rarity_prefilter_sql <- function(strategy) {

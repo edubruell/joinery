@@ -10,15 +10,15 @@ extract_unmatched(data, id, matches, ...)
 \item{data}{A data.frame / tibble / data.table (or db table in other backends)
 containing the original records.}
 
-\item{id}{Character scalar naming the ID column in `data`.}
+\item{id}{Character scalar naming the ID column in \code{data}.}
 
 \item{matches}{A table of matched record pairs, containing the ID column.}
 
 \item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
-A subset of `data` containing only records whose IDs do not appear
-  in `matches`.
+A subset of \code{data} containing only records whose IDs do not appear
+in \code{matches}.
 }
 \description{
 Identify and extract records from a table that were

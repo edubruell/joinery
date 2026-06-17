@@ -8,17 +8,17 @@ as_soundex(text)
 }
 \arguments{
 \item{text}{A character string or vector to encode, or a token list-column
-(one character vector of tokens per row) when the encoder is placed *after*
+(one character vector of tokens per row) when the encoder is placed \emph{after}
 a token generator -- each token is then encoded in place.}
 }
 \value{
 A character vector of Soundex keys (letter followed by digits), one
-  per input element.
+per input element.
 }
 \description{
 Soundex is the classic phonetic code: it keeps the first letter and reduces
-the rest to a short digit string (for example `"Robert"` and `"Rupert"` both
-become `"R163"`), so spellings that sound alike share one key. It is coarser
+the rest to a short digit string (for example \code{"Robert"} and \code{"Rupert"} both
+become \code{"R163"}), so spellings that sound alike share one key. It is coarser
 and older than Metaphone but widely understood and a good default for English
 surnames.
 }

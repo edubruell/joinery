@@ -7,22 +7,22 @@
 summarise_matches(matches, ...)
 }
 \arguments{
-\item{matches}{Match output table from [detect_duplicates()] or
-[search_candidates()].}
+\item{matches}{Match output table from \code{\link[=detect_duplicates]{detect_duplicates()}} or
+\code{\link[=search_candidates]{search_candidates()}}.}
 
 \item{...}{Method-specific arguments. The data.table method accepts:
-`base` (optional base input table for coverage), `target` (optional
-target input table for candidate coverage), and `bins` (integer
-number of histogram bins for the score distribution; default `50`).}
+\code{base} (optional base input table for coverage), \code{target} (optional
+target input table for candidate coverage), and \code{bins} (integer
+number of histogram bins for the score distribution; default \code{50}).}
 }
 \value{
-A `Match_Overview` object.
+A \code{Match_Overview} object.
 }
 \description{
 Post-match overview (Q2). Auto-detects whether the input
-is a duplicate table (presence of `duplicate_group` column) or a
-candidate table (presence of `match_id` and `source` columns), and
-reports score distribution, coverage (when `base` / `target` are
+is a duplicate table (presence of \code{duplicate_group} column) or a
+candidate table (presence of \code{match_id} and \code{source} columns), and
+reports score distribution, coverage (when \code{base} / \code{target} are
 supplied), cluster-size or candidates-per-record distribution, and
 top-1-vs-top-2 score-gap distribution for candidates. Recommendations
 link symptoms to strategy levers.

@@ -14,63 +14,61 @@ block_on_tokens(
 }
 \arguments{
 \item{column}{The column whose tokens become block keys (for example
-`"name"`).}
+\code{"name"}).}
 
 \item{max_df}{Numeric scalar. Global document-frequency cap: tokens appearing
-in more than `max_df` records corpus-wide are dropped as block keys.
-Default `Inf` (no cap - see the density warning above).}
+in more than \code{max_df} records corpus-wide are dropped as block keys.
+Default \code{Inf} (no cap - see the density warning above).}
 
 \item{min_rarity}{Numeric scalar. Global rarity floor: tokens whose
-corpus-wide rarity falls below this are dropped as block keys. Default `0`.}
+corpus-wide rarity falls below this are dropped as block keys. Default \code{0}.}
 
 \item{preparer}{Optional preprocessing pipeline for the blocking column,
-given as a one-sided or two-sided formula like the `column ~ steps` you
-pass to [search_strategy()] (for example `~ normalize_text +
-word_tokens(min_nchar = 4)`). Default `NULL` reuses the column's own scored
-preparer when `column` is also a scored column, else falls back to
-`normalize_text + word_tokens(min_nchar = min_nchar)`.}
+given as a one-sided or two-sided formula like the \code{column ~ steps} you
+pass to \code{\link[=search_strategy]{search_strategy()}} (for example \code{~ normalize_text + word_tokens(min_nchar = 4)}). Default \code{NULL} reuses the column's own scored
+preparer when \code{column} is also a scored column, else falls back to
+\code{normalize_text + word_tokens(min_nchar = min_nchar)}.}
 
 \item{min_nchar}{Integer scalar. Minimum token length for the default
-preparer. Default `3L`.}
+preparer. Default \code{3L}.}
 }
 \value{
-A `Block_On_Tokens` spec, to be placed in `block_by`.
+A \code{Block_On_Tokens} spec, to be placed in \code{block_by}.
 }
 \description{
-Build a token-blocking key for use inside a strategy's `block_by`. Where a
+Build a token-blocking key for use inside a strategy's \code{block_by}. Where a
 plain column name blocks two records only when they share a literal value,
-`block_on_tokens()` blocks them when they share **any** of a designated
-column's (rare) tokens. This is **region-free**: a record that drifts across
+\code{block_on_tokens()} blocks them when they share \strong{any} of a designated
+column's (rare) tokens. This is \strong{region-free}: a record that drifts across
 a region boundary - a firm that moves to a new postcode, say - still
 co-blocks with its earlier self through a distinctive name token, and so
 becomes a candidate where a literal block would never compare them.
 
-Hand it to `block_by` in place of (or mixed with) a column name:
+Hand it to \code{block_by} in place of (or mixed with) a column name:
 
-```r
-# fully region-free - share a rare name token, regardless of place
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{# fully region-free - share a rare name token, regardless of place
 search_strategy(name ~ normalize_text + word_tokens(min_nchar = 3),
                 block_by = block_on_tokens("name", max_df = 50))
 
 # region-bounded - share a rare name token AND sit in the same plz2
 search_strategy(name ~ normalize_text + word_tokens(min_nchar = 3),
                 block_by = list(block_on_tokens("name", max_df = 50), "plz2"))
-```
+}\if{html}{\out{</div>}}
 
-`max_df` and `min_rarity` select which tokens are eligible block keys, using
-the **global** (corpus-wide) document frequency: a token appearing in more
-than `max_df` records, or whose global rarity falls below `min_rarity`, is
+\code{max_df} and \code{min_rarity} select which tokens are eligible block keys, using
+the \strong{global} (corpus-wide) document frequency: a token appearing in more
+than \code{max_df} records, or whose global rarity falls below \code{min_rarity}, is
 dropped as a key. This is where "block on the distinctive words, not the
 common ones" lives - a franchise name ("ALDI") is globally common, fails the
 cap, and never becomes a block key, while a distinctive brand survives. A
-record with no surviving block key is **unreachable via token-blocking in
-this stage** (it contributes no token-block rows).
+record with no surviving block key is \strong{unreachable via token-blocking in
+this stage} (it contributes no token-block rows).
 
 Token-blocking is the densest operation in the package: every pair sharing a
-surviving key is materialised. It is safe **only** behind a real `max_df` (or
-`min_rarity`) plus the always-on fan-out guard. Passing neither cap is a
+surviving key is materialised. It is safe \strong{only} behind a real \code{max_df} (or
+\code{min_rarity}) plus the always-on fan-out guard. Passing neither cap is a
 loud warning, not an error, but you almost always want one.
 }
 \seealso{
-[search_strategy()]
+\code{\link[=search_strategy]{search_strategy()}}
 }

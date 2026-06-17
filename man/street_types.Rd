@@ -9,82 +9,87 @@ An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) w
 }
 \source{
 Manually curated based on postal conventions, open datasets, and
-  commonly observed street-name variations across languages. The dictionary is
-  periodically expanded as new variants are encountered in real-world data.
+commonly observed street-name variations across languages. The dictionary is
+periodically expanded as new variants are encountered in real-world data.
 }
 \usage{
 street_types
 }
 \description{
 A curated cross-linguistic dictionary of street-type forms used for robust
-address standardization and record linkage. Each entry maps a *variant* -
+address standardization and record linkage. Each entry maps a \emph{variant} -
 including abbreviations, orthographic alternatives, morphological forms,
-and transliterated spellings - to a *canonical* street-type label.
+and transliterated spellings - to a \emph{canonical} street-type label.
 }
 \details{
 Unlike simple suffix lists, this dictionary encodes language-specific
 normalization rules. Each variant is marked as either:
-
-- **"exact"** - the variant should only match a token when it appears
-  *exactly*, e.g. `"st."` → `"STREET"` (English), `"pl"` → `"PLAZA"` (Spanish)
-- **"suffix"** - the variant may safely match a token *ending with* that
-  sequence, e.g. `"gatan"` → `"GATA"` (Swedish), `"strasse"` → `"STRASSE"`
-  (German)
+\itemize{
+\item \strong{"exact"} - the variant should only match a token when it appears
+\emph{exactly}, e.g. \code{"st."} → \code{"STREET"} (English), \code{"pl"} → \code{"PLAZA"} (Spanish)
+\item \strong{"suffix"} - the variant may safely match a token \emph{ending with} that
+sequence, e.g. \code{"gatan"} → \code{"GATA"} (Swedish), \code{"strasse"} → \code{"STRASSE"}
+(German)
+}
 
 By separating exact vs. suffix behavior and tagging each entry with an ISO
-language code, \pkg{joinery} can normalize addresses *without* incorrect
-transformations (e.g. preventing `"LINCOLN"` → `"LANE"`, or `"VICTOR"` →
-`"RUE"`). This structure enables high-precision multilingual address cleaning.
-
-## Languages Covered
+language code, \pkg{joinery} can normalize addresses \emph{without} incorrect
+transformations (e.g. preventing \code{"LINCOLN"} → \code{"LANE"}, or \code{"VICTOR"} →
+\code{"RUE"}). This structure enables high-precision multilingual address cleaning.
+\subsection{Languages Covered}{
 
 The dictionary currently includes major street-type systems from:
-
-- **German** - Straße, Gasse, Weg, Platz, Allee, …
-- **English** - Street, Road, Avenue, Boulevard, Lane, …
-- **French** - Rue, Avenue, Boulevard, Impasse, Quai, Chemin, …
-- **Spanish** - Calle, Avenida, Paseo, Plaza, Camino, …
-- **Italian** - Via, Piazza, Corso, Viale, …
-- **Portuguese** - Rua, Avenida, Praça, Alameda, Travessa, …
-- **Polish** - Ulica, Aleja, Plac, Osiedle, …
-- **Dutch** - Straat, Laan, Weg, Plein, …
-- **Turkish** - Sokak, Cadde, Bulvar, Meydan, …
-- **Swedish** - Gata, Gatan, Vägen, Torg, …
-- **Danish/Norwegian** - Gade, Vej, Plads, …
-- **Greek (transliterated)** - Odos, Leoforos, Plateia
-- **Russian (transliterated)** - Ulitsa, Prospekt, Pereulok, …
+\itemize{
+\item \strong{German} - Straße, Gasse, Weg, Platz, Allee, …
+\item \strong{English} - Street, Road, Avenue, Boulevard, Lane, …
+\item \strong{French} - Rue, Avenue, Boulevard, Impasse, Quai, Chemin, …
+\item \strong{Spanish} - Calle, Avenida, Paseo, Plaza, Camino, …
+\item \strong{Italian} - Via, Piazza, Corso, Viale, …
+\item \strong{Portuguese} - Rua, Avenida, Praça, Alameda, Travessa, …
+\item \strong{Polish} - Ulica, Aleja, Plac, Osiedle, …
+\item \strong{Dutch} - Straat, Laan, Weg, Plein, …
+\item \strong{Turkish} - Sokak, Cadde, Bulvar, Meydan, …
+\item \strong{Swedish} - Gata, Gatan, Vägen, Torg, …
+\item \strong{Danish/Norwegian} - Gade, Vej, Plads, …
+\item \strong{Greek (transliterated)} - Odos, Leoforos, Plateia
+\item \strong{Russian (transliterated)} - Ulitsa, Prospekt, Pereulok, …
+}
 
 Additional languages and street-type systems can be incorporated as needed.
+}
 
-## Use in `normalize_street()`
+\subsection{Use in \code{normalize_street()}}{
 
-`street_types` is used by [normalize_street()] to:
+\code{street_types} is used by \code{\link[=normalize_street]{normalize_street()}} to:
+\itemize{
+\item standardize street-type tokens to a canonical form,
+\item optionally apply language-specific suffix rules (\code{lang = "de"}, \code{"sv"}, etc.),
+\item avoid over-normalization by matching only valid variants for the specified
+language,
+\item support multilingual cleaning workflows in data preprocessing and record
+linkage.
+}
+}
 
-- standardize street-type tokens to a canonical form,
-- optionally apply language-specific suffix rules (`lang = "de"`, `"sv"`, etc.),
-- avoid over-normalization by matching only valid variants for the specified
-  language,
-- support multilingual cleaning workflows in data preprocessing and record
-  linkage.
-
-## Format
+\subsection{Format}{
 
 A tibble with four columns:
 
 \describe{
-  \item{canonical}{Character string. The standardized street-type label in
-    uppercase ASCII (e.g. `"STRASSE"`, `"AVENUE"`, `"PLAC"`).}
+\item{canonical}{Character string. The standardized street-type label in
+uppercase ASCII (e.g. \code{"STRASSE"}, \code{"AVENUE"}, \code{"PLAC"}).}
 
-  \item{variant}{Character string. A lowercase spelling, abbreviation,
-    transliteration, or inflected form seen in raw address data (e.g.
-    `"str."`, `"straße"`, `"avda"`, `"gatan"`).}
+\item{variant}{Character string. A lowercase spelling, abbreviation,
+transliteration, or inflected form seen in raw address data (e.g.
+\code{"str."}, \code{"straße"}, \code{"avda"}, \code{"gatan"}).}
 
-  \item{type}{Either `"exact"` or `"suffix"`, indicating whether the variant
-    should match only whole tokens or may safely match as a word-final
-    suffix.}
+\item{type}{Either \code{"exact"} or \code{"suffix"}, indicating whether the variant
+should match only whole tokens or may safely match as a word-final
+suffix.}
 
-  \item{lang}{ISO 639-1 language code (e.g. `"de"`, `"en"`, `"fr"`, `"sv"`),
-    used to restrict normalization to the appropriate street-type system.}
+\item{lang}{ISO 639-1 language code (e.g. \code{"de"}, \code{"en"}, \code{"fr"}, \code{"sv"}),
+used to restrict normalization to the appropriate street-type system.}
+}
 }
 }
 \keyword{datasets}

@@ -9,21 +9,21 @@ audit_strategy(data, id, strategy, ...)
 \arguments{
 \item{data}{A data.frame / tibble / data.table (or backend-specific table).}
 
-\item{id}{Character scalar naming the ID column in `data`.}
+\item{id}{Character scalar naming the ID column in \code{data}.}
 
-\item{strategy}{A `Search_Strategy` object.}
+\item{strategy}{A \code{Search_Strategy} object.}
 
 \item{...}{Additional backend-specific arguments. Notably:
-`target` (optional second table for cross-table vocabulary overlap)
-and `sample_n` (optional integer; if set, audit a random sample of rows).}
+\code{target} (optional second table for cross-table vocabulary overlap)
+and \code{sample_n} (optional integer; if set, audit a random sample of rows).}
 }
 \value{
-A `Strategy_Audit` object.
+A \code{Strategy_Audit} object.
 }
 \description{
 Pre-match diagnostic (Q1). Runs preparation and rarity
 computation, reports per-column token / rarity statistics and
-(when `block_by` is set) block-size distribution and estimated
+(when \code{block_by} is set) block-size distribution and estimated
 comparison count. Surfaces recommendations linking pre-match
 symptoms to strategy levers.
 }

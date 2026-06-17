@@ -9,14 +9,14 @@ sample_matches(matches, ...)
 \arguments{
 \item{matches}{Match output table.}
 
-\item{...}{Method-specific arguments. Standard arguments: `mode`
-(one of the sampling modes above), `n` (number of rows to sample),
-and mode-specific extras (e.g. `threshold` for `"borderline"`).}
+\item{...}{Method-specific arguments. Standard arguments: \code{mode}
+(one of the sampling modes above), \code{n} (number of rows to sample),
+and mode-specific extras (e.g. \code{threshold} for \code{"borderline"}).}
 }
 \value{
-A `Match_Sample` object.
+A \code{Match_Sample} object.
 }
 \description{
-Sampling diagnostic (Q4). Modes: `"high"`, `"low"`,
-`"borderline"`, `"ambiguous"`, `"top_gap"`, `"random"`.
+Sampling diagnostic (Q4). Modes: \code{"high"}, \code{"low"},
+\code{"borderline"}, \code{"ambiguous"}, \code{"top_gap"}, \code{"random"}.
 }

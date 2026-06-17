@@ -9,19 +9,19 @@ compute_embeddings(data, id, strategy, ...)
 \arguments{
 \item{data}{A data.frame / tibble / data.table (or db table in other backends).}
 
-\item{id}{Character scalar naming the ID column in `data`.}
+\item{id}{Character scalar naming the ID column in \code{data}.}
 
-\item{strategy}{An `Embedding_Strategy` object specifying columns,
+\item{strategy}{An \code{Embedding_Strategy} object specifying columns,
 embedding model, and normalization settings.}
 
 \item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
-A backend-specific table with columns: `id` and `embedding`
-  (where `embedding` contains numeric vectors).
+A backend-specific table with columns: \code{id} and \code{embedding}
+(where \code{embedding} contains numeric vectors).
 }
 \description{
-Compute embedding vectors for records using an `Embedding_Strategy`.
+Compute embedding vectors for records using an \code{Embedding_Strategy}.
 This is a backend-specific generic that handles data retrieval,
 text assembly, and embedding computation via tidyllm.
 }

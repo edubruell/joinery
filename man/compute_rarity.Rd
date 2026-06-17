@@ -7,41 +7,43 @@
 compute_rarity(tokens, strategy, ...)
 }
 \arguments{
-\item{tokens}{A token table created by [prepare_search_data()], in any
-backend-specific representation. Must contain at least `column`, `token`,
-and `row_id`, plus any `block_by` columns.}
+\item{tokens}{A token table created by \code{\link[=prepare_search_data]{prepare_search_data()}}, in any
+backend-specific representation. Must contain at least \code{column}, \code{token},
+and \code{row_id}, plus any \code{block_by} columns.}
 
-\item{strategy}{A `Search_Strategy` defining the rarity method, blocking
+\item{strategy}{A \code{Search_Strategy} defining the rarity method, blocking
 variables, and field structure.}
 
 \item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
-The same token table with an added `rarity` column.
+The same token table with an added \code{rarity} column.
 }
 \description{
-`compute_rarity()` assigns a rarity score to each token produced by
-[`prepare_search_data()`], using the rarity method defined in a
-`Search_Strategy`.
+\code{compute_rarity()} assigns a rarity score to each token produced by
+\code{\link[=prepare_search_data]{prepare_search_data()}}, using the rarity method defined in a
+\code{Search_Strategy}.
 }
 \details{
 Rarity quantifies how informative a token is when comparing records.
-In **joinery**, rarity is always computed:
+In \strong{joinery}, rarity is always computed:
+\itemize{
+\item using \strong{one global rarity metric} specified in the strategy,
+\item \strong{per column}, because each field has its own token distribution,
+\item \strong{within each block} (if the strategy specifies \code{block_by}).
+}
 
-- using **one global rarity metric** specified in the strategy,
-- **per column**, because each field has its own token distribution,
-- **within each block** (if the strategy specifies `block_by`).
-
-The input `tokens` must be the long-format token table returned by
-`prepare_search_data()`, containing at minimum:
-
-- an ID column,
-- a `column` field indicating the source variable,
-- a `token` field,
-- a `row_id` identifying the originating record,
-- and any `block_by` variables required by the strategy.
+The input \code{tokens} must be the long-format token table returned by
+\code{prepare_search_data()}, containing at minimum:
+\itemize{
+\item an ID column,
+\item a \code{column} field indicating the source variable,
+\item a \code{token} field,
+\item a \code{row_id} identifying the originating record,
+\item and any \code{block_by} variables required by the strategy.
+}
 
 Backends (e.g., data.frame, data.table, DuckDB relations) may implement
 their own methods for this generic, but all must return the same logical
-structure: the original token table with an added numeric `rarity` column.
+structure: the original token table with an added numeric \code{rarity} column.
 }

@@ -7,25 +7,25 @@
 \format{
 A tibble with 3,300 rows and 7 variables:
 \describe{
-  \item{id_base}{Character identifier for base records (B0001-B3150)}
-  \item{Vorname}{First name, weighted by ethnic group prevalence}
-  \item{Nachname}{Last name, weighted by ethnic group prevalence}
-  \item{Strasse}{Street name, including German street types}
-  \item{Hausnummer}{House number, some with letter suffixes}
-  \item{Ort}{City or town name}
-  \item{Kreis}{Administrative district (Kreis)}
+\item{id_base}{Character identifier for base records (B0001-B3150)}
+\item{Vorname}{First name, weighted by ethnic group prevalence}
+\item{Nachname}{Last name, weighted by ethnic group prevalence}
+\item{Strasse}{Street name, including German street types}
+\item{Hausnummer}{House number, some with letter suffixes}
+\item{Ort}{City or town name}
+\item{Kreis}{Administrative district (Kreis)}
 }
 }
 \source{
 Synthetically generated using weighted sampling from common German, Turkish,
-  and Polish names (93%, 4%, and 3% respectively) and realistic German geography.
+and Polish names (93\%, 4\%, and 3\% respectively) and realistic German geography.
 }
 \usage{
 base_example
 }
 \description{
 A dataset containing 3,300 person records with German, Turkish, and Polish names,
-including addresses across various German cities. Approximately 5% of records are
+including addresses across various German cities. Approximately 5\% of records are
 intentional duplicates with small variations to simulate real-world data quality issues.
 }
 \keyword{datasets}

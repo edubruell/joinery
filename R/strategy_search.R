@@ -17,7 +17,7 @@
 #' A `Search_Strategy` does **not** execute any matching itself.
 #' Instead, it stores:
 #'
-#' - A list of [`Search_Preparer`] objects, one per column.
+#' - A list of `Search_Preparer` objects, one per column.
 #' - Optional named numeric **weights** used in similarity scoring.
 #' - Optional **block_by** variable(s) restricting candidate searches to blocks.
 #' - A **rarity** method governing how token rarity is computed
@@ -46,7 +46,7 @@
 #'   more than this many records within their `(block, column)` are removed
 #'   before scoring (a raw document-frequency cap, the blunt companion to the
 #'   rarity-metric `min_rarity`). Default `Inf` (off).
-#' @slot smoothing A [Smoothing] object describing how rIP should be smoothed
+#' @slot smoothing A `Smoothing` object describing how rIP should be smoothed
 #'   within each record and column before scoring.
 #' @slot max_candidates Numeric scalar specifying the maximum number of candidate
 #'   matches to retain per record. Default is `Inf` (no limit). When finite,
@@ -365,7 +365,7 @@ expr_to_step <- function(expr) {
 #'   [rarity_distribution()] to choose a value from the token distribution.
 #' @param threshold Numeric scalar specifying the minimum relative identification
 #'   potential required for two records to be considered matches. Default is `0.9`.
-#' @param smoothing A [Smoothing] object created by one of the
+#' @param smoothing A `Smoothing` object created by one of the
 #'   [smooth_rip] helpers that controls how rIP values are smoothed before
 #'   scoring. Default is [smooth_rip_identity()].
 #' @param max_candidates Numeric scalar specifying the maximum number of candidate

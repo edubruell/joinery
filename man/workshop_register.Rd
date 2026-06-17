@@ -7,29 +7,29 @@
 \format{
 A tibble with 979 rows and 15 variables:
 \describe{
-  \item{reg_no}{Character registration number, the base id (e.g. "GMC-00042")}
-  \item{workshop}{Canonical business name (distinctive stem plus trade and legal-form boilerplate)}
-  \item{proprietor}{Proprietor name}
-  \item{trade}{One of eight woodworking trades; half the blocking key}
-  \item{legal_form}{Ltd, LLP, Partnership, or Sole Trader}
-  \item{postcode_area}{UK outward-code area (e.g. "LS"); half the blocking key}
-  \item{town}{Town for the postcode area}
-  \item{address}{Street address}
-  \item{established}{Year the workshop was established}
-  \item{employees}{Headcount, varying with legal form}
-  \item{apprentices}{Number of apprentices}
-  \item{guild_member}{Logical, whether a current guild member}
-  \item{sic}{UK SIC 2007 industry code for the trade}
-  \item{true_entity}{Evaluation only. Same-entity key: planted duplicate rows
-    share it, homonym workshops get distinct keys.}
-  \item{gen_tier}{Evaluation only. Which generation tier the row belongs to.}
+\item{reg_no}{Character registration number, the base id (e.g. "GMC-00042")}
+\item{workshop}{Canonical business name (distinctive stem plus trade and legal-form boilerplate)}
+\item{proprietor}{Proprietor name}
+\item{trade}{One of eight woodworking trades; half the blocking key}
+\item{legal_form}{Ltd, LLP, Partnership, or Sole Trader}
+\item{postcode_area}{UK outward-code area (e.g. "LS"); half the blocking key}
+\item{town}{Town for the postcode area}
+\item{address}{Street address}
+\item{established}{Year the workshop was established}
+\item{employees}{Headcount, varying with legal form}
+\item{apprentices}{Number of apprentices}
+\item{guild_member}{Logical, whether a current guild member}
+\item{sic}{UK SIC 2007 industry code for the trade}
+\item{true_entity}{Evaluation only. Same-entity key: planted duplicate rows
+share it, homonym workshops get distinct keys.}
+\item{gen_tier}{Evaluation only. Which generation tier the row belongs to.}
 }
 }
 \source{
 Synthetically generated. Distinct workshop identities come from a
-  frozen LLM seed (\code{data-raw/llm_workshop_seed.R}); all geography,
-  colour columns, planted duplicates, and homonyms are added by the seeded,
-  offline \code{data-raw/generate_workshop_example.R}. Ships no real business.
+frozen LLM seed (\code{data-raw/llm_workshop_seed.R}); all geography,
+colour columns, planted duplicates, and homonyms are added by the seeded,
+offline \code{data-raw/generate_workshop_example.R}. Ships no real business.
 }
 \usage{
 workshop_register

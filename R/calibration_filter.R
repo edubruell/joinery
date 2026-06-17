@@ -598,7 +598,7 @@
 #'   `0` (sensible for aIP slot columns where NA means "no token").
 #' @param ... Reserved for future expansion.
 #'
-#' @return A [`Filter_Model`] object.
+#' @return A `Filter_Model` object.
 #'
 #' @export
 fit_filter <- function(features, labels,
@@ -620,16 +620,16 @@ fit_filter <- function(features, labels,
 #' Apply a fitted filter to match features
 #'
 #' @description
-#' Score a [`Match_Features`] table with a fitted [`Filter_Model`] and
-#' return a [`Calibrated_Matches`] object. When `matches` is supplied,
+#' Score a `Match_Features` table with a fitted `Filter_Model` and
+#' return a `Calibrated_Matches` object. When `matches` is supplied,
 #' the original match table is enriched with `tp_prob` and
 #' `predicted_tp` columns and stored in the result's `@matches` slot;
 #' when `matches` is `NULL`, the features table itself is enriched and
 #' stored.
 #'
-#' @param features A [`Match_Features`] object.
-#' @param filter_model A [`Filter_Model`] produced by [fit_filter()].
-#' @param threshold Numeric scalar in [0, 1] or `NULL`. When non-`NULL` it is
+#' @param features A `Match_Features` object.
+#' @param filter_model A `Filter_Model` produced by [fit_filter()].
+#' @param threshold Numeric scalar in (0, 1) or `NULL`. When non-`NULL` it is
 #'   used verbatim and overrides `threshold_rule`. When `NULL`, the threshold is
 #'   chosen on the training labels per `threshold_rule`. Decision 13.7 default.
 #' @param threshold_rule The operating-point rule used when `threshold` is
@@ -638,7 +638,7 @@ fit_filter <- function(features, labels,
 #'   or `"cost_weighted"` (minimise `cost_ratio * FN + FP`). For a firm panel the
 #'   recall-favouring rules are usually the right operating point, splitting one
 #'   business across years is worse than admitting a few co-located firms a later
-#'   collapse can still catch ([`feedback_recall_favouring_threshold`]).
+#'   collapse can still catch.
 #' @param target_recall Target recall in (0, 1] for
 #'   `threshold_rule = "target_recall"`. Default `0.95`.
 #' @param cost_ratio `cost(FN) / cost(FP)` for `threshold_rule =
@@ -649,7 +649,7 @@ fit_filter <- function(features, labels,
 #'   rows of a `match_id`; duplicates: every row of a `duplicate_group`).
 #' @param ... Reserved for future expansion.
 #'
-#' @return A [`Calibrated_Matches`] object.
+#' @return A `Calibrated_Matches` object.
 #'
 #' @export
 apply_filter <- function(features, filter_model,

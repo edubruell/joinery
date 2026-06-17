@@ -16,66 +16,71 @@ normalize_street(
 \arguments{
 \item{x}{A character vector containing street names or address fragments.}
 
-\item{lang}{Optional language code (e.g., `"de"`, `"en"`, `"fr"`).
+\item{lang}{Optional language code (e.g., \code{"de"}, \code{"en"}, \code{"fr"}).
 When provided, the dictionary is filtered to that language and safe
 language-specific suffix matching is enabled. It also restricts
-`drop_stopwords` to that language's particle list.}
+\code{drop_stopwords} to that language's particle list.}
 
-\item{drop_house_numbers}{Logical (default `FALSE`). When `TRUE`, drops any
-token beginning with a digit (house numbers like `"12"`, `"12A"`,
-`"123B"`), keeping only the street name. Applied after street-type
+\item{drop_house_numbers}{Logical (default \code{FALSE}). When \code{TRUE}, drops any
+token beginning with a digit (house numbers like \code{"12"}, \code{"12A"},
+\code{"123B"}), keeping only the street name. Applied after street-type
 replacement.}
 
-\item{drop_stopwords}{Logical (default `FALSE`). When `TRUE`, removes
-locative particles and articles (e.g. German `AN DER`, French `DE LA`)
-listed in `stopwords`, collapsing `"An der Alster"` to `"ALSTER"`. When
-`lang` is given, only that language's particles are removed; otherwise the
-whole `stopwords` set is used.}
+\item{drop_stopwords}{Logical (default \code{FALSE}). When \code{TRUE}, removes
+locative particles and articles (e.g. German \verb{AN DER}, French \verb{DE LA})
+listed in \code{stopwords}, collapsing \code{"An der Alster"} to \code{"ALSTER"}. When
+\code{lang} is given, only that language's particles are removed; otherwise the
+whole \code{stopwords} set is used.}
 
 \item{dict}{A dictionary of street-type definitions, typically
-[joinery::street_types], containing the columns:
-* `canonical`: canonical uppercase form
-* `variant`: lowercased normalized variant form
-* `type`: `"exact"` or `"suffix"`
-* `lang`: ISO language code}
+\link{street_types}, containing the columns:
+\itemize{
+\item \code{canonical}: canonical uppercase form
+\item \code{variant}: lowercased normalized variant form
+\item \code{type}: \code{"exact"} or \code{"suffix"}
+\item \code{lang}: ISO language code
+}}
 
 \item{stopwords}{A street-stopword table, typically
-[joinery::street_stopwords], with columns `stopword` (uppercase ASCII) and
-`lang`. Only consulted when `drop_stopwords = TRUE`.}
+\link{street_stopwords}, with columns \code{stopword} (uppercase ASCII) and
+\code{lang}. Only consulted when \code{drop_stopwords = TRUE}.}
 }
 \value{
-A character vector of normalized street names. `NA` inputs are
-  preserved as `NA`. Rows reduced to nothing (e.g. a bare house number with
-  `drop_house_numbers = TRUE`) become `""`.
+A character vector of normalized street names. \code{NA} inputs are
+preserved as \code{NA}. Rows reduced to nothing (e.g. a bare house number with
+\code{drop_house_numbers = TRUE}) become \code{""}.
 }
 \description{
-Street names are written many ways for the same place: `"Hauptstr."`,
-`"Hauptstrasse"`, `"Haupt Strasse"`. `normalize_street()` collapses those
+Street names are written many ways for the same place: \code{"Hauptstr."},
+\code{"Hauptstrasse"}, \code{"Haupt Strasse"}. \code{normalize_street()} collapses those
 variants to one canonical spelling so an address column matches on the street
 name rather than on its abbreviation. It normalizes Unicode, folds to ASCII,
 upper-cases, and cleans whitespace, then rewrites known street-type tokens
 from a multilingual dictionary.
 }
 \details{
-Returns text, so it sits where [normalize_text()] would in a pipeline, ahead
-of a token generator: `street ~ normalize_street(lang = "de") + word_tokens()`.
+Returns text, so it sits where \code{\link[=normalize_text]{normalize_text()}} would in a pipeline, ahead
+of a token generator: \code{street ~ normalize_street(lang = "de") + word_tokens()}.
 
-Exact matches (e.g., `"st"`, `"rd."`, `"via"`) are always replaced.
-Suffix matches (e.g., German `"strasse"` endings or Dutch `"straat"`)
-are applied **only when `lang` is explicitly specified**, which prevents
-unsafe substitutions such as rewriting the ending of `"LINCOLN LANE"`.
-
+Exact matches (e.g., \code{"st"}, \code{"rd."}, \code{"via"}) are always replaced.
+Suffix matches (e.g., German \code{"strasse"} endings or Dutch \code{"straat"})
+are applied \strong{only when \code{lang} is explicitly specified}, which prevents
+unsafe substitutions such as rewriting the ending of \code{"LINCOLN LANE"}.
 
 Normalization steps include:
-* Unicode -> Latin transliteration and ASCII folding (`stri_trans_general`)
-* Conversion to uppercase
-* Removal of non-alphanumeric characters
-* Tokenization on spaces and per-token replacement
+\itemize{
+\item Unicode -> Latin transliteration and ASCII folding (\code{stri_trans_general})
+\item Conversion to uppercase
+\item Removal of non-alphanumeric characters
+\item Tokenization on spaces and per-token replacement
+}
 
 Exact variants are replaced verbatim with their canonical form.
 Suffix variants are replaced only when:
-* `lang` is specified, and
-* the token ends with a known variant suffix for that language.
+\itemize{
+\item \code{lang} is specified, and
+\item the token ends with a known variant suffix for that language.
+}
 }
 \examples{
 normalize_street("Muellerstrasse", lang = "de")

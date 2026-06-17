@@ -9,20 +9,20 @@ use_dictionary(text, dict)
 \arguments{
 \item{text}{A character vector of tokens to look up.}
 
-\item{dict}{A [data.table::data.table] with a `tokens` column and a
-`token_group` column. Rows whose `tokens` value matches an input token
+\item{dict}{A \link[data.table:data.table]{data.table::data.table} with a \code{tokens} column and a
+\code{token_group} column. Rows whose \code{tokens} value matches an input token
 supply that token's group label.}
 }
 \value{
 A list of character vectors, one per input element, holding the
-  matched group labels (empty when the token is not in `dict`).
+matched group labels (empty when the token is not in \code{dict}).
 }
 \description{
 When you already know which tokens mean the same thing (a curated synonym
-list, brand-name variants, a code-to-label table), `use_dictionary()` rewrites
+list, brand-name variants, a code-to-label table), \code{use_dictionary()} rewrites
 each token to its group label so the variants collapse to one token and match.
 Use it when the mapping is known in advance; when you instead want joinery to
-discover near-duplicates from the data, use [fuzzy_tokens()].
+discover near-duplicates from the data, use \code{\link[=fuzzy_tokens]{fuzzy_tokens()}}.
 }
 \details{
 Tokens absent from the dictionary return no group, so chain this after a token
@@ -38,7 +38,7 @@ use_dictionary("nonexistent", dict)
 
 }
 \seealso{
-[fuzzy_tokens()] to discover groups from the data instead.
+\code{\link[=fuzzy_tokens]{fuzzy_tokens()}} to discover groups from the data instead.
 
 Other token transformers: 
 \code{\link{drop_numeric_tokens}()},

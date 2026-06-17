@@ -9,33 +9,32 @@ normalize_date(x, format = NULL, orders = c("ymd", "dmy", "mdy"))
 \arguments{
 \item{x}{A character or Date vector containing dates to normalize.}
 
-\item{format}{Optional format string for parsing (passed to `as.Date()`).
-If `NULL` (default), attempts automatic parsing via multiple common formats.}
+\item{format}{Optional format string for parsing (passed to \code{as.Date()}).
+If \code{NULL} (default), attempts automatic parsing via multiple common formats.}
 
 \item{orders}{Optional character vector of lubridate order specifications
-(e.g., `c("dmy", "mdy", "ymd")`). Used when `format = NULL`.
-Defaults to `c("ymd", "dmy", "mdy")`.}
+(e.g., \code{c("dmy", "mdy", "ymd")}). Used when \code{format = NULL}.
+Defaults to \code{c("ymd", "dmy", "mdy")}.}
 }
 \value{
 A character vector of dates in ISO 8601 format (YYYY-MM-DD).
-  Unparseable dates return `NA_character_` with a warning.
+Unparseable dates return \code{NA_character_} with a warning.
 }
 \description{
-The same day is written `"31.12.2023"`, `"12/31/2023"`, or `"2023-12-31"`
-depending on who typed it. `normalize_date()` parses these mixed formats and
-rewrites them to one ISO 8601 string (`YYYY-MM-DD`), so a date column matches
+The same day is written \code{"31.12.2023"}, \code{"12/31/2023"}, or \code{"2023-12-31"}
+depending on who typed it. \code{normalize_date()} parses these mixed formats and
+rewrites them to one ISO 8601 string (\code{YYYY-MM-DD}), so a date column matches
 on the day it names rather than on how it was formatted. It recognizes
 European (DD.MM.YYYY), American (MM/DD/YYYY), and ISO-style inputs.
 }
 \details{
 Returns text. For matching on individual date parts (year only, year and
-month) use [date_tokens()]; to deliberately blur near-dates together use
-[approximate_date()].
+month) use \code{\link[=date_tokens]{date_tokens()}}; to deliberately blur near-dates together use
+\code{\link[=approximate_date]{approximate_date()}}.
 
-
-When `format` is provided, uses `as.Date(x, format)` directly.
-When `format = NULL`, tries `lubridate::parse_date_time()` with the
-specified `orders` to handle mixed formats flexibly.
+When \code{format} is provided, uses \code{as.Date(x, format)} directly.
+When \code{format = NULL}, tries \code{lubridate::parse_date_time()} with the
+specified \code{orders} to handle mixed formats flexibly.
 }
 \examples{
 normalize_date("31.12.2023")

@@ -7,20 +7,20 @@
 joinery_recipe(features, labels, ...)
 }
 \arguments{
-\item{features}{A [`Match_Features`] object.}
+\item{features}{A \code{\link{Match_Features}} object.}
 
-\item{labels}{A labels `data.table` with `equal` (as for
-[fit_filter()]).}
+\item{labels}{A labels \code{data.table} with \code{equal} (as for
+\code{\link[=fit_filter]{fit_filter()}}).}
 
 \item{...}{Reserved for future expansion.}
 }
 \value{
-A [recipes::recipe()] object.
+A \code{\link[recipes:recipe]{recipes::recipe()}} object.
 }
 \description{
-Construct a pre-configured [recipes::recipe()] suitable for fitting a
-false-positive filter on the output of [match_features()]. Tags ID
-columns (`searched`, `found`, `match_id`) with role `"id"`, sets
-`equal` as the outcome, and keeps every other numeric column as a
-predictor. Requires the suggested `recipes` package.
+Construct a pre-configured \code{\link[recipes:recipe]{recipes::recipe()}} suitable for fitting a
+false-positive filter on the output of \code{\link[=match_features]{match_features()}}. Tags ID
+columns (\code{searched}, \code{found}, \code{match_id}) with role \code{"id"}, sets
+\code{equal} as the outcome, and keeps every other numeric column as a
+predictor. Requires the suggested \code{recipes} package.
 }

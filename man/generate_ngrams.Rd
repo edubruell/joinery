@@ -13,20 +13,20 @@ generate_ngrams(text, n)
 }
 \value{
 A list of character vectors, one per input element. Strings shorter
-  than `n` yield an empty vector.
+than \code{n} yield an empty vector.
 }
 \description{
-An n-gram is a sliding window of `n` consecutive characters. Matching on
+An n-gram is a sliding window of \code{n} consecutive characters. Matching on
 character n-grams instead of whole words tolerates typos, truncations, and
 joined-up spellings, because two strings that differ by a letter still share
-most of their windows (`"meier"` and `"maier"` share `"ei"`, `"er"`, and so
+most of their windows (\code{"meier"} and \code{"maier"} share \code{"ei"}, \code{"er"}, and so
 on). Reach for it on short, noisy fields where word tokens are too brittle.
 }
 \details{
-It tokenizes text directly, so it replaces [word_tokens()] rather than
+It tokenizes text directly, so it replaces \code{\link[=word_tokens]{word_tokens()}} rather than
 following it. The trade-off is fan-out: every string yields many overlapping
-tokens, so n-grams cost more to match than words. Larger `n` is sharper and
-cheaper, smaller `n` is fuzzier and denser.
+tokens, so n-grams cost more to match than words. Larger \code{n} is sharper and
+cheaper, smaller \code{n} is fuzzier and denser.
 }
 \examples{
 generate_ngrams("hello", 2)
@@ -34,7 +34,7 @@ generate_ngrams("an example", 3)
 
 }
 \seealso{
-[word_tokens()] for whole-word tokens.
+\code{\link[=word_tokens]{word_tokens()}} for whole-word tokens.
 
 Other token generators: 
 \code{\link{numeric_tokens}()},

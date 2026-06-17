@@ -121,10 +121,10 @@ Smoothing_Softmax <- new_class(
 #' by themselves. Backend methods for `detect_duplicates()` and
 #' `search_candidates()` interpret the resulting `Smoothing` object.
 #'
-#' @return An object inheriting from [Smoothing] that can be passed to
+#' @return An object inheriting from `Smoothing` that can be passed to
 #'   the `smoothing` argument of [search_strategy()].
 #'
-#' @seealso [search_strategy()], [Smoothing]
+#' @seealso [search_strategy()]
 NULL
 
 #' @describeIn smooth_rip Identity rIP smoothing (no transformation beyond

@@ -14,50 +14,52 @@ duckdb_control(
 )
 }
 \arguments{
-\item{target_batch_size}{`NULL` (auto-tune from RAM / row size) or a positive
+\item{target_batch_size}{\code{NULL} (auto-tune from RAM / row size) or a positive
 number of rows per batch / scoring chunk.}
 
-\item{min_batch_size}{`NULL` (auto-tune) or a positive number - the minimum
+\item{min_batch_size}{\code{NULL} (auto-tune) or a positive number - the minimum
 table size before preprocess batching engages.}
 
-\item{chunk_strategy}{Preprocess chunking strategy: `"block_consolidated"`
-(default), `"block_first"`, or `"even"`.}
+\item{chunk_strategy}{Preprocess chunking strategy: \code{"block_consolidated"}
+(default), \code{"block_first"}, or \code{"even"}.}
 
-\item{chunk_by}{Scoring chunk key. `NULL` (default) auto-derives a coarse key
-when the input is large and leaves small inputs monolithic; `FALSE` forces
+\item{chunk_by}{Scoring chunk key. \code{NULL} (default) auto-derives a coarse key
+when the input is large and leaves small inputs monolithic; \code{FALSE} forces
 the monolithic path; a character vector names an explicit key, which must be
-a subset of the strategy's `block_by` (else cross-chunk pairs would be
+a subset of the strategy's \code{block_by} (else cross-chunk pairs would be
 silently dropped).}
 
-\item{on_error}{Per-scoring-chunk failure policy: `"skip"` (default - record
-and continue), `"retry"` (re-run once with conservative pragmas, then skip),
-or `"stop"` (re-raise).}
+\item{on_error}{Per-scoring-chunk failure policy: \code{"skip"} (default - record
+and continue), \code{"retry"} (re-run once with conservative pragmas, then skip),
+or \code{"stop"} (re-raise).}
 
-\item{progress}{`NULL` (auto), `TRUE`, or `FALSE` to force or suppress
+\item{progress}{\code{NULL} (auto), \code{TRUE}, or \code{FALSE} to force or suppress
 progress output.}
 }
 \value{
-A [Duckdb_Control] object.
+A \link{Duckdb_Control} object.
 }
 \description{
-Build a [Duckdb_Control] bundling the DuckDB backend's execution knobs, and
-pass it as `control =` to [prepare_search_data()], [detect_duplicates()], or
-[search_candidates()] on DuckDB tables. It controls **how** a match runs
-(memory, batching, chunking, failure isolation), never **what** matches -
-matching semantics stay on the [search_strategy()].
+Build a \link{Duckdb_Control} bundling the DuckDB backend's execution knobs, and
+pass it as \verb{control =} to \code{\link[=prepare_search_data]{prepare_search_data()}}, \code{\link[=detect_duplicates]{detect_duplicates()}}, or
+\code{\link[=search_candidates]{search_candidates()}} on DuckDB tables. It controls \strong{how} a match runs
+(memory, batching, chunking, failure isolation), never \strong{what} matches -
+matching semantics stay on the \code{\link[=search_strategy]{search_strategy()}}.
 
 Two execution stages, two atomicity rules:
-- **Preprocess batching** (tokenization) is per-row, governed by
-  `target_batch_size` / `min_batch_size` / `chunk_strategy`. Any row split is
-  safe.
-- **Scoring chunking** (the overlap join) is *block-atomic* - a pair only
-  forms within a block, so a block can never be split. `chunk_by` packs
-  *whole* blocks under `target_batch_size`; `on_error` isolates a
-  pathological block from the rest of the run.
+\itemize{
+\item \strong{Preprocess batching} (tokenization) is per-row, governed by
+\code{target_batch_size} / \code{min_batch_size} / \code{chunk_strategy}. Any row split is
+safe.
+\item \strong{Scoring chunking} (the overlap join) is \emph{block-atomic} - a pair only
+forms within a block, so a block can never be split. \code{chunk_by} packs
+\emph{whole} blocks under \code{target_batch_size}; \code{on_error} isolates a
+pathological block from the rest of the run.
+}
 
 Chunking is a DuckDB (out-of-core) concern; the in-memory data.table backend
 ignores it.
 }
 \seealso{
-[prepare_search_data()], [detect_duplicates()], [search_candidates()].
+\code{\link[=prepare_search_data]{prepare_search_data()}}, \code{\link[=detect_duplicates]{detect_duplicates()}}, \code{\link[=search_candidates]{search_candidates()}}.
 }

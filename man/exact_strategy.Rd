@@ -14,54 +14,53 @@ exact_strategy(
 )
 }
 \arguments{
-\item{...}{Two-sided formulas `column ~ step1 + step2`, identical in form to
-[search_strategy()].}
+\item{...}{Two-sided formulas \code{column ~ step1 + step2}, identical in form to
+\code{\link[=search_strategy]{search_strategy()}}.}
 
 \item{block_by}{Optional character vector of blocking columns.}
 
 \item{rarity}{Character scalar rarity metric, used only by the containment
-guard. Default `"inverse_freq"`.}
+guard. Default \code{"inverse_freq"}.}
 
-\item{containment}{One of `"off"` (set-equality, default), `"forward"`
+\item{containment}{One of \code{"off"} (set-equality, default), \code{"forward"}
 (link when the base record's tokens are a subset of the target's), or
-`"bidirectional"` (either direction). Whether it helps depends on the data;
+\code{"bidirectional"} (either direction). Whether it helps depends on the data;
 it over-links on noisy corpora, so it is never the default.}
 
 \item{min_base_rarity}{Numeric containment guard: drop links whose base
-record carries summed rarity mass below this floor. Default `0`.}
+record carries summed rarity mass below this floor. Default \code{0}.}
 
-\item{min_containment_tokens}{Numeric containment guard, default `1` (no
-restriction). A *proper* containment link (one record's tokens a strict
+\item{min_containment_tokens}{Numeric containment guard, default \code{1} (no
+restriction). A \emph{proper} containment link (one record's tokens a strict
 subset of the other's) requires the contained record to hold at least this
-many tokens; set-equality always links. Raise to `2` to stop a single
+many tokens; set-equality always links. Raise to \code{2} to stop a single
 generic token - a bare category or hub name (e.g. a shopping-centre name) -
 being a subset of every richer "Store + Centre" name and transitively
-chaining unrelated records into one entity. Ignored when `containment =
-"off"`.}
+chaining unrelated records into one entity. Ignored when \code{containment = "off"}.}
 }
 \value{
-An [Exact_Strategy] object.
+An \link{Exact_Strategy} object.
 }
 \description{
-Creates an [Exact_Strategy] for exact, score-1.0 token-set matching. Hand it
-to the same verbs you would hand a [search_strategy()]: [detect_duplicates()]
-to group identical records within a table, [search_candidates()] to match
-them across tables. Both return the usual result with `score == 1.0`.
+Creates an \link{Exact_Strategy} for exact, score-1.0 token-set matching. Hand it
+to the same verbs you would hand a \code{\link[=search_strategy]{search_strategy()}}: \code{\link[=detect_duplicates]{detect_duplicates()}}
+to group identical records within a table, \code{\link[=search_candidates]{search_candidates()}} to match
+them across tables. Both return the usual result with \code{score == 1.0}.
 
-Two records link only when **every column's token set is equal** within the
+Two records link only when \strong{every column's token set is equal} within the
 same block. This is the same as a fuzzy score of exactly 1.0, reached without
-any scoring or threshold, and it is **robust to empty columns**: two records
+any scoring or threshold, and it is \strong{robust to empty columns}: two records
 with identical names and both streets blank will link, where a weighted
 threshold would silently reject them. (A blank column drags a weighted score
 below its threshold, since its weight stays in the denominator; exact
 matching has no such ceiling.)
 
 Use it as the cheap first stage of a staged workflow (exact first, then fuzzy
-on whatever is left): the leftover records come from [extract_unmatched()],
-and [multi_stage_dedup()] / [multi_stage_search()] thread them through for
-you when you pass `list(exact_strategy(...), search_strategy(...))`.
+on whatever is left): the leftover records come from \code{\link[=extract_unmatched]{extract_unmatched()}},
+and \code{\link[=multi_stage_dedup]{multi_stage_dedup()}} / \code{\link[=multi_stage_search]{multi_stage_search()}} thread them through for
+you when you pass \code{list(exact_strategy(...), search_strategy(...))}.
 }
 \seealso{
-[search_strategy()], [detect_duplicates()], [search_candidates()],
-  [extract_unmatched()].
+\code{\link[=search_strategy]{search_strategy()}}, \code{\link[=detect_duplicates]{detect_duplicates()}}, \code{\link[=search_candidates]{search_candidates()}},
+\code{\link[=extract_unmatched]{extract_unmatched()}}.
 }

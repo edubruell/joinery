@@ -33,7 +33,7 @@
 #' @param x A `Strategy_Audit` object from [audit_strategy()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (column_rarity_stats).
-#' @noRd
+#' @export
 rarity_histogram <- function(x, ...) {
   crs <- x@column_rarity_stats
   if (is.null(crs) || nrow(crs) == 0L)
@@ -56,7 +56,7 @@ rarity_histogram <- function(x, ...) {
 #' @param x A `Strategy_Audit` object from [audit_strategy()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (column_token_stats).
-#' @noRd
+#' @export
 token_frequency_plot <- function(x, ...) {
   cts <- x@column_token_stats
   if (is.null(cts) || nrow(cts) == 0L)
@@ -78,7 +78,7 @@ token_frequency_plot <- function(x, ...) {
 #' @param x A `Strategy_Audit` object from [audit_strategy()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (block_summary$distribution).
-#' @noRd
+#' @export
 block_size_plot <- function(x, ...) {
   bs <- x@block_summary
   if (is.null(bs))
@@ -101,7 +101,7 @@ block_size_plot <- function(x, ...) {
 #'   `target` supplied.
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table`.
-#' @noRd
+#' @export
 vocab_overlap_plot <- function(x, ...) {
   vo <- attr(x, "vocab_overlap")
   if (is.null(vo) || length(vo) == 0L)
@@ -138,7 +138,7 @@ vocab_overlap_plot <- function(x, ...) {
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the histogram `data.table` with columns
 #'   `bin_lower`, `bin_upper`, `bin_mid`, `count`.
-#' @noRd
+#' @export
 similarity_histogram <- function(x,
                                  threshold = attr(x, "threshold"),
                                  bins      = 30L,
@@ -188,7 +188,7 @@ similarity_histogram <- function(x,
 #' @param x An `Embedding_Audit` object from [audit_strategy()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (quantile, norm).
-#' @noRd
+#' @export
 norm_plot <- function(x, ...) {
   ns <- x@norm_summary
   if (length(ns) == 0L || is.null(ns$quantiles) ||
@@ -225,7 +225,7 @@ norm_plot <- function(x, ...) {
 #'   threshold stored in `x@score_dist$threshold` when available.
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (histogram with bin_mid column).
-#' @noRd
+#' @export
 score_histogram <- function(x, threshold = x@score_dist$threshold %||% NA_real_, ...) {
   hist_dt <- data.table::copy(x@score_dist$histogram)
   hist_dt[, bin_mid := round((bin_lower + bin_upper) / 2, 3L)]
@@ -254,7 +254,7 @@ score_histogram <- function(x, threshold = x@score_dist$threshold %||% NA_real_,
 #'   threshold stored in `x@score_dist$threshold` when available.
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the `data.table` of expanded scores.
-#' @noRd
+#' @export
 score_density <- function(x, threshold = x@score_dist$threshold %||% NA_real_, ...) {
   hist_dt <- data.table::copy(x@score_dist$histogram)
   hist_dt[, bin_mid := round((bin_lower + bin_upper) / 2, 3L)]
@@ -280,7 +280,7 @@ score_density <- function(x, threshold = x@score_dist$threshold %||% NA_real_, .
 #' @param x A `Match_Overview` object from [summarise_matches()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table`.
-#' @noRd
+#' @export
 coverage_plot <- function(x, ...) {
   cov  <- x@coverage
   vals <- c(base = cov$base_coverage, target = cov$target_coverage)
@@ -314,7 +314,7 @@ coverage_plot <- function(x, ...) {
 #'   `match_type == "duplicates"`.
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (cluster_dist).
-#' @noRd
+#' @export
 cluster_size_plot <- function(x, ...) {
   if (x@match_type != "duplicates")
     cli::cli_abort("{.fn cluster_size_plot} requires {.code match_type == \"duplicates\"}. Got: {.val {x@match_type}}")
@@ -339,7 +339,7 @@ cluster_size_plot <- function(x, ...) {
 #'   `match_type == "candidates"`.
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (ambiguity_dist).
-#' @noRd
+#' @export
 ambiguity_plot <- function(x, ...) {
   if (x@match_type != "candidates")
     cli::cli_abort("{.fn ambiguity_plot} requires {.code match_type == \"candidates\"}. Got: {.val {x@match_type}}")
@@ -364,7 +364,7 @@ ambiguity_plot <- function(x, ...) {
 #'   `match_type == "candidates"`.
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (top_gap_dist with bin_mid).
-#' @noRd
+#' @export
 top_gap_density <- function(x, ...) {
   if (x@match_type != "candidates")
     cli::cli_abort("{.fn top_gap_density} requires {.code match_type == \"candidates\"}. Got: {.val {x@match_type}}")
@@ -393,7 +393,7 @@ top_gap_density <- function(x, ...) {
 #' @param x A `Match_Explanation` object from [explain_match()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (per_column_contrib).
-#' @noRd
+#' @export
 contribution_plot <- function(x, ...) {
   pcc <- x@per_column_contrib
   if (is.null(pcc) || nrow(pcc) == 0L)
@@ -415,7 +415,7 @@ contribution_plot <- function(x, ...) {
 #' @param x A `Match_Explanation` object from [explain_match()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (shared_tokens with token_label).
-#' @noRd
+#' @export
 token_contribution_plot <- function(x, ...) {
   st <- x@shared_tokens
   if (is.null(st) || nrow(st) == 0L)
@@ -448,7 +448,7 @@ token_contribution_plot <- function(x, ...) {
 #' @param x A `Stage_Comparison` object from [compare_stages()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (marginal_coverage with stage_idx).
-#' @noRd
+#' @export
 stage_coverage_plot <- function(x, ...) {
   mc <- x@marginal_coverage
   if (is.null(mc) || nrow(mc) == 0L)
@@ -493,7 +493,7 @@ stage_coverage_plot <- function(x, ...) {
 #' @param x A `Stage_Comparison` object from [compare_stages()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (score_dist_by_stage with bin_mid).
-#' @noRd
+#' @export
 stage_score_plot <- function(x, ...) {
   sds <- x@score_dist_by_stage
   if (is.null(sds) || nrow(sds) == 0L)
@@ -524,7 +524,7 @@ stage_score_plot <- function(x, ...) {
 #' @param x A `Strategy_Plan` object from [plan_strategy()].
 #' @param ... Passed to [tinyplot::tinyplot()].
 #' @return Invisibly, the plotted `data.table` (frontier).
-#' @noRd
+#' @export
 frontier_plot <- function(x, ...) {
   fr <- x@frontier
   if (is.null(fr) || nrow(fr) == 0L)
@@ -553,25 +553,25 @@ frontier_plot <- function(x, ...) {
 # Default plot() methods (plain S3 dispatch — S7 objects expose S3 classes)
 # ---------------------------------------------------------------------------
 
-#' @noRd
+#' @exportS3Method base::plot
 plot.Match_Overview <- function(x, ...) score_histogram(x, ...)
 
-#' @noRd
+#' @exportS3Method base::plot
 plot.Strategy_Audit <- function(x, ...) rarity_histogram(x, ...)
 
-#' @noRd
+#' @exportS3Method base::plot
 plot.Strategy_Plan <- function(x, ...) frontier_plot(x, ...)
 
-#' @noRd
+#' @exportS3Method base::plot
 plot.Embedding_Audit <- function(x, ...) similarity_histogram(x, ...)
 
-#' @noRd
+#' @exportS3Method base::plot
 plot.Match_Explanation <- function(x, ...) contribution_plot(x, ...)
 
-#' @noRd
+#' @exportS3Method base::plot
 plot.Stage_Comparison <- function(x, ...) stage_coverage_plot(x, ...)
 
-#' @noRd
+#' @exportS3Method base::plot
 plot.Match_Sample <- function(x, ...) {
   rows <- x@rows
   if (is.null(rows) || nrow(rows) == 0L)

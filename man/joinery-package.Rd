@@ -10,6 +10,15 @@
 
 Index-based heuristic record linkage for R.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://edubruell.github.io/joinery/}
+  \item \url{https://github.com/edubruell/joinery}
+  \item Report bugs at \url{https://github.com/edubruell/joinery/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Eduard Brüll \email{eduard.bruell@zew.de}
 

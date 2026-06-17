@@ -10,22 +10,22 @@ drop_short_tokens(tokens, min_nchar = 2)
 \item{tokens}{A list of character vectors.}
 
 \item{min_nchar}{Whole number; tokens with fewer than this many characters are
-dropped. Default `2`.}
+dropped. Default \code{2}.}
 }
 \value{
 A list of character vectors with short tokens removed.
 }
 \description{
-Removes tokens shorter than `min_nchar` characters from a token column. Where
-[word_tokens()]'s own `min_nchar` filters length at *tokenisation*, this filters
-length *after* a token transform - which is where it matters for the phonetic
-encoders ([as_cologne()], [as_soundex()], [as_metaphone()]) and [generate_ngrams()]:
+Removes tokens shorter than \code{min_nchar} characters from a token column. Where
+\code{\link[=word_tokens]{word_tokens()}}'s own \code{min_nchar} filters length at \emph{tokenisation}, this filters
+length \emph{after} a token transform - which is where it matters for the phonetic
+encoders (\code{\link[=as_cologne]{as_cologne()}}, \code{\link[=as_soundex]{as_soundex()}}, \code{\link[=as_metaphone]{as_metaphone()}}) and \code{\link[=generate_ngrams]{generate_ngrams()}}:
 those produce short codes, and a 1-2 character code maps to a very large
 equivalence class (low distinctiveness), so it behaves as a false-match magnet.
-Chain `drop_short_tokens()` after the encoder to keep only the discriminative codes.
+Chain \code{drop_short_tokens()} after the encoder to keep only the discriminative codes.
 
 Operates on the list-of-character token vectors produced by earlier steps,
-mirroring [filter_stopwords()] / [drop_numeric_tokens()].
+mirroring \code{\link[=filter_stopwords]{filter_stopwords()}} / \code{\link[=drop_numeric_tokens]{drop_numeric_tokens()}}.
 }
 \examples{
 drop_short_tokens(list(c("BAU", "AG", "X")))
@@ -37,9 +37,9 @@ drop_short_tokens(as_cologne(list(c("Bülau", "Mertens"))), min_nchar = 4)
 
 }
 \seealso{
-[filter_stopwords()] and [drop_numeric_tokens()] for the same
-  list-column idea with other drop rules; [word_tokens()] for the same length
-  cut applied at tokenisation instead.
+\code{\link[=filter_stopwords]{filter_stopwords()}} and \code{\link[=drop_numeric_tokens]{drop_numeric_tokens()}} for the same
+list-column idea with other drop rules; \code{\link[=word_tokens]{word_tokens()}} for the same length
+cut applied at tokenisation instead.
 
 Other token transformers: 
 \code{\link{drop_numeric_tokens}()},

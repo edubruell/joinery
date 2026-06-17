@@ -17,14 +17,14 @@ FALSE, any token containing a digit is dropped.}
 A list of character vectors with numeric tokens removed.
 }
 \description{
-Symmetric inverse of [numeric_tokens()]: removes pure-digit tokens
+Symmetric inverse of \code{\link[=numeric_tokens]{numeric_tokens()}}: removes pure-digit tokens
 (typically house numbers) from a token column. Operates on the
 list-of-character token vectors produced by earlier steps such as
-`word_tokens()`, mirroring [filter_stopwords()].
+\code{word_tokens()}, mirroring \code{\link[=filter_stopwords]{filter_stopwords()}}.
 
 Useful in address pipelines where the street name carries the matching
 signal but the house number is noise (and fans out blocks): tokenize the
-street, then `drop_numeric_tokens()` to keep only the name tokens.
+street, then \code{drop_numeric_tokens()} to keep only the name tokens.
 }
 \examples{
 drop_numeric_tokens(list(c("MAIN", "12", "ST")))
@@ -35,8 +35,8 @@ drop_numeric_tokens(list(c("MAIN", "12A")), keep_letters = FALSE)
 
 }
 \seealso{
-[numeric_tokens()], its inverse; [filter_stopwords()] for the same
-  idea with a named word list.
+\code{\link[=numeric_tokens]{numeric_tokens()}}, its inverse; \code{\link[=filter_stopwords]{filter_stopwords()}} for the same
+idea with a named word list.
 
 Other token transformers: 
 \code{\link{drop_short_tokens}()},

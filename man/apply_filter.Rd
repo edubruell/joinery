@@ -16,43 +16,42 @@ apply_filter(
 )
 }
 \arguments{
-\item{features}{A [`Match_Features`] object.}
+\item{features}{A \code{Match_Features} object.}
 
-\item{filter_model}{A [`Filter_Model`] produced by [fit_filter()].}
+\item{filter_model}{A \code{Filter_Model} produced by \code{\link[=fit_filter]{fit_filter()}}.}
 
-\item{threshold}{Numeric scalar in [0, 1] or `NULL`. When non-`NULL` it is
-used verbatim and overrides `threshold_rule`. When `NULL`, the threshold is
-chosen on the training labels per `threshold_rule`. Decision 13.7 default.}
+\item{threshold}{Numeric scalar in (0, 1) or \code{NULL}. When non-\code{NULL} it is
+used verbatim and overrides \code{threshold_rule}. When \code{NULL}, the threshold is
+chosen on the training labels per \code{threshold_rule}. Decision 13.7 default.}
 
-\item{threshold_rule}{The operating-point rule used when `threshold` is
-`NULL`: `"youden"` (default, maximise Youden's J, symmetric error costs),
-`"target_recall"` (the highest threshold still achieving `target_recall`),
-or `"cost_weighted"` (minimise `cost_ratio * FN + FP`). For a firm panel the
+\item{threshold_rule}{The operating-point rule used when \code{threshold} is
+\code{NULL}: \code{"youden"} (default, maximise Youden's J, symmetric error costs),
+\code{"target_recall"} (the highest threshold still achieving \code{target_recall}),
+or \code{"cost_weighted"} (minimise \code{cost_ratio * FN + FP}). For a firm panel the
 recall-favouring rules are usually the right operating point, splitting one
 business across years is worse than admitting a few co-located firms a later
-collapse can still catch ([`feedback_recall_favouring_threshold`]).}
+collapse can still catch.}
 
 \item{target_recall}{Target recall in (0, 1] for
-`threshold_rule = "target_recall"`. Default `0.95`.}
+\code{threshold_rule = "target_recall"}. Default \code{0.95}.}
 
-\item{cost_ratio}{`cost(FN) / cost(FP)` for `threshold_rule =
-"cost_weighted"`; `> 1` favours recall. Default `1` (symmetric).}
+\item{cost_ratio}{\code{cost(FN) / cost(FP)} for \code{threshold_rule = "cost_weighted"}; \verb{> 1} favours recall. Default \code{1} (symmetric).}
 
 \item{matches}{Optional raw matches table to enrich. When supplied,
-`tp_prob` / `predicted_tp` are broadcast onto every row of the
-pair (candidates: both `source == "base"` and `source == "target"`
-rows of a `match_id`; duplicates: every row of a `duplicate_group`).}
+\code{tp_prob} / \code{predicted_tp} are broadcast onto every row of the
+pair (candidates: both \code{source == "base"} and \code{source == "target"}
+rows of a \code{match_id}; duplicates: every row of a \code{duplicate_group}).}
 
 \item{...}{Reserved for future expansion.}
 }
 \value{
-A [`Calibrated_Matches`] object.
+A \code{Calibrated_Matches} object.
 }
 \description{
-Score a [`Match_Features`] table with a fitted [`Filter_Model`] and
-return a [`Calibrated_Matches`] object. When `matches` is supplied,
-the original match table is enriched with `tp_prob` and
-`predicted_tp` columns and stored in the result's `@matches` slot;
-when `matches` is `NULL`, the features table itself is enriched and
+Score a \code{Match_Features} table with a fitted \code{Filter_Model} and
+return a \code{Calibrated_Matches} object. When \code{matches} is supplied,
+the original match table is enriched with \code{tp_prob} and
+\code{predicted_tp} columns and stored in the result's \verb{@matches} slot;
+when \code{matches} is \code{NULL}, the features table itself is enriched and
 stored.
 }

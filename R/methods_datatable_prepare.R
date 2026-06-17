@@ -270,7 +270,7 @@ method(
 #' after scoring, where it would save nothing. This helper applies both cut
 #' axes in one predicate on a `compute_rarity()` output (which carries `rarity`
 #' and `df`): `min_rarity` floors the rarity metric, `max_token_df` caps raw
-#' document frequency. It is the data.table mirror of [.rarity_prefilter_sql()]
+#' document frequency. It is the data.table mirror of `.rarity_prefilter_sql()`
 #' on the DuckDB backend - keep the two predicates identical.
 #' @noRd
 .rarity_prefilter_dt <- function(tokens, strategy) {

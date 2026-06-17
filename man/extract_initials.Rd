@@ -13,14 +13,13 @@ extract_initials(tokens)
 A list of character vectors of single-character initials.
 }
 \description{
-Keeps only the first character of each token (`"ANNA"` becomes `"A"`). Use it
+Keeps only the first character of each token (\code{"ANNA"} becomes \code{"A"}). Use it
 to match on initials when full first names are recorded inconsistently, for
-example when one source has `"Anna Berta Schmidt"` and another `"A. B.
-Schmidt"`.
+example when one source has \code{"Anna Berta Schmidt"} and another \code{"A. B. Schmidt"}.
 }
 \details{
 It transforms a token column, so it runs after a token generator such as
-[word_tokens()].
+\code{\link[=word_tokens]{word_tokens()}}.
 }
 \examples{
 extract_initials(list(c("Anna", "Berta")))

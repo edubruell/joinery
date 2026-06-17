@@ -33,7 +33,7 @@
 #' @slot embedding_model A tidyllm provider object that specifies both the
 #'   provider and model (e.g., `ollama(.model = "mxbai-embed-large")`).
 #'   This is passed directly to tidyllm's `embed()` function.
-#' @slot threshold Numeric scalar in [0, 1] for cosine similarity filtering.
+#' @slot threshold Numeric scalar in (0, 1) for cosine similarity filtering.
 #' @slot collapse_sep Character scalar used to join multiple columns into
 #'   a single text string per record. Default is " ".
 #' @slot normalize Logical. If TRUE (default), apply L2 normalization to
@@ -143,7 +143,7 @@ method(print.Search_Preparer, Embedding_Strategy) <- function(x, ...) {
 #' @param embedding_model A tidyllm provider object (e.g.,
 #'   `ollama(.model = "mxbai-embed-large")`). This is passed directly to
 #'   tidyllm's `embed()` function.
-#' @param threshold Numeric scalar in [0, 1]. Cosine similarity threshold for
+#' @param threshold Numeric scalar in (0, 1). Cosine similarity threshold for
 #'   filtering matches.
 #' @param collapse_sep Character scalar. Separator used when joining multiple
 #'   columns into a single text string. Default is " ".

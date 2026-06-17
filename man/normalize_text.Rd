@@ -10,26 +10,26 @@ normalize_text(text, transliteration = "De-ASCII")
 \item{text}{A character string or vector to normalize.}
 
 \item{transliteration}{A transliteration scheme passed to
-[stringi::stri_trans_general()], defaulting to `"De-ASCII"` (German-aware
-folding, which expands umlauts to digraphs such as `ue` and `oe`). Use
-`"Latin-ASCII"` for plain accent stripping, which drops the diacritic
+\code{\link[stringi:stri_trans_general]{stringi::stri_trans_general()}}, defaulting to \code{"De-ASCII"} (German-aware
+folding, which expands umlauts to digraphs such as \code{ue} and \code{oe}). Use
+\code{"Latin-ASCII"} for plain accent stripping, which drops the diacritic
 instead of expanding it.}
 }
 \value{
-A character vector the same length as `text`: upper-cased, ASCII,
-  alphanumeric-and-space only, with surrounding and repeated spaces removed.
+A character vector the same length as \code{text}: upper-cased, ASCII,
+alphanumeric-and-space only, with surrounding and repeated spaces removed.
 }
 \description{
 The usual first step in a preparer pipeline. Folds text to upper case,
 transliterates accented and non-Latin characters to ASCII, drops anything
 that is not a letter, digit, or space, and collapses runs of whitespace. The
 point is to make superficial differences in case, accents, and punctuation
-disappear so that `"Cafe-Conac"` and `"cafe conac"` reduce to the same text
+disappear so that \code{"Cafe-Conac"} and \code{"cafe conac"} reduce to the same text
 before it is split into tokens.
 }
 \details{
-Returns text, so it goes ahead of a token generator such as [word_tokens()]
-in a strategy: `name ~ normalize_text() + word_tokens()`.
+Returns text, so it goes ahead of a token generator such as \code{\link[=word_tokens]{word_tokens()}}
+in a strategy: \code{name ~ normalize_text() + word_tokens()}.
 }
 \examples{
 normalize_text("Cafe Conac")
@@ -37,7 +37,7 @@ normalize_text("Strasse", transliteration = "Latin-ASCII")
 
 }
 \seealso{
-[word_tokens()], the token generator that usually follows.
+\code{\link[=word_tokens]{word_tokens()}}, the token generator that usually follows.
 
 Other text normalizers: 
 \code{\link{normalize_street}()},

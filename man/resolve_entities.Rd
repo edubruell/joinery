@@ -19,25 +19,25 @@ resolve_entities(
 \item{edges}{A backend table of record-pair edges (one row per edge).}
 
 \item{id_a, id_b}{Character scalars naming the two endpoint columns in
-`edges`.}
+\code{edges}.}
 
 \item{score}{Optional character scalar naming a per-edge score column in
-`edges`. When supplied, within-entity `rank` is ordered by descending
+\code{edges}. When supplied, within-entity \code{rank} is ordered by descending
 best score (the maximum over a vertex's incident edges) and that best
-score is returned as an extra `score` column. When `NULL`, ranking
-falls back to the `rep_by`/`id` rule.}
+score is returned as an extra \code{score} column. When \code{NULL}, ranking
+falls back to the \code{rep_by}/\code{id} rule.}
 
 \item{vertices}{Optional. All vertex ids to include, so that ids absent
 from every edge come back as their own singleton entity (rank 1,
-`rep` = self). Either an atomic vector of ids, or a table with an `id`
-column (plus any `rep_by` column). When `NULL`, only ids appearing in
-`edges` are returned.}
+\code{rep} = self). Either an atomic vector of ids, or a table with an \code{id}
+column (plus any \code{rep_by} column). When \code{NULL}, only ids appearing in
+\code{edges} are returned.}
 
 \item{rep_by}{Optional character scalar naming a priority column (on the
-`vertices` table) used to pick the canonical representative: the member
-with the smallest `rep_by` wins, ties broken by smallest `id`.}
+\code{vertices} table) used to pick the canonical representative: the member
+with the smallest \code{rep_by} wins, ties broken by smallest \code{id}.}
 
-\item{block_by}{Optional character vector of columns in `edges` used to
+\item{block_by}{Optional character vector of columns in \code{edges} used to
 run connected components per block (DuckDB backend).}
 
 \item{...}{Additional arguments passed to backend-specific methods.}
@@ -45,30 +45,30 @@ run connected components per block (DuckDB backend).}
 \value{
 One row per resolved vertex:
 \describe{
-  \item{id}{The vertex id.}
-  \item{entity}{Integer entity (connected-component) label.}
-  \item{rep}{The canonical representative id of the entity.}
-  \item{rank}{Rank within the entity; rank 1 is the representative.}
-  \item{score}{Best incident-edge score per vertex (only when `score` is
-    supplied).}
+\item{id}{The vertex id.}
+\item{entity}{Integer entity (connected-component) label.}
+\item{rep}{The canonical representative id of the entity.}
+\item{rank}{Rank within the entity; rank 1 is the representative.}
+\item{score}{Best incident-edge score per vertex (only when \code{score} is
+supplied).}
 }
 }
 \description{
 Take a list of matched record pairs (an edge list) and turn it into
 entities: records that link directly or through a chain of links are
-grouped together, each group gets an `entity` number, and one record in
+grouped together, each group gets an \code{entity} number, and one record in
 each group is marked as its representative.
 
-This is the grouping step [detect_duplicates()] performs internally, exposed
+This is the grouping step \code{\link[=detect_duplicates]{detect_duplicates()}} performs internally, exposed
 on its own so you can resolve any pair list into entities, for example the
-output of [search_candidates()] or a set of links you assembled yourself.
+output of \code{\link[=search_candidates]{search_candidates()}} or a set of links you assembled yourself.
 }
 \details{
-The result does not depend on the order of rows in `edges`: the same pairs
-always produce the same `entity`, `rep`, and `rank`. Entity numbers are
+The result does not depend on the order of rows in \code{edges}: the same pairs
+always produce the same \code{entity}, \code{rep}, and \code{rank}. Entity numbers are
 assigned by the smallest member id in each group. The representative (the
-rank-1 member) is chosen by highest best `score` when a score column is
-given, then by smallest `rep_by` when given, then by smallest `id`.
+rank-1 member) is chosen by highest best \code{score} when a score column is
+given, then by smallest \code{rep_by} when given, then by smallest \code{id}.
 }
 \examples{
 # r1-r2 and r2-r3 chain into one entity; r4-r5 form another

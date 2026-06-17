@@ -11,18 +11,18 @@ token_shapes(tokens)
 }
 \value{
 A list of character vectors of shape signatures, one signature per
-  input token.
+input token.
 }
 \description{
-Reduces each token to its letter/digit pattern: every letter becomes `"A"`,
-every digit `"N"`, anything else `"X"`. The signature ignores the actual
+Reduces each token to its letter/digit pattern: every letter becomes \code{"A"},
+every digit \code{"N"}, anything else \code{"X"}. The signature ignores the actual
 characters and keeps only the layout, which is useful for matching on the
 format of a code or identifier (postal codes, licence plates, product codes)
 rather than its exact value, or as a coarse blocking key.
 }
 \details{
 It transforms a token column, so it runs after a token generator such as
-[word_tokens()].
+\code{\link[=word_tokens]{word_tokens()}}.
 }
 \examples{
 token_shapes(list(c("MUELLER", "A12B")))

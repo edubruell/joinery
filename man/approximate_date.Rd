@@ -15,36 +15,40 @@ approximate_date(
 \item{x}{A character or Date vector containing dates to approximate.}
 
 \item{unit}{Character string specifying the rounding unit. One of:
-* `"month"` -- round to first day of month (default)
-* `"quarter"` -- round to first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
-* `"half"` -- round to first day of half-year (Jan 1 or Jul 1)
-* `"year"` -- round to January 1
-* `"decade"` -- round to first year of decade (e.g., 2020-01-01)}
+\itemize{
+\item \code{"month"} -- round to first day of month (default)
+\item \code{"quarter"} -- round to first day of quarter (Jan 1, Apr 1, Jul 1, Oct 1)
+\item \code{"half"} -- round to first day of half-year (Jan 1 or Jul 1)
+\item \code{"year"} -- round to January 1
+\item \code{"decade"} -- round to first year of decade (e.g., 2020-01-01)
+}}
 
-\item{format}{Optional format string for parsing (passed to `as.Date()`).
-If `NULL` (default), attempts automatic parsing via lubridate.}
+\item{format}{Optional format string for parsing (passed to \code{as.Date()}).
+If \code{NULL} (default), attempts automatic parsing via lubridate.}
 
 \item{orders}{Optional character vector of lubridate order specifications.
-Used when `format = NULL`. Defaults to `c("ymd", "dmy", "mdy")`.}
+Used when \code{format = NULL}. Defaults to \code{c("ymd", "dmy", "mdy")}.}
 }
 \value{
 A character vector of dates in ISO 8601 format (YYYY-MM-DD),
-  rounded to the start of the specified time unit. Unparseable dates
-  return `NA_character_` with a warning.
+rounded to the start of the specified time unit. Unparseable dates
+return \code{NA_character_} with a warning.
 }
 \description{
-`approximate_date()` rounds dates to the start of broader time periods
+\code{approximate_date()} rounds dates to the start of broader time periods
 (month, quarter, half-year, year, or decade). This is useful for fuzzy
 temporal matching when exact dates may differ slightly but represent the
 same general time period.
 }
 \details{
-Rounding always goes to the **start** of the period:
-* `"month"`: 2023-03-15 -> 2023-03-01
-* `"quarter"`: 2023-03-15 -> 2023-01-01 (Q1), 2023-05-20 -> 2023-04-01 (Q2)
-* `"half"`: 2023-03-15 -> 2023-01-01 (H1), 2023-08-20 -> 2023-07-01 (H2)
-* `"year"`: 2023-03-15 -> 2023-01-01
-* `"decade"`: 2023-03-15 -> 2020-01-01
+Rounding always goes to the \strong{start} of the period:
+\itemize{
+\item \code{"month"}: 2023-03-15 -> 2023-03-01
+\item \code{"quarter"}: 2023-03-15 -> 2023-01-01 (Q1), 2023-05-20 -> 2023-04-01 (Q2)
+\item \code{"half"}: 2023-03-15 -> 2023-01-01 (H1), 2023-08-20 -> 2023-07-01 (H2)
+\item \code{"year"}: 2023-03-15 -> 2023-01-01
+\item \code{"decade"}: 2023-03-15 -> 2020-01-01
+}
 }
 \examples{
 approximate_date("2023-03-15", unit = "month")
@@ -67,8 +71,8 @@ approximate_date(c("2023-01-15", "2023-04-20", "2023-09-10"), unit = "quarter")
 
 }
 \seealso{
-[normalize_date()] for exact dates, [date_tokens()] to split a date
-  into part tokens.
+\code{\link[=normalize_date]{normalize_date()}} for exact dates, \code{\link[=date_tokens]{date_tokens()}} to split a date
+into part tokens.
 
 Other date preparers: 
 \code{\link{date_tokens}()},

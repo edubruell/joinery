@@ -11,36 +11,36 @@ search_candidates(base_table, target_table, base_id, target_id, strategy, ...)
 
 \item{target_table}{The table to search against.}
 
-\item{base_id}{Character scalar naming the ID column in `base_table`.}
+\item{base_id}{Character scalar naming the ID column in \code{base_table}.}
 
-\item{target_id}{Character scalar naming the ID column in `target_table`.}
+\item{target_id}{Character scalar naming the ID column in \code{target_table}.}
 
-\item{strategy}{A `Search_Strategy` (or `Exact_Strategy`) describing how to
+\item{strategy}{A \code{Search_Strategy} (or \code{Exact_Strategy}) describing how to
 tokenize each column, how to block, and the matching threshold.}
 
 \item{...}{Additional arguments passed to backend-specific methods, such as
-`threshold` and `weights`.}
+\code{threshold} and \code{weights}.}
 }
 \value{
 A table with two rows per matched pair (one for the base record, one
-  for the target record), sharing a `match_id`:
+for the target record), sharing a \code{match_id}:
 \describe{
-  \item{match_id}{Identifier shared by the two rows of a matched pair.}
-  \item{score}{The pair's match score.}
-  \item{source}{`"base"` or `"target"`.}
-  \item{id}{The record ID.}
-  \item{<original columns>}{Every other column from the source table.}
-  \item{rank}{Rank of this candidate among a record's matches.}
+\item{match_id}{Identifier shared by the two rows of a matched pair.}
+\item{score}{The pair's match score.}
+\item{source}{\code{"base"} or \code{"target"}.}
+\item{id}{The record ID.}
+\item{\if{html}{\out{<original columns>}}}{Every other column from the source table.}
+\item{rank}{Rank of this candidate among a record's matches.}
 }
 }
 \description{
 Find candidate matches between two tables: for each record on one side, the
 records on the other side that share enough rare, informative token content
 to score at or above the threshold. This is the cross-table counterpart of
-[detect_duplicates()].
+\code{\link[=detect_duplicates]{detect_duplicates()}}.
 
-Pass a [search_strategy()] for fuzzy, scored matching, or an
-[exact_strategy()] to keep only pairs whose token sets are identical.
+Pass a \code{\link[=search_strategy]{search_strategy()}} for fuzzy, scored matching, or an
+\code{\link[=exact_strategy]{exact_strategy()}} to keep only pairs whose token sets are identical.
 }
 \examples{
 data(base_example)
@@ -63,7 +63,7 @@ head(matches)
 
 }
 \seealso{
-[detect_duplicates()] for the within-table version,
-  [extract_unmatched()] for the residual, [multi_stage_search()] for staged
-  passes.
+\code{\link[=detect_duplicates]{detect_duplicates()}} for the within-table version,
+\code{\link[=extract_unmatched]{extract_unmatched()}} for the residual, \code{\link[=multi_stage_search]{multi_stage_search()}} for staged
+passes.
 }

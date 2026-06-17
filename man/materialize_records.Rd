@@ -10,42 +10,43 @@ materialize_records(data, id, ids, ...)
 \item{data}{A data.frame / tibble / data.table (or db table in other
 backends) - the corpus to pull records from.}
 
-\item{id}{Character scalar naming the ID column in `data`.}
+\item{id}{Character scalar naming the ID column in \code{data}.}
 
 \item{ids}{Either an atomic vector of ID values, or a table carrying them
-(read from an `id` column, else a column named `id`'s value).}
+(read from an \code{id} column, else a column named \code{id}'s value).}
 
 \item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
-The rows of `data` whose ID is in `ids`, all columns intact, one
-  row per matching record, in no guaranteed order.
+The rows of \code{data} whose ID is in \code{ids}, all columns intact, one
+row per matching record, in no guaranteed order.
 }
 \description{
-Rehydrate a set of record IDs back into their **full records**. The
-positive (semi-join) complement of [extract_unmatched()]: where
-`extract_unmatched()` *produces* a residual set of IDs, `materialize_records()`
+Rehydrate a set of record IDs back into their \strong{full records}. The
+positive (semi-join) complement of \code{\link[=extract_unmatched]{extract_unmatched()}}: where
+\code{extract_unmatched()} \emph{produces} a residual set of IDs, \code{materialize_records()}
 pulls those IDs back into complete, scorable rows for the next stage.
 }
 \details{
-`ids` is **polymorphic**. It may be either
+\code{ids} is \strong{polymorphic}. It may be either
+\itemize{
+\item an atomic vector of ID values, or
+\item a table (data.frame / data.table / backend tbl) carrying the IDs. The
+lookup order for the ID column is: a column literally named \code{id} first
+(the \code{\link[=extract_unmatched]{extract_unmatched()}} / \code{resolve_entities()} output convention),
+otherwise a column named the same as \code{id}.
+}
 
-- an atomic vector of ID values, or
-- a table (data.frame / data.table / backend tbl) carrying the IDs. The
-  lookup order for the ID column is: a column literally named `id` first
-  (the [extract_unmatched()] / `resolve_entities()` output convention),
-  otherwise a column named the same as `id`.
-
-The return is a **semi-join**: IDs absent from `data` are silently dropped
+The return is a \strong{semi-join}: IDs absent from \code{data} are silently dropped
 (there is nothing to rehydrate), never NULL-filled. IDs are coerced to a
 common type on both sides, so a BIGINT-corpus / character-id request still
 matches. Row order is not guaranteed; the caller sorts if needed.
 
-On the DuckDB backend the IDs are **always** registered as a temp table and
-joined - never inlined as an `id IN (<literal list>)`, which binds in
+On the DuckDB backend the IDs are \strong{always} registered as a temp table and
+joined - never inlined as an \verb{id IN (<literal list>)}, which binds in
 roughly O(n^2) and pins cores for minutes on large residual sets.
 }
 \seealso{
-[extract_unmatched()], the negative complement that produces the
-  residual IDs this verb rehydrates.
+\code{\link[=extract_unmatched]{extract_unmatched()}}, the negative complement that produces the
+residual IDs this verb rehydrates.
 }
