@@ -61,7 +61,8 @@ print.Rarity_Distribution <- new_external_generic("base", "print", "x")
 #' @noRd
 .rarity_distribution_core <- function(tokens, strategy, n_offenders) {
 
-  block_by <- strategy@block_by
+  # Use plain block cols for display (skip derived ._btok token-blocking keys).
+  block_by <- .plain_block_cols(strategy)
   by_keys  <- c(block_by, "src_column")
 
   # Per-token document frequency / rarity within (block, column, token). These
@@ -70,7 +71,7 @@ print.Rarity_Distribution <- new_external_generic("base", "print", "x")
   tok <- unique(tokens[, c(by_keys, "token", "df", "rarity"), with = FALSE])
 
   # A single, stable block key string for display / grouping.
-  if (!is.null(block_by)) {
+  if (length(block_by) > 0L) {
     if (length(block_by) == 1L) {
       tok[, block := as.character(tok[[block_by]])]
     } else {
@@ -104,7 +105,7 @@ print.Rarity_Distribution <- new_external_generic("base", "print", "x")
   offenders <- off[, c("src_column", "block", "token", "df", "rarity"), with = FALSE]
 
   # Drop the synthetic block column when unblocked, for a clean schema.
-  if (is.null(block_by)) {
+  if (length(block_by) == 0L) {
     distribution[, block := NULL]
     offenders[, block := NULL]
   }

@@ -7,6 +7,8 @@
 ^examples$
 ^localwip$
 ^pkgdown$
+^_pkgdown\.yml$
+^docs$
 ^Rplots\.pdf$
 ^CLAUDE\.md$
 ^data-raw$

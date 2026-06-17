@@ -10,3 +10,4 @@ notes/
 .DS_Store
 .claude/
 data-raw/workshop_seed_cache/
+docs/

@@ -98,6 +98,7 @@ method(
 #'   drop_joinery_temp_tables(con)
 #' }
 #'
+#' @export
 drop_joinery_temp_tables <- function(
     con,
     prefixes = c("_joinery_tokens_", "_joinery_tmp_", "_joinery_emb_")

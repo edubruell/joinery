@@ -5,9 +5,12 @@
 \alias{workshop_register}
 \title{Workshop guild register (base) for record linkage examples}
 \format{
-A tibble with 979 rows and 15 variables:
+A tibble with 982 rows and 15 variables:
 \describe{
-\item{reg_no}{Character registration number, the base id (e.g. "GMC-00042")}
+\item{reg_no}{Character registration number, the base id. Most are
+\code{"GMC-#####"}; planted duplicates, homonyms, and shared-venue rows
+carry \code{"GMC-D####"}, \code{"GMC-H####"}, and \code{"GMC-V####"}
+prefixes respectively.}
 \item{workshop}{Canonical business name (distinctive stem plus trade and legal-form boilerplate)}
 \item{proprietor}{Proprietor name}
 \item{trade}{One of eight woodworking trades; half the blocking key}
@@ -22,7 +25,13 @@ A tibble with 979 rows and 15 variables:
 \item{sic}{UK SIC 2007 industry code for the trade}
 \item{true_entity}{Evaluation only. Same-entity key: planted duplicate rows
 share it, homonym workshops get distinct keys.}
-\item{gen_tier}{Evaluation only. Which generation tier the row belongs to.}
+\item{gen_tier}{Evaluation only. Which generation tier the row belongs to.
+Three rows are \code{hub_trap}: short-named shared venues ("Trinity
+Workshops", "The Forge", "Riverside Works") that are themselves guild
+registered. Their two-token names are a forward-containment subset of every
+"\if{html}{\out{<workshop>}}, \if{html}{\out{<venue>}}" listing, so they bait an exact containment strategy
+into merging unrelated workshops; the \code{min_containment_tokens} guard
+blocks them.}
 }
 }
 \source{

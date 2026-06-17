@@ -3,6 +3,21 @@ url: https://edubruell.github.io/joinery/
 development:
   mode: auto
 
+navbar:
+  structure:
+    left: [intro, articles, reference, news]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: "Get Started"
+          href: articles/joinery.html
+        - text: "-------"
+        - text: "Features"
+        - text: "Beyond the Basics: Fuzzy and Exact Strategies"
+          href: articles/features.html
+
 template:
   bootstrap: 5
   bootswatch: litera

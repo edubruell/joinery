@@ -1,0 +1,413 @@
+---
+title: "Beyond the Basics: Fuzzy and Exact Strategies"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Beyond the Basics: Fuzzy and Exact Strategies}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The Getting Started guide used one tool: a `search_strategy()` that scores every
+candidate pair by how much rare token mass the two records share. That fuzzy
+score is forgiving, which is what you want for typos and reorderings, but
+forgiveness costs precision and compute. Two things round it out:
+
+- an **exact strategy** that matches by token-set identity or containment. It is
+  cheap and certain, and it handles the common case where one side simply
+  appends extra words.
+- **staging**, where you run several strategies in order with
+  `multi_stage_search()`: a strict, cheap pass first, then looser passes that
+  only see what the earlier passes left behind.
+
+This article builds both on the `workshop_register` / `workshop_listings` pair.
+Every feature has a planted tier in the data, so switching it on produces a
+number you can read off the page.
+
+```{r load}
+library(joinery)
+library(dplyr)
+```
+
+## The data
+
+`workshop_register` is the clean base table: 982 entries from a fictional Guild
+of Master Craftsmen roll. `workshop_listings` is the messier directory side: 844
+listings, 729 of which refer to a known register entry (the `actual_link`
+column). The matchable columns share names across both tables, so one strategy
+formula serves both sides. Block on `(postcode_area, trade)`.
+
+```{r glimpse}
+glimpse(workshop_register)
+```
+
+The listings come in labelled tiers (`gen_tier`), each exercising one challenge:
+
+| Tier | n | Challenge |
+|---|---|---|
+| `clean` | 290 | Minimal distortion. |
+| `slogan` | 119 | Directory appends a marketing slogan after the name. |
+| `variant` | 96 | Abbreviations, punctuation, word reorderings. |
+| `mover` | 86 | Workshop relocated; listing is in a different `postcode_area`. |
+| `phonetic` | 21 | Name spelled by ear (Pennell / Penell). |
+| `hub_member` / `hub_trap` | 42 | A shared venue name baits over-linking. |
+| `category_trap` | 8 | A bare generic trade name, another over-linking bait. |
+| `homonym_*` | 84 | Different workshops with similar names. |
+| `new` | 98 | No match in the register. |
+
+The trap and homonym tiers carry no `actual_link` (there is nothing correct for
+them to match); they are here to test precision, and we return to them at the
+end.
+
+### One way to measure
+
+Every verb in this article returns the same thing: an entity table, one row per
+record, with an `entity` id that groups records the matcher believes are the
+same workshop. A listing is **recovered** when it lands in the same entity as the
+register row named in its `actual_link`. That one rule scores every strategy
+below, so we write it once.
+
+```{r recall-helper}
+entity_recall <- function(ms, tiers = c("clean", "slogan", "variant", "mover", "phonetic")) {
+  ent   <- ms |> select(id, entity)
+  truth <- workshop_listings |>
+    filter(!is.na(actual_link)) |>
+    select(listing_id, actual_link, gen_tier)
+
+  truth |>
+    left_join(ent, by = c("listing_id" = "id")) |>
+    left_join(ent, by = c("actual_link" = "id"), suffix = c("_listing", "_register")) |>
+    mutate(linked = !is.na(entity_listing) & entity_listing == entity_register) |>
+    filter(gen_tier %in% tiers) |>
+    group_by(gen_tier) |>
+    summarise(recovered = sum(linked), total = n(), .groups = "drop") |>
+    arrange(match(gen_tier, tiers))
+}
+```
+
+`multi_stage_search()` produces that entity table even for a single strategy, so
+we run everything through it and the same helper scores all of them.
+
+## Exact matching: token sets, not scores
+
+Many directory listings differ from the register in a way that has nothing to do
+with spelling. They just say more. A slogan listing looks like this:
+
+```{r slogan-example}
+workshop_listings |>
+  filter(gen_tier == "slogan") |>
+  select(listing_id, workshop) |>
+  slice(1:3)
+```
+
+The register name is "Pollard Joinery"; the listing is "Pollard Joinery" plus a
+tagline. The two token sets are not equal, but the register's tokens are a
+**subset** of the listing's. That relationship is exactly what an exact strategy
+with containment is for.
+
+```{r exact-strategy}
+st_exact <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  containment = "forward",
+  block_by    = c("postcode_area", "trade")
+)
+```
+
+`containment` has three settings:
+
+- `"off"`: the two token sets must be **equal**. The strictest match.
+- `"forward"`: the base record's tokens must be a **subset** of the target's.
+  This catches the slogan case, where the directory adds words.
+- `"bidirectional"`: either side may be the subset of the other.
+
+Every pair an exact strategy returns scores `1.0`. There is no rarity weighting
+and no threshold to tune: the token sets either stand in the required
+relationship or they do not. That makes it cheap, and on the slogan tier it is
+also complete.
+
+```{r exact-run}
+m_exact <- multi_stage_search(
+  workshop_register, workshop_listings,
+  base_id = "reg_no", target_id = "listing_id",
+  strategies = list(st_exact)
+)
+
+entity_recall(m_exact)
+```
+
+All 119 slogan listings recovered, plus most of the clean tier, at no scoring
+cost. Movers and phonetic variants stay at zero, for two different reasons: a
+phonetic spelling is not a subset of anything (containment has no notion of
+"close"), and a mover never shares a `postcode_area` block with its register
+entry in the first place. Those are the two jobs we stage on top of this later.
+
+## When containment over-links: the shared venue
+
+Containment is powerful precisely because it ignores extra words, and that is
+also how it gets you into trouble. Consider a shared workshop building that rents
+benches to several independent businesses, and that is itself a guild member:
+
+```{r mall-register}
+workshop_register |>
+  filter(workshop == "Trinity Workshops") |>
+  select(reg_no, workshop, trade, postcode_area)
+```
+
+"Trinity Workshops" is two tokens. Every business at that address lists itself as
+"<their name>, Trinity Workshops":
+
+```{r mall-listings}
+workshop_listings |>
+  filter(grepl("Trinity Workshops", workshop)) |>
+  select(listing_id, workshop, actual_link)
+```
+
+Under forward containment the venue's two tokens are a subset of every one of
+those listings. So the venue's register row links to all of them, and connected
+components then fuse the unrelated workshops behind those listings into a single
+entity:
+
+```{r mall-trap}
+st_loose <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  containment            = "forward",
+  min_containment_tokens = 1,
+  block_by               = c("postcode_area", "trade")
+)
+
+m_loose <- multi_stage_search(
+  workshop_register, workshop_listings,
+  base_id = "reg_no", target_id = "listing_id",
+  strategies = list(st_loose)
+)
+
+# find the entity the venue (GMC-V0001) landed in, then list everyone in it
+trap_entity <- m_loose$entity[m_loose$id == "GMC-V0001"][1]
+m_loose |>
+  filter(entity == trap_entity) |>
+  select(id, rep, score)
+```
+
+Three distinct register entries (`GMC-00413`, `GMC-00500`, `GMC-00522`) are now
+one entity, joined only because they happen to share a building. This is a real
+pattern: it is the shopping-mall problem that motivated the containment guards in
+the first place.
+
+### The two guards
+
+An exact strategy has no threshold, so it cannot be tuned the way a fuzzy score
+can. Instead it carries two guards that decide which proper-containment links are
+allowed to stand:
+
+- **`min_containment_tokens`** is a cardinality floor. A proper-subset link is
+  only kept when the contained (base) record has at least this many tokens. A
+  two-token venue name cannot reach a floor of three, so it can no longer absorb
+  longer listings.
+- **`min_base_rarity`** is a rarity-mass floor. It drops links where the
+  contained record's tokens are individually too common to carry identifying
+  weight, even if there are several of them.
+
+Setting the cardinality floor to three closes the trap:
+
+```{r mall-fixed}
+st_guarded <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  containment            = "forward",
+  min_containment_tokens = 3,
+  block_by               = c("postcode_area", "trade")
+)
+
+m_guarded <- multi_stage_search(
+  workshop_register, workshop_listings,
+  base_id = "reg_no", target_id = "listing_id",
+  strategies = list(st_guarded)
+)
+
+fixed_entity <- m_guarded$entity[m_guarded$id == "GMC-V0001"][1]
+m_guarded |>
+  filter(entity == fixed_entity) |>
+  select(id, rep, score)
+```
+
+The venue now keeps only its own true match: the bare "Trinity Workshops"
+listing, an equality match that the cardinality guard never touches (the floor
+gates proper-subset links, not identical sets). The three real workshops are
+free again.
+
+### The guard is not free
+
+That safety has a price. A floor of three also blocks legitimate subset links
+where the register name is short:
+
+```{r guard-cost}
+entity_recall(m_guarded, tiers = "slogan")
+```
+
+Slogan recovery drops from 119 to 106. The thirteen we lost are workshops whose
+register name is only two tokens ("Pollard Joinery"), so their genuine slogan
+listings can no longer clear the cardinality floor either. The guard cannot tell
+a two-token shop from a two-token mall. Tightening exact matching to keep out the
+mall necessarily keeps out those short real names too. The next section is how
+you get them back.
+
+## Staging: strict first, then forgiving
+
+The exact pass is cheap and precise but rigid; it drops the short slogans and
+never had a chance at movers or phonetics. A fuzzy `search_strategy()` is the
+opposite: tolerant, but more expensive and lower precision. You do not have to
+choose. `multi_stage_search()` runs a list of strategies in order, and each
+later stage only sees the records the earlier stages failed to match.
+
+Put the guarded exact strategy first and a plain fuzzy strategy second:
+
+```{r stage-exact-fuzzy}
+st_fuzzy <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.7
+)
+
+m_staged <- multi_stage_search(
+  workshop_register, workshop_listings,
+  base_id = "reg_no", target_id = "listing_id",
+  strategies = list(st_guarded, st_fuzzy)
+)
+
+entity_recall(m_staged)
+```
+
+Slogan recovery is back to 119: the strict exact pass took the long names safely,
+and the fuzzy pass picked up the thirteen short ones it had skipped, along with
+more of the variant tier. You kept the precision of exact matching on the bulk of
+the work and spent the expensive fuzzy scorer only on the residual.
+
+## A stage that follows names across geography
+
+Movers are still at zero. No mover listing shares a `postcode_area` with its
+register entry, and both stages so far block on `postcode_area`, so the two sides
+never meet.
+
+```{r mover-example}
+workshop_listings |>
+  filter(gen_tier == "mover") |>
+  select(listing_id, workshop, postcode_area, actual_link) |>
+  slice(1:3)
+```
+
+The fix is to block on the name itself instead of on geography. Two records
+co-block when they share a rare workshop-name token, so a distinctive name
+travels with the business wherever it moved.
+
+```{r rf-strategy}
+st_region_free <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by     = list("trade", block_on_tokens("workshop", max_df = 50)),
+  rarity_scope = "global",
+  threshold    = 0.7
+)
+```
+
+Two arguments carry this:
+
+- `block_on_tokens("workshop", max_df = 50)` makes each record block on its own
+  rare name tokens. The `max_df = 50` cap excludes boilerplate like "Joinery" or
+  "Ltd" that appears in too many entries to be a useful block key.
+- `rarity_scope = "global"` measures token rarity across the whole corpus rather
+  than within a block, so a nationally distinctive name reads as rare even where
+  several similar names cluster locally.
+
+Before setting the cap, look at what the hottest tokens are with
+`rarity_distribution()`:
+
+```{r rarity}
+rarity_distribution(workshop_register, id = "reg_no", strategy = st_region_free)
+```
+
+Without the cap, a common descriptor would pull a large share of the corpus into
+one block and make the overlap join both slow and noisy. The cap is the lever
+that keeps token blocking affordable.
+
+## A stage that matches names by sound
+
+The phonetic tier spells surnames by ear:
+
+```{r phonetic-example}
+phon <- workshop_listings |>
+  filter(gen_tier == "phonetic") |>
+  select(listing_id, workshop, actual_link)
+
+phon |>
+  left_join(select(workshop_register, reg_no, register = workshop),
+            by = c("actual_link" = "reg_no")) |>
+  select(listing = workshop, register) |>
+  head(5)
+```
+
+"Penell" and "Pennell" are different token strings, so neither exact nor token
+fuzzy matching connects them, but they share a Cologne phonetic code. A stage
+that drops short tokens (so codes for "Ltd" or "LLP" do not flood the match) and
+then encodes what remains will catch them:
+
+```{r phonetic-stage}
+st_phonetic <- search_strategy(
+  workshop ~ normalize_text() + word_tokens() + drop_short_tokens(min_nchar = 4) + as_cologne(),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.7
+)
+```
+
+## The full pipeline
+
+Stack all three in order of how much you trust them: exact first, then
+region-free fuzzy for the bulk and the movers, then phonetics for the residual
+sound-alikes.
+
+```{r full-pipeline}
+m_full <- multi_stage_search(
+  workshop_register, workshop_listings,
+  base_id = "reg_no", target_id = "listing_id",
+  strategies = list(st_guarded, st_region_free, st_phonetic)
+)
+
+entity_recall(m_full)
+```
+
+Every tier is now covered: the movers came in through token blocking, the
+phonetic names through the Cologne stage, and the slogan and variant tiers
+through the earlier passes. `compare_stages()` shows what each stage actually
+contributed:
+
+```{r compare-stages}
+stages <- compare_stages(m_full)
+stages
+```
+
+Each stage adds matches the earlier ones could not reach, and it only ever works
+on their leftovers, so the strict, cheap exact pass carries most of the load and
+the expensive stages run on a shrinking residual. The default plot draws that as
+a cumulative coverage curve:
+
+```{r compare-stages-plot, fig.alt = "Cumulative base records matched, rising and flattening across the three stages.", fig.width = 7, fig.height = 4.5}
+plot(stages)
+```
+
+The curve climbs steeply at the exact pass, then flattens: each later stage costs
+more per record recovered, which is exactly why you order them strict-to-loose.
+
+## Where to look next
+
+- **Large datasets**: the same strategies run on a DuckDB backend with no formula
+  changes. See *Working at scale with DuckDB*.
+- **Names that describe the same thing in different words**: when two records
+  share no tokens and no sounds (synonyms, free text, different languages), token
+  and phonetic matching both fail. `embedding_strategy()` matches on vector
+  similarity instead. See *Embedding-based matching*.
+- **Separating look-alikes that are not the same business**: the homonym tiers
+  need more than a threshold. A calibrated post-match filter learns the
+  difference from labelled pairs. See *Calibrating a false-positive filter*.

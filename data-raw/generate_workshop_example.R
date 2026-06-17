@@ -104,9 +104,11 @@ uk_streets <- c(
 )
 
 # Shared workshop venues -- a single hub token spans several unrelated workshops.
+# Disjoint from COLLISION_VENUES below: those three venue names are reserved for
+# the register-side containment trap and must each live in exactly one block.
 hub_venues <- c(
   "The Old Sawmill", "Maker's Yard", "The Timber Yard", "Wenlock Workshops",
-  "Riverside Works", "Trinity Workshops", "The Forge", "Kiln Lane Studios"
+  "Canalside Studios", "Bridgewater Mews", "Kiln Lane Studios", "Stanhope Yard"
 )
 
 # Common UK surnames for planted homonyms + target-only "new" listings. These are
@@ -364,7 +366,7 @@ homonym_listings <- homonym_reg |>
 # --- 5c. hub clusters: co-located workshops share a venue token ---------------
 #   Pick (area,trade) blocks with >= 4 register rows; each becomes one hub. Member
 #   listings carry "<workshop>, <venue>"; a bare "<venue>" row (no actual_link)
-#   is the containment-blocker trap (low-rarity shared token must not chain them).
+#   is a listing-side hub_trap (low-rarity shared token).
 hub_candidates <- register_core |>
   count(postcode_area, trade, name = "k") |>
   filter(k >= 4)
@@ -388,6 +390,78 @@ hub_listings <- pmap_dfr(hub_blocks, function(postcode_area, trade, k) {
     gen_tier = "hub_trap")
   bind_rows(member_rows, bare_row)
 })
+
+# --- 5c.2. Hub-collision clusters: the shared-venue trap (register side) -------
+#   The YP-mall problem: a shared workspace is itself registered as a guild member
+#   ("Trinity Workshops Ltd"). Forward containment then makes the venue's short
+#   token set a subset of every "<member>, Trinity Workshops" listing — false
+#   positives. min_containment_tokens = 3 blocks this: the venue has 2 tokens
+#   (after min_nchar = 3), which is below the guard; real workshop names carry 3+.
+#
+#   Three fixed venue names, each anchored to one trade for a clean block key.
+#   Each cluster: 3 hub_member listings + 1 bare hub_trap listing + 1 register entry.
+
+COLLISION_VENUES <- data.frame(
+  venue_name = c("Trinity Workshops", "The Forge",  "Riverside Works"),
+  trade      = c("Joiner",            "Carpenter",  "Shopfitter"),
+  stringsAsFactors = FALSE
+)
+
+collision_clusters <- lapply(seq_len(nrow(COLLISION_VENUES)), function(i) {
+  venue <- COLLISION_VENUES$venue_name[i]
+  tr    <- COLLISION_VENUES$trade[i]
+
+  cands <- register_core |>
+    filter(trade == tr) |>
+    count(postcode_area, town, name = "k") |>
+    filter(k >= 3)
+  if (nrow(cands) == 0) return(list(listings = tibble(), reg = tibble()))
+
+  blk     <- cands[sample(nrow(cands), 1), ]
+  members <- register_core |>
+    filter(trade == tr, postcode_area == blk$postcode_area) |>
+    slice_head(n = 3)
+
+  listings <- bind_rows(
+    members |>
+      transmute(
+        actual_link   = reg_no,
+        listing_name  = paste0(workshop, ", ", venue),
+        listing_owner = map2_chr(first, last, owner_messify),
+        trade, postcode_area, town, gen_tier = "hub_member"
+      ),
+    tibble(
+      actual_link = NA_character_, listing_name = venue,
+      listing_owner = NA_character_, trade = tr,
+      postcode_area = blk$postcode_area, town = blk$town,
+      gen_tier = "hub_trap"
+    )
+  )
+
+  # The venue itself is a guild-registered entity (the "mall" in the register).
+  reg_entry <- tibble(
+    reg_no        = sprintf("GMC-V%04d", i),
+    workshop      = venue,
+    proprietor    = NA_character_,
+    trade         = tr,
+    legal_form    = "Ltd",
+    postcode_area = blk$postcode_area,
+    town          = blk$town,
+    address       = paste(sample(1:180, 1), sample(uk_streets, 1)),
+    established   = sample(1985:2015, 1),
+    employees     = sample(3:8, 1),
+    apprentices   = 0L,
+    guild_member  = TRUE,
+    sic           = trade_sic$sic[trade_sic$trade == tr][1],
+    true_entity   = sprintf("GMC-V%04d", i),
+    gen_tier      = "hub_trap"
+  )
+
+  list(listings = listings, reg = reg_entry)
+})
+
+collision_listings <- bind_rows(lapply(collision_clusters, `[[`, "listings"))
+collision_register <- bind_rows(lapply(collision_clusters, `[[`, "reg"))
 
 # --- 5d. bare-category traps (single generic token; min_containment_tokens) ---
 #   Use single-word trades so the name reduces to ONE non-stopword token, the
@@ -423,7 +497,9 @@ new_listings <- tibble(
 # The matchable fields (workshop, proprietor, trade, postcode_area, town) share
 # names with workshop_register so an article writes ONE formula for both tables.
 workshop_listings <- bind_rows(
-  matched_listings, homonym_listings, hub_listings, category_listings, new_listings
+  matched_listings, homonym_listings,
+  hub_listings, collision_listings,
+  category_listings, new_listings
 ) |>
   mutate(listing_id = sprintf("L%05d", sample(seq_len(n()))), .before = 1) |>
   arrange(listing_id) |>
@@ -431,7 +507,7 @@ workshop_listings <- bind_rows(
   select(listing_id, workshop, proprietor, trade, postcode_area, town,
          actual_link, gen_tier)
 
-workshop_register <- register
+workshop_register <- bind_rows(register, collision_register)
 
 # =============================================================================
 # 6. Sanity checks -- assert each tier's defining token-set relationship holds

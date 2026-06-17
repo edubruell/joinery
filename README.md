@@ -43,18 +43,17 @@ devtools::install_github("edubruell/joinery")
 
 ## Minimal Example
 
-This example uses the package’s built-in sample data and will be expanded in the **Getting Started** vignette.
+This example uses the package’s built-in sample data. The **Getting Started** vignette walks the same path step by step and scores the result against a known answer key (`target_example$actual_link` holds the true link for each copied record).
 
 ```r
 library(joinery)
-library(data.table)
 
-# Load example data
+# Load example data (shipped as tibbles; joinery also takes data.frames / data.table / DuckDB)
 data("base_example")
 data("target_example")
 
 # Define a simple first-pass strategy
-hard_strategy <- search_strategy(
+strat <- search_strategy(
   Nachname   ~ normalize_text() + word_tokens(min_nchar = 3),
   Vorname    ~ normalize_text() + word_tokens(min_nchar = 3),
   Strasse    ~ normalize_street(lang = "de") + word_tokens(min_nchar = 3),
@@ -65,38 +64,56 @@ hard_strategy <- search_strategy(
 )
 
 # Inspect the tokenization
-inspect_tokens(base_example, "id_base", hard_strategy, Vorname)
+inspect_tokens(base_example, "id_base", strat, Vorname)
 
-# Detect duplicates within the base data
-duplicates <- detect_duplicates(
-  base_example, 
-  id = "id_base",
-  strategy = hard_strategy
-)
-
-base_dedupped <- deduplicate_table(
-  base_example, 
-  duplicates, 
-  id = "id_base"
-)
+# Detect and collapse duplicates within the base data
+duplicates    <- detect_duplicates(base_example, id = "id_base", strategy = strat)
+base_dedupped <- deduplicate_table(base_example, duplicates, id = "id_base")
 
 # Cross-table candidate matches
-matches_hard <- search_candidates(
+matches <- search_candidates(
   base_dedupped,
-  as.data.table(target_example),
+  target_example,
   base_id   = "id_base",
   target_id = "id_target",
-  strategy  = hard_strategy
+  strategy  = strat
 )
 
-# Unmatched residuals 
-extract_unmatched(base_dedupped, "id_base", matches_hard)
-extract_unmatched(target_example, "id_target", matches_hard)
+# Check the result, then read the residuals
+summarise_matches(matches, threshold = 0.8)
+extract_unmatched(base_dedupped, "id_base", matches)
+extract_unmatched(target_example, "id_target", matches)
+```
+
+### Stage exact, then fuzzy
+
+A cheap, strict exact pass first, then a tolerant fuzzy pass only on what is left:
+
+```r
+staged <- multi_stage_search(
+  base_dedupped,
+  target_example,
+  base_id   = "id_base",
+  target_id = "id_target",
+  strategies = list(
+    exact = exact_strategy(
+      Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+      Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),
+      Ort      ~ normalize_text(),
+      block_by = "Kreis"
+    ),
+    fuzzy = strat
+  )
+)
 ```
 
 ## Documentation
 
-Full documentation and a step-by-step tutorial are available in the package vignettes.
+A step-by-step tutorial is available in the Getting Started vignette:
+
+```r
+vignette("joinery", package = "joinery")
+```
 
 
 ## License

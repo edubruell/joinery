@@ -1,3 +1,79 @@
+# joinery 0.9.0
+
+## Phase 0.9: Staged Linkage, Region-Free Matching, and Documentation
+
+Delivers the Part-A staged-entity-resolution spine built during the v0.8 development cycle, two new production features (region-free linking and the fan-out guard), a batch of preparer improvements, and the first public-facing documentation (getting-started vignette, pkgdown site, example data).
+
+### Staged entity resolution (the Part-A spine)
+
+The central feature of this cycle: a composable, multi-pass linkage kernel that threads residuals between stages and resolves connected components once at the end.
+
+* **`resolve_entities()`**: connected-components kernel over an edge table. Accepts any `(id_a, id_b[, score])` data.table; returns a group table with a `rep` column identifying each component's representative. Optional `vertices =` adds singletons not present in any edge. Optional `rep_by =` chooses representatives by a named column (e.g. `"score"`) rather than by smallest id.
+* **`find_stopwords()`**: corpus-frequency helper that identifies token-level stopwords (high-df terms that carry no discriminating power) for a given column, suitable for supplying to `filter_stopwords()` or for inspecting the token distribution.
+* **`exact_strategy()` / `Exact_Strategy`**: score-1.0 token-set matching as a first-class strategy class (not a verb). Dispatches through the standard apply verbs (`detect_duplicates()`, `search_candidates()`), returns the standard output schema with `score == 1.0`, and is composable in `multi_stage_dedup()` / `multi_stage_search()` as an exact front. The fingerprint rides `prepare_search_data()`; residual extraction uses the existing `extract_unmatched()`. Both data.table and DuckDB backends.
+* **`materialize_records()`**: rehydrate-by-id semi-join generic. Given a data frame and a vector of ids, returns the original rows for those ids; the complement of `extract_unmatched()` for selective retrieval. All three backends.
+* **`rarity_distribution()`**: pre-match, scoring-free diagnostic. Runs `prepare_search_data()` + `compute_rarity()` without the overlap join, and reports the per-column df/rarity distribution plus the top-df offender list (fan-out drivers). Returns a `Rarity_Distribution` with a `suggested_min_rarity` per column. Use it to calibrate `min_rarity` / `max_token_df` before running search.
+* **`duckdb_control()`**: unified DuckDB execution-tuning object. Replaces the old loose `target_batch_size` / `min_batch_size` / `chunk_strategy` arguments (clean break). Consolidates batch sizes, scoring chunk key, per-chunk failure policy (`on_error = "skip" | "retry" | "stop"`), and progress into one `Duckdb_Control` object passed as `control =`. Chunking is execution, not semantics: it is never a `Search_Strategy` slot. Block-atomic chunking in `search_candidates()` ensures that a block is never split across chunks (splitting one would drop within-block cross-pairs). Failed chunks are recorded in `attr(result, "failed_chunks")` for post-hoc inspection.
+* **`multi_stage_dedup()` + `multi_stage_search()`**: two-face staged linkage over a shared engine (`R/internal_staging.R`). `multi_stage_dedup()` is the within-table face: successive passes accumulate edges, the residual carry-forward keeps each found group's representative as a bridge, and one final connected-components call resolves everything. `multi_stage_search()` is the cross-source face (directed search; hard rename of the former `multi_stage_match()`): matches entities across `base_table` / `target_table`, accumulates a directed ledger, and supports `collapse = "rep"` for collapse-and-continue bridging between stages. Both accept an ordered list of `Search_Strategy`, `Exact_Strategy`, or `Embedding_Strategy` objects. The `multi_stage_match()` name is removed; update call sites.
+* **`plan_strategy()`**: pre-match, pre-strategy blocking planner. Upstream of `audit_strategy()`: helps you *choose* a blocking key rather than grade one. Given a base table, a strategy (preparer pipeline only; `block_by` is ignored), and a list of `block_candidates`, it measures each candidate on four axes without ever computing token overlap: blocking-resolution frontier (block count, size distribution, brute-pair cost estimate, exact-twin co-blocking recall), exact-set persister rate (A2 yield), residual structure, and per-column discriminativeness (rarity distribution + cost curve + empty-column score ceiling). Returns a `Strategy_Plan`; default `plot()` is `frontier_plot()`. DuckDB samples with `SELECT *` and delegates to data.table; no pairs touch the connection.
+
+### Region-free linking
+
+Recovers the same entity across different geographic blocks (movers, name drift, year-over-year) without abandoning block-based cost control.
+
+* **`block_on_tokens(column, max_df, min_rarity, preparer, min_nchar)`**: token-blocking spec. Place it in the `block_by =` list of a `search_strategy()` alongside plain column names. In `prepare_search_data()`, each record is exploded against its own rare tokens of `column` into a derived `._btok` block column, so two records sharing any rare token co-block. The rarity/fan-out guard and the scoring join see `._btok` (via `.block_cols()`); entity resolution and DuckDB batch/chunk slicing use plain columns (via `.plain_block_cols()`) so a record matched under several block-tokens still resolves into one entity.
+* **`rarity_scope = "global"`** on `search_strategy()`: global rarity. Under `"global"`, token rarity is measured corpus-wide rather than within each block; a distinctive brand reads as a strong signal anywhere, and a globally common name gets low global rarity (dropped by `min_rarity`). The cost axis (df, max_token_df, fan-out guard) stays block-local regardless; only the rarity metric and the `min_rarity` distinctiveness floor follow `rarity_scope`. Both backends; the `explain_match` round-trip contract holds under global scope.
+
+### Always-on fan-out guard
+
+* **`max_fanout` / `on_fanout`** on `search_strategy()`: automatic cost ceiling. Estimates the overlap join's intermediate-row count from the pairs-free df histogram (`Σ df·(df−1)` for self / `Σ df_b·df_t` for cross) and, when it busts `max_fanout` (default `5e7`), auto-derives a `df ≤ cut` ceiling dropping the smallest set of near-zero-rarity hot tokens (`on_fanout = "cap"`, loud `cli_warn`) or aborts (`"abort"`); `"off"` disables. The cut is on the same df axis as `max_token_df` and identical on both backends. Supersedes the old dedup-only `max_comparisons` argument (removed; clean break). Unlike `min_rarity` / `max_token_df`, the guard is always on by default: it is the protection against a hot token fanning a dense block into a quadratic join.
+
+### Exact strategy enhancements
+
+* **Per-column `min_containment_tokens`** on `exact_strategy()`: a per-column minimum number of tokens the base record must contribute to a match for it to count as a containment hit. Prevents a single shared hub token from triggering a false-positive containment link when the base record has very few tokens.
+* **Feedback framing improvements**: the feedback term in the exact-strategy scoring is now framed consistently with the token-scoring kernel so contributions are comparable between exact and fuzzy stages in a multi-stage workflow.
+
+### New and improved preparers
+
+* **`drop_short_tokens(min_nchar = 2)`**: new preparer. Drops tokens shorter than `min_nchar` characters from a token list-column. Useful after phonetic encoding (encoders can produce short codes that act as hub tokens) or to strip uninformative single-character tokens.
+* **Phonetic encoders accept token list-columns**: `as_cologne()`, `as_soundex()`, `as_metaphone()`, and `as_nysiis()` now work on both raw character columns (string → code) and token list-columns produced by `word_tokens()` (token → code per element). This lets you apply phonetic encoding after tokenization rather than before, which is usually the right order.
+* **Vectorized `word_tokens()` + `filter_stopwords()`**: rewritten to operate group-wise on data.table token tables instead of row-by-row; throughput improvement roughly proportional to group size.
+* **Vectorized `drop_numeric_tokens()`, `token_shapes()`, `extract_initials()`**: same treatment; batch-safe for large token tables.
+* **`normalize_street()`** gains `drop_house_numbers` and `drop_stopwords` arguments: strips house numbers and common address stopwords (e.g. `"Str."`, `"Straße"`) before normalization, reducing token noise on address fields.
+* **DuckDB chunking vectorized**: `.chunk_block_consolidated()` is now per-block rather than per-row (`[.data.table` scoped), cutting overhead on wide block tables.
+
+### Calibration and validation improvements
+
+* **`on_missing` renormalization**: when a column's tokens are entirely absent for a record in a pair, the column's weight is redistributed among the present columns rather than silently dropped, so scores remain in `[0, 1]` regardless of missingness patterns.
+* **Comparison ID pre-flight** (`D1`): `search_candidates()` now checks that `base_id` and `target_id` are non-overlapping before the overlap join; overlapping id spaces produce spurious self-links that are hard to diagnose downstream.
+* **Non-unique-id pre-flight** (`D2`): `prepare_search_data()` errors early when the id column contains duplicates; downstream CC resolution assumes unique ids and silently gives wrong results otherwise.
+* **Calibration robustness**: `fit_filter()` and `apply_filter()` handle edge cases in small labelled sets (zero-variance columns, all-positive or all-negative splits) without crashing.
+
+### Example data
+
+* **`workshop_register`** + **`workshop_listings`**: synthetic woodworking-workshop data (chamber register vs. marketplace listings) with planted difficulty tiers (`gen_tier`) and `actual_link` ground truth per pair. Each feature tier (exact front + containment blocker, region-free mover, phonetic twin, fan-out hub) has a planted minority that measurably wins when the corresponding feature is switched on. Tibble dispatch for `exact_strategy` and `materialize_records` was added while building these datasets.
+
+### Documentation
+
+* **Getting-started vignette** (`vignette("getting-started", package = "joinery")`): end-to-end walkthrough on `base_example` / `target_example`: preprocessing, dedup, cross-table search, multi-stage exact+fuzzy, `explain_match`, precision/recall trade-off sweep. Tibble-first; `eval = TRUE`; fast enough for `R CMD check`.
+* **pkgdown site**: `_pkgdown.yml` with Litera bootswatch, grouped reference index (61 exports + 6 datasets in pipeline order), and favicons. `check_pkgdown()` clean. Build the site locally with `pkgdown::build_site()`; CI/GitHub Pages wiring deferred until the repo goes public.
+* **Roxygen markdown enabled**: `DESCRIPTION` carries `Roxygen: list(markdown = TRUE)`; all docstrings can now use standard Markdown formatting.
+* **Preparer docstring overhaul**: Tier-A verb descriptions rewritten; mechanical jargon swept; `@examples` added for `detect_duplicates()`, `search_candidates()`, and `resolve_entities()`.
+
+### Bug fixes
+
+* **`resolve_entities()`**: round-number numeric ids (e.g. `1e5`) are now coerced to plain decimal strings before the graph join, preventing a class-mismatch that dropped singletons when ids mixed integer and double representations.
+* **`summarise_matches()`** (DuckDB): score-histogram bin boundaries are clamped so floating-point values just above `1.0` land in the top bin rather than producing an underflow bin outside `[0, 1]`.
+* **`drop_joinery_temp_tables()`**: was missing `@export` despite having full roxygen documentation; it is now callable as documented.
+* **Exact set-equality kernel** (DuckDB): replaced the `O(N²)` self-join with a `GROUP BY` fingerprint aggregation; no change in results, substantial speedup on dense blocks.
+
+### Tests
+
+* `R CMD check` clean; full test suite passes.
+* DuckDB `resolve_entities` paths for empty-without-vertices and `vertices` singleton-fold now covered.
+
+---
+
 # joinery 0.8.0
 
 ## Phase 0.8: Stability & Quality Assurance
@@ -14,14 +90,14 @@ Consolidates the internals after the 0.7 calibration work, with a focus on consi
 
 ### Bug fixes surfaced by the YP practicality test
 
-* **DuckDB dedup empty-result schema** — `detect_duplicates()` on a DuckDB tbl now returns the full base schema with zero rows when no pairs cross threshold, so per-block results can be `UNION`-ed without a column-count mismatch.
-* **Filtered lazy DuckDB inputs** — every user-facing DuckDB method (`detect_duplicates`, `search_candidates`, `prepare_search_data`, `extract_unmatched`, `audit_strategy`, `summarise_matches`, embedding equivalents) now accepts `tbl(con, "x") |> filter(...)` inputs. Filtered lazies are silently materialised to a TEMP TABLE.
-* **Block-aware connected components in DuckDB dedup** — the recursive CTE now iterates per block instead of running one global recursion, which previously OOMed on disk at corpus scale. Result objects carry an `attr("wall_seconds")` for downstream wall-clock budgeting.
-* **Scoring now uses token SETS, not bags** — a token repeated within one record's column (e.g. `"Fritzel … Fritzel … Fritzel"`) previously inflated a pair's score through the token-overlap self-join, producing scores above the `sum(weights)` ceiling (up to 2.8 on real Yellow-Pages data) and breaking the `[0, 1]`-style threshold semantics. The scoring path on both backends now collapses within-record token multiplicity before computing rIP and the overlap join, so `score ∈ [0, sum(weights)]`. The fix is confined to scoring (`.score_pairs_sql`, `.score_token_pairs`, and `explain_match`'s attribution, which stay in lock-step for the round-trip contract); rarity is untouched, so `inverse_freq` keeps its corpus term-frequency definition. The change is a no-op for records whose tokens are already distinct.
+* **DuckDB dedup empty-result schema**: `detect_duplicates()` on a DuckDB tbl now returns the full base schema with zero rows when no pairs cross threshold, so per-block results can be `UNION`-ed without a column-count mismatch.
+* **Filtered lazy DuckDB inputs**: every user-facing DuckDB method (`detect_duplicates`, `search_candidates`, `prepare_search_data`, `extract_unmatched`, `audit_strategy`, `summarise_matches`, embedding equivalents) now accepts `tbl(con, "x") |> filter(...)` inputs. Filtered lazies are silently materialised to a TEMP TABLE.
+* **Block-aware connected components in DuckDB dedup**: the recursive CTE now iterates per block instead of running one global recursion, which previously OOMed on disk at corpus scale. Result objects carry an `attr("wall_seconds")` for downstream wall-clock budgeting.
+* **Scoring now uses token SETS, not bags**: a token repeated within one record's column (e.g. `"Fritzel … Fritzel … Fritzel"`) previously inflated a pair's score through the token-overlap self-join, producing scores above the `sum(weights)` ceiling (up to 2.8 on real Yellow-Pages data) and breaking the `[0, 1]`-style threshold semantics. The scoring path on both backends now collapses within-record token multiplicity before computing rIP and the overlap join, so `score ∈ [0, sum(weights)]`. The fix is confined to scoring (`.score_pairs_sql`, `.score_token_pairs`, and `explain_match`'s attribution, which stay in lock-step for the round-trip contract); rarity is untouched, so `inverse_freq` keeps its corpus term-frequency definition. The change is a no-op for records whose tokens are already distinct.
 
 ### New optional API
 
-* `summarise_matches(..., entity_cols = c(...))` — when supplied, counts duplicate groups whose listed columns are single-valued and fires a new `cluster_identical_name_street` recommendation that shadows the generic `duplicates_mega_cluster` advice. Useful for distinguishing real "stopword" clusters from upstream cardinality artefacts.
+* `summarise_matches(..., entity_cols = c(...))`: when supplied, counts duplicate groups whose listed columns are single-valued and fires a new `cluster_identical_name_street` recommendation that shadows the generic `duplicates_mega_cluster` advice. Useful for distinguishing real "stopword" clusters from upstream cardinality artefacts.
 * Recommendations catalog: new `suppresses` field lets a firing rule shadow another rule's message.
 
 ### Tests
@@ -131,18 +207,18 @@ This release implements advanced matching heuristics that significantly improve 
 
 ### New Features
 
-* **rIP Smoothing** — Four smoothing methods for token weights:
-  - `smoothing(method = "log")` — Log transformation
-  - `smoothing(method = "softmax", temperature = 1.0)` — Softmax with temperature
-  - `smoothing(method = "offset", alpha = 0.1)` — Additive smoothing
-  - `smoothing(method = "none")` — No smoothing (default)
+* **rIP Smoothing**: Four smoothing methods for token weights:
+  - `smoothing(method = "log")`: Log transformation
+  - `smoothing(method = "softmax", temperature = 1.0)`: Softmax with temperature
+  - `smoothing(method = "offset", alpha = 0.1)`: Additive smoothing
+  - `smoothing(method = "none")`: No smoothing (default)
   
-* **Containment** — Control maximum matches per record:
+* **Containment**: Control maximum matches per record:
   - `max_candidates` parameter limits top-N matches
   - Prevents one-token overmatching
   - Works with threshold filtering
   
-* **Feedback Weighting** — Penalize low token overlap:
+* **Feedback Weighting**: Penalize low token overlap:
   - `feedback_strength` parameter (0-1) controls intensity
   - Reduces noise in partial matches
   - Rewards comprehensive token overlap
