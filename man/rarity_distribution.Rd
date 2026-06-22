@@ -30,6 +30,15 @@ the ones that drive a match to balloon. Use it to set \code{min_rarity} and
 It never builds the pair set: it only tokenizes and measures rarity, so it
 is cheap enough to run on a full corpus before committing to a strategy.
 }
+\examples{
+strat <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by = c("postcode_area", "trade")
+)
+# Read the token distribution and the most common tokens before matching.
+rarity_distribution(workshop_register, "reg_no", strat)
+
+}
 \seealso{
 \code{\link[=search_strategy]{search_strategy()}} for the \code{min_rarity} / \code{max_token_df} levers
 this verb informs; \code{\link[=audit_strategy]{audit_strategy()}} for the broader pre-match audit.

@@ -431,6 +431,16 @@ expr_to_step <- function(expr) {
 #'
 #' @return A [Search_Strategy] object.
 #'
+#' @examples
+#' # Tokenize two name columns, block on region, keep pairs scoring at least 0.8.
+#' strat <- search_strategy(
+#'   Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = "Kreis",
+#'   threshold = 0.8
+#' )
+#' strat
+#'
 #' @export
 search_strategy <- function(...,
                             block_by   = NULL,

@@ -70,6 +70,19 @@ The strategy you pass supplies only the column preparation steps; its own
 \code{block_by} is ignored, since the blocking is exactly what you are choosing
 here.
 }
+\examples{
+strat <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3)
+)
+# Compare two candidate blockings side by side before committing to one.
+plan_strategy(
+  workshop_register, strat,
+  block_candidates = list(area       = "postcode_area",
+                          area_trade = c("postcode_area", "trade")),
+  base_id = "reg_no"
+)
+
+}
 \seealso{
 \code{\link[=audit_strategy]{audit_strategy()}} to grade a chosen strategy,
 \code{\link[=rarity_distribution]{rarity_distribution()}} for one column's distribution,

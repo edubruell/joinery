@@ -600,6 +600,24 @@
 #'
 #' @return A `Filter_Model` object.
 #'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.30
+#' )
+#' matches <- search_candidates(
+#'   workshop_listings, workshop_register,
+#'   base_id = "listing_id", target_id = "reg_no", strategy = strat
+#' )
+#' feats <- match_features(matches, strat,
+#'                         base = workshop_listings, id = "listing_id",
+#'                         target = workshop_register, target_id = "reg_no")
+#' # match_labels_example carries the same pairs with a hand-checked `equal` flag.
+#' model <- fit_filter(feats, match_labels_example)
+#' model
+#'
 #' @export
 fit_filter <- function(features, labels,
                        model = "logistic",
@@ -650,6 +668,24 @@ fit_filter <- function(features, labels,
 #' @param ... Reserved for future expansion.
 #'
 #' @return A `Calibrated_Matches` object.
+#'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.30
+#' )
+#' matches <- search_candidates(
+#'   workshop_listings, workshop_register,
+#'   base_id = "listing_id", target_id = "reg_no", strategy = strat
+#' )
+#' feats <- match_features(matches, strat,
+#'                         base = workshop_listings, id = "listing_id",
+#'                         target = workshop_register, target_id = "reg_no")
+#' model <- fit_filter(feats, match_labels_example)
+#' # Broadcast the true-positive probability back onto the match rows.
+#' apply_filter(feats, model, matches = matches)
 #'
 #' @export
 apply_filter <- function(features, filter_model,

@@ -22,3 +22,13 @@ A deduplicated version of \code{base_table}.
 Generic function that removes or merges duplicate records from a table
 based on duplicate pairs identified by \code{detect_duplicates()}.
 }
+\examples{
+ex <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by = c("postcode_area", "trade")
+)
+dups <- detect_duplicates(workshop_register, id = "reg_no", strategy = ex)
+deduped <- deduplicate_table(workshop_register, dups, id = "reg_no")
+c(before = nrow(workshop_register), after = nrow(deduped))
+
+}

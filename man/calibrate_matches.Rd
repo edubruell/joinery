@@ -29,3 +29,21 @@ High-level Q5 verb. Builds features via \code{\link[=match_features]{match_featu
 \code{\link[=apply_filter]{apply_filter()}} to return a \code{Calibrated_Matches} object enriched
 with \code{tp_prob} / \code{predicted_tp}. Dispatches on the strategy class.
 }
+\examples{
+strat <- search_strategy(
+  workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
+  proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.30
+)
+matches <- search_candidates(
+  workshop_listings, workshop_register,
+  base_id = "listing_id", target_id = "reg_no", strategy = strat
+)
+# One call: build features, fit the filter, apply it. Uses the shipped
+# labelled pairs, which line up with this exact search.
+calibrate_matches(matches, strat, labels = match_labels_example,
+                  base = workshop_listings, id = "listing_id",
+                  target = workshop_register, target_id = "reg_no")
+
+}

@@ -20,3 +20,17 @@ A \code{Match_Sample} object.
 Sampling diagnostic (Q4). Modes: \code{"high"}, \code{"low"},
 \code{"borderline"}, \code{"ambiguous"}, \code{"top_gap"}, \code{"random"}.
 }
+\examples{
+strat <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.7
+)
+matches <- search_candidates(
+  workshop_listings, workshop_register,
+  base_id = "listing_id", target_id = "reg_no", strategy = strat
+)
+# Pull the borderline pairs near the threshold, the ones worth eyeballing.
+sample_matches(matches, mode = "borderline", n = 5, threshold = 0.7)
+
+}

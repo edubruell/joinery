@@ -46,6 +46,23 @@ same group.
 
 For linking across two tables or several sources, use \code{\link[=multi_stage_search]{multi_stage_search()}}.
 }
+\examples{
+# Two passes over one table: exact token-set first, then a looser fuzzy pass
+# on whatever the exact pass left unmatched.
+exact <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by = c("postcode_area", "trade")
+)
+fuzzy <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.6
+)
+dups <- multi_stage_dedup(workshop_register, "reg_no",
+                          list(exact = exact, fuzzy = fuzzy))
+head(dups)
+
+}
 \seealso{
 \code{\link[=multi_stage_search]{multi_stage_search()}} for the cross-table version,
 \code{\link[=detect_duplicates]{detect_duplicates()}} for a single pass, \code{\link[=resolve_entities]{resolve_entities()}} for the

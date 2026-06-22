@@ -75,6 +75,27 @@ for example one record may carry only part of another's information, so it
 matters which side is searched against which. For finding duplicates within
 a single table, use \code{\link[=multi_stage_dedup]{multi_stage_dedup()}} instead.
 }
+\examples{
+# Follow each workshop across years: pool the panel, search it against itself,
+# exact first then fuzzy, collapsing each group found so later passes see less.
+exact <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by = c("postcode_area", "trade")
+)
+fuzzy <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.55
+)
+g <- multi_stage_search(
+  workshop_panel, workshop_panel,
+  base_id = "record_id", target_id = "record_id",
+  list(exact = exact, fuzzy = fuzzy),
+  self = TRUE, source_by = "year", collapse = "rep"
+)
+head(g)
+
+}
 \seealso{
 \code{\link[=multi_stage_dedup]{multi_stage_dedup()}} for the within-one-table version,
 \code{\link[=resolve_entities]{resolve_entities()}} for the grouping step, \code{\link[=exact_strategy]{exact_strategy()}} for the

@@ -27,3 +27,12 @@ computation, reports per-column token / rarity statistics and
 comparison count. Surfaces recommendations linking pre-match
 symptoms to strategy levers.
 }
+\examples{
+strat <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.7
+)
+audit_strategy(workshop_register, "reg_no", strat)
+
+}

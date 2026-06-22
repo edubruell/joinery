@@ -69,6 +69,20 @@ surviving key is materialised. It is safe \strong{only} behind a real \code{max_
 \code{min_rarity}) plus the always-on fan-out guard. Passing neither cap is a
 loud warning, not an error, but you almost always want one.
 }
+\examples{
+# Block on a rare word from the workshop name instead of a region, so a
+# workshop still co-blocks with its relocated self. The max_df cap keeps
+# common words ("joinery") from becoming block keys.
+strat <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by     = list(block_on_tokens("workshop", max_df = 50, min_nchar = 4),
+                      "trade"),
+  rarity_scope = "global",
+  threshold    = 0.6
+)
+strat
+
+}
 \seealso{
 \code{\link[=search_strategy]{search_strategy()}}
 }

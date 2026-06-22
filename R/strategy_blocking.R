@@ -216,6 +216,19 @@ Block_On_Tokens <- new_class(
 #'
 #' @seealso [search_strategy()]
 #'
+#' @examples
+#' # Block on a rare word from the workshop name instead of a region, so a
+#' # workshop still co-blocks with its relocated self. The max_df cap keeps
+#' # common words ("joinery") from becoming block keys.
+#' strat <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by     = list(block_on_tokens("workshop", max_df = 50, min_nchar = 4),
+#'                       "trade"),
+#'   rarity_scope = "global",
+#'   threshold    = 0.6
+#' )
+#' strat
+#'
 #' @export
 block_on_tokens <- function(column,
                             max_df     = Inf,

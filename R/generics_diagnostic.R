@@ -34,6 +34,14 @@
 #'
 #' @return A `Strategy_Audit` object.
 #'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.7
+#' )
+#' audit_strategy(workshop_register, "reg_no", strat)
+#'
 #' @export
 audit_strategy <- new_generic(
   "audit_strategy",
@@ -95,6 +103,23 @@ summarise_matches <- new_generic(
 #'
 #' @return A `Match_Explanation` object.
 #'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.7
+#' )
+#' matches <- search_candidates(
+#'   workshop_listings, workshop_register,
+#'   base_id = "listing_id", target_id = "reg_no", strategy = strat
+#' )
+#' # Break one pair's score down into its per-token contributions.
+#' first_id <- matches$match_id[matches$source == "target"][1]
+#' explain_match(matches, strat,
+#'               base = workshop_listings, id = "listing_id",
+#'               target = workshop_register, target_id = "reg_no",
+#'               match_id = first_id)
+#'
 #' @export
 explain_match <- new_generic(
   "explain_match",
@@ -114,6 +139,19 @@ explain_match <- new_generic(
 #'   and mode-specific extras (e.g. `threshold` for `"borderline"`).
 #'
 #' @return A `Match_Sample` object.
+#'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.7
+#' )
+#' matches <- search_candidates(
+#'   workshop_listings, workshop_register,
+#'   base_id = "listing_id", target_id = "reg_no", strategy = strat
+#' )
+#' # Pull the borderline pairs near the threshold, the ones worth eyeballing.
+#' sample_matches(matches, mode = "borderline", n = 5, threshold = 0.7)
 #'
 #' @export
 sample_matches <- new_generic(
@@ -137,6 +175,25 @@ sample_matches <- new_generic(
 #'   accept `base` and `target` for coverage.
 #'
 #' @return A `Stage_Comparison` object.
+#'
+#' @examples
+#' exact <- exact_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by = c("postcode_area", "trade")
+#' )
+#' fuzzy <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.55
+#' )
+#' g <- multi_stage_search(
+#'   workshop_panel, workshop_panel,
+#'   base_id = "record_id", target_id = "record_id",
+#'   list(exact = exact, fuzzy = fuzzy),
+#'   self = TRUE, source_by = "year", collapse = "rep"
+#' )
+#' # See how much each pass added that earlier passes had not reached.
+#' compare_stages(g, base = workshop_panel, target = workshop_panel)
 #'
 #' @export
 compare_stages <- new_generic(
@@ -168,6 +225,14 @@ compare_stages <- new_generic(
 #'
 #' @seealso [search_strategy()] for the `min_rarity` / `max_token_df` levers
 #'   this verb informs; [audit_strategy()] for the broader pre-match audit.
+#'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by = c("postcode_area", "trade")
+#' )
+#' # Read the token distribution and the most common tokens before matching.
+#' rarity_distribution(workshop_register, "reg_no", strat)
 #'
 #' @export
 rarity_distribution <- new_generic(
@@ -223,6 +288,18 @@ rarity_distribution <- new_generic(
 #' @seealso [audit_strategy()] to grade a chosen strategy,
 #'   [rarity_distribution()] for one column's distribution,
 #'   [exact_strategy()] for the front stage it sizes.
+#'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3)
+#' )
+#' # Compare two candidate blockings side by side before committing to one.
+#' plan_strategy(
+#'   workshop_register, strat,
+#'   block_candidates = list(area       = "postcode_area",
+#'                           area_trade = c("postcode_area", "trade")),
+#'   base_id = "reg_no"
+#' )
 #'
 #' @export
 plan_strategy <- new_generic(

@@ -44,3 +44,22 @@ external dependencies. The features object is the input from
 \code{\link[=match_features]{match_features()}}; labels carry the \code{equal} column produced by
 \code{\link[=import_labels]{import_labels()}}.
 }
+\examples{
+strat <- search_strategy(
+  workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
+  proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.30
+)
+matches <- search_candidates(
+  workshop_listings, workshop_register,
+  base_id = "listing_id", target_id = "reg_no", strategy = strat
+)
+feats <- match_features(matches, strat,
+                        base = workshop_listings, id = "listing_id",
+                        target = workshop_register, target_id = "reg_no")
+# match_labels_example carries the same pairs with a hand-checked `equal` flag.
+model <- fit_filter(feats, match_labels_example)
+model
+
+}

@@ -25,3 +25,21 @@ second positional argument: a \code{\link{Search_Strategy}} triggers
 reconstruction from raw inputs; a tokens-shaped table is used
 directly.
 }
+\examples{
+strat <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.7
+)
+matches <- search_candidates(
+  workshop_listings, workshop_register,
+  base_id = "listing_id", target_id = "reg_no", strategy = strat
+)
+# Break one pair's score down into its per-token contributions.
+first_id <- matches$match_id[matches$source == "target"][1]
+explain_match(matches, strat,
+              base = workshop_listings, id = "listing_id",
+              target = workshop_register, target_id = "reg_no",
+              match_id = first_id)
+
+}

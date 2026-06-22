@@ -60,6 +60,28 @@ pathological block from the rest of the run.
 Chunking is a DuckDB (out-of-core) concern; the in-memory data.table backend
 ignores it.
 }
+\examples{
+# The control object just bundles execution knobs; it carries no data.
+ctrl <- duckdb_control(target_batch_size = 5e5, on_error = "skip")
+ctrl
+
+\dontrun{
+# Pass it to a verb running on a DuckDB table.
+library(duckdb)
+library(DBI)
+library(dplyr)
+con <- dbConnect(duckdb::duckdb(), ":memory:")
+dbWriteTable(con, "reg", as.data.frame(workshop_register))
+strat <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.7
+)
+detect_duplicates(tbl(con, "reg"), "reg_no", strat, control = ctrl)
+dbDisconnect(con, shutdown = TRUE)
+}
+
+}
 \seealso{
 \code{\link[=prepare_search_data]{prepare_search_data()}}, \code{\link[=detect_duplicates]{detect_duplicates()}}, \code{\link[=search_candidates]{search_candidates()}}.
 }

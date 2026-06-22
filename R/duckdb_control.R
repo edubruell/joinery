@@ -151,6 +151,27 @@ method(print.Duckdb_Control, Duckdb_Control) <- function(x, ...) {
 #'
 #' @seealso [prepare_search_data()], [detect_duplicates()], [search_candidates()].
 #'
+#' @examples
+#' # The control object just bundles execution knobs; it carries no data.
+#' ctrl <- duckdb_control(target_batch_size = 5e5, on_error = "skip")
+#' ctrl
+#'
+#' \dontrun{
+#' # Pass it to a verb running on a DuckDB table.
+#' library(duckdb)
+#' library(DBI)
+#' library(dplyr)
+#' con <- dbConnect(duckdb::duckdb(), ":memory:")
+#' dbWriteTable(con, "reg", as.data.frame(workshop_register))
+#' strat <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.7
+#' )
+#' detect_duplicates(tbl(con, "reg"), "reg_no", strat, control = ctrl)
+#' dbDisconnect(con, shutdown = TRUE)
+#' }
+#'
 #' @export
 duckdb_control <- function(target_batch_size = NULL,
                            min_batch_size    = NULL,

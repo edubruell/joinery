@@ -87,6 +87,23 @@ prepare_auxiliary_registry <- new_generic(
 #' @return A [`Match_Features`] object wrapping a wide feature
 #'   `data.table`.
 #'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.30
+#' )
+#' matches <- search_candidates(
+#'   workshop_listings, workshop_register,
+#'   base_id = "listing_id", target_id = "reg_no", strategy = strat
+#' )
+#' # One row per pair, with the features a filter can learn from.
+#' feats <- match_features(matches, strat,
+#'                         base = workshop_listings, id = "listing_id",
+#'                         target = workshop_register, target_id = "reg_no")
+#' feats
+#'
 #' @export
 match_features <- new_generic(
   "match_features",
@@ -114,6 +131,23 @@ match_features <- new_generic(
 #'   `include_block_stats`, `method`).
 #'
 #' @return A `Calibrated_Matches` object.
+#'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.30
+#' )
+#' matches <- search_candidates(
+#'   workshop_listings, workshop_register,
+#'   base_id = "listing_id", target_id = "reg_no", strategy = strat
+#' )
+#' # One call: build features, fit the filter, apply it. Uses the shipped
+#' # labelled pairs, which line up with this exact search.
+#' calibrate_matches(matches, strat, labels = match_labels_example,
+#'                   base = workshop_listings, id = "listing_id",
+#'                   target = workshop_register, target_id = "reg_no")
 #'
 #' @export
 calibrate_matches <- new_generic(

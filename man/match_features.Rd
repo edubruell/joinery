@@ -51,3 +51,21 @@ the full token schema (core + token-side columns + string similarity).
 An \code{\link{Embedding_Strategy}} returns the reduced "embedding" schema
 (core columns + string similarity + \code{cosine_sim} + embedding norms).
 }
+\examples{
+strat <- search_strategy(
+  workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
+  proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.30
+)
+matches <- search_candidates(
+  workshop_listings, workshop_register,
+  base_id = "listing_id", target_id = "reg_no", strategy = strat
+)
+# One row per pair, with the features a filter can learn from.
+feats <- match_features(matches, strat,
+                        base = workshop_listings, id = "listing_id",
+                        target = workshop_register, target_id = "reg_no")
+feats
+
+}

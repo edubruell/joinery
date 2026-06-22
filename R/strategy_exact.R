@@ -218,6 +218,16 @@ method(print.Search_Strategy, Exact_Strategy) <- function(x, ...) {
 #' @seealso [search_strategy()], [detect_duplicates()], [search_candidates()],
 #'   [extract_unmatched()].
 #'
+#' @examples
+#' # Link only workshops whose name tokens are identical within the same area
+#' # and trade. No threshold to tune, and blank columns do not sink a match.
+#' ex <- exact_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by = c("postcode_area", "trade")
+#' )
+#' dups <- detect_duplicates(workshop_register, id = "reg_no", strategy = ex)
+#' head(dups)
+#'
 #' @export
 exact_strategy <- function(...,
                            block_by               = NULL,

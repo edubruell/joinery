@@ -65,6 +65,17 @@ on whatever is left): the leftover records come from \code{\link[=extract_unmatc
 and \code{\link[=multi_stage_dedup]{multi_stage_dedup()}} / \code{\link[=multi_stage_search]{multi_stage_search()}} thread them through for
 you when you pass \code{list(exact_strategy(...), search_strategy(...))}.
 }
+\examples{
+# Link only workshops whose name tokens are identical within the same area
+# and trade. No threshold to tune, and blank columns do not sink a match.
+ex <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by = c("postcode_area", "trade")
+)
+dups <- detect_duplicates(workshop_register, id = "reg_no", strategy = ex)
+head(dups)
+
+}
 \seealso{
 \code{\link[=search_strategy]{search_strategy()}}, \code{\link[=detect_duplicates]{detect_duplicates()}}, \code{\link[=search_candidates]{search_candidates()}},
 \code{\link[=extract_unmatched]{extract_unmatched()}}.

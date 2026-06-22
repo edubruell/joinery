@@ -23,3 +23,23 @@ per-stage score distributions. Note that \code{\link[=summarise_matches]{summari
 verb when they want per-stage analysis (see
 \code{notes/diagnostics_design.md}).
 }
+\examples{
+exact <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by = c("postcode_area", "trade")
+)
+fuzzy <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.55
+)
+g <- multi_stage_search(
+  workshop_panel, workshop_panel,
+  base_id = "record_id", target_id = "record_id",
+  list(exact = exact, fuzzy = fuzzy),
+  self = TRUE, source_by = "year", collapse = "rep"
+)
+# See how much each pass added that earlier passes had not reached.
+compare_stages(g, base = workshop_panel, target = workshop_panel)
+
+}

@@ -143,3 +143,14 @@ preprocessed for token index based record linkage, along with optional
 weights, blocking variables, rarity computation method, rIP smoothing,
 and similarity threshold.
 }
+\examples{
+# Tokenize two name columns, block on region, keep pairs scoring at least 0.8.
+strat <- search_strategy(
+  Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+  Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = "Kreis",
+  threshold = 0.8
+)
+strat
+
+}

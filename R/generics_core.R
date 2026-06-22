@@ -169,6 +169,15 @@ resolve_entities <- new_generic(
 #'
 #' @return A deduplicated version of `base_table`.
 #'
+#' @examples
+#' ex <- exact_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by = c("postcode_area", "trade")
+#' )
+#' dups <- detect_duplicates(workshop_register, id = "reg_no", strategy = ex)
+#' deduped <- deduplicate_table(workshop_register, dups, id = "reg_no")
+#' c(before = nrow(workshop_register), after = nrow(deduped))
+#'
 #' @export
 deduplicate_table <- new_generic("deduplicate_table",
                                  c("base_table", "duplicates", "id"))
@@ -289,6 +298,20 @@ compute_rarity <- new_generic(
 #' @return A subset of `data` containing only records whose IDs do not appear
 #'   in `matches`.
 #'
+#' @examples
+#' strat <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.7
+#' )
+#' matches <- search_candidates(
+#'   workshop_listings, workshop_register,
+#'   base_id = "listing_id", target_id = "reg_no", strategy = strat
+#' )
+#' # The listings that found no register match, ready for a looser next pass.
+#' leftover <- extract_unmatched(workshop_listings, "listing_id", matches)
+#' nrow(leftover)
+#'
 #' @export
 extract_unmatched <- new_generic(
   "extract_unmatched",
@@ -405,6 +428,26 @@ materialize_records <- new_generic(
 #'   [resolve_entities()] for the grouping step, [exact_strategy()] for the
 #'   usual front stage.
 #'
+#' @examples
+#' # Follow each workshop across years: pool the panel, search it against itself,
+#' # exact first then fuzzy, collapsing each group found so later passes see less.
+#' exact <- exact_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by = c("postcode_area", "trade")
+#' )
+#' fuzzy <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.55
+#' )
+#' g <- multi_stage_search(
+#'   workshop_panel, workshop_panel,
+#'   base_id = "record_id", target_id = "record_id",
+#'   list(exact = exact, fuzzy = fuzzy),
+#'   self = TRUE, source_by = "year", collapse = "rep"
+#' )
+#' head(g)
+#'
 #' @export
 multi_stage_search <- new_generic(
   "multi_stage_search",
@@ -450,6 +493,22 @@ multi_stage_search <- new_generic(
 #' @seealso [multi_stage_search()] for the cross-table version,
 #'   [detect_duplicates()] for a single pass, [resolve_entities()] for the
 #'   grouping step.
+#'
+#' @examples
+#' # Two passes over one table: exact token-set first, then a looser fuzzy pass
+#' # on whatever the exact pass left unmatched.
+#' exact <- exact_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by = c("postcode_area", "trade")
+#' )
+#' fuzzy <- search_strategy(
+#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by  = c("postcode_area", "trade"),
+#'   threshold = 0.6
+#' )
+#' dups <- multi_stage_dedup(workshop_register, "reg_no",
+#'                           list(exact = exact, fuzzy = fuzzy))
+#' head(dups)
 #'
 #' @export
 multi_stage_dedup <- new_generic(
