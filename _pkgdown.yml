@@ -11,12 +11,20 @@ navbar:
     articles:
       text: Articles
       menu:
-        - text: "Get Started"
+        - text: "Get started"
           href: articles/joinery.html
         - text: "-------"
-        - text: "Features"
-        - text: "Beyond the Basics: Fuzzy and Exact Strategies"
+        - text: "Workflows"
+        - text: "Beyond the basics: fuzzy and exact strategies"
           href: articles/features.html
+        - text: "Matching across years and sources"
+          href: articles/staged.html
+        - text: "Calibrating a false-positive filter"
+          href: articles/calibration.html
+        - text: "Embedding-based matching"
+          href: articles/embeddings.html
+        - text: "Working at scale with DuckDB"
+          href: articles/duckdb.html
 
 template:
   bootstrap: 5
@@ -157,5 +165,7 @@ reference:
       - target_example
       - workshop_register
       - workshop_listings
+      - workshop_panel
+      - match_labels_example
       - street_types
       - street_stopwords

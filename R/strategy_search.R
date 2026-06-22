@@ -339,8 +339,36 @@ expr_to_step <- function(expr) {
 #'   key values. Default is `NULL` (no blocking).
 #' @param weights Optional named numeric vector of weights for similarity scoring.
 #'   Names should correspond to columns. Default is `numeric()` (uniform weights).
-#' @param rarity Character scalar specifying the rarity computation method.
-#'   Default is `"inverse_freq"`.
+#' @param rarity Character scalar choosing how a token's rarity (its
+#'   informativeness, the weight it carries in scoring) is computed from token
+#'   counts. A shared rare token is strong evidence two records match; a shared
+#'   common one is weak. The four methods differ in how hard they push common
+#'   tokens down. Let `f` be the token's frequency, `df` its document frequency
+#'   (how many records contain it), and `N` the record count, all measured over
+#'   the scope set by `rarity_scope`. One of:
+#'   \describe{
+#'     \item{`"inverse_freq"`}{(default) `rarity = 1 / f`. Simple and robust: a
+#'       token seen once is maximally rare, one seen often counts for little. A
+#'       good first choice and what every other article uses.}
+#'     \item{`"smoothed_inverse_freq"`}{`rarity = 1 / (f + 1)`. The same shape,
+#'       damped so the very rarest tokens do not dominate quite as sharply. Reach
+#'       for it when single-occurrence tokens (often typos) are swinging scores
+#'       too much.}
+#'     \item{`"tfidf"`}{`rarity = tf * idf` with `tf = f / sum(f)` and
+#'       `idf = log(1 + N / df)`. Weighs a token by how few records carry it, not
+#'       just its raw count. Use when the same token recurs at very different
+#'       rates across columns or blocks and you want document spread to matter.}
+#'     \item{`"bm25"`}{`rarity = log((N - df + 0.5) / (df + 0.5))`, the Okapi BM25
+#'       inverse-document-frequency term. The most aggressive: it drives common
+#'       tokens toward zero and turns *negative* for a token in more than half the
+#'       records, which actively penalises boilerplate. Use on corpora thick with
+#'       shared legal-form or trade words ("Ltd", "Joinery") that you want
+#'       suppressed hard.}
+#'   }
+#'   Default is `"inverse_freq"`; most linkages never need to change it. Inspect
+#'   the token distribution with [rarity_distribution()] before switching, and
+#'   note `rarity_scope` decides whether these counts are block-local or
+#'   corpus-wide.
 #' @param rarity_scope Character scalar, `"block"` (default) or `"global"`,
 #'   selecting the scope over which a token's rarity (informativeness) is
 #'   measured. `"block"` measures rarity within each block (the historical and

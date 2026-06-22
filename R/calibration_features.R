@@ -221,9 +221,9 @@
 #'   to `base_id`).
 #' @param columns character vector - columns to compute string similarity on.
 #'   Columns absent from `base_dt` or `target_dt` are silently skipped.
-#' @param method stringdist method. Scalar applied to every column
-#'   (default `"jw"`), or a named character vector for per-column methods
-#'   (scalar is the degenerate single-element case).
+#' @param method stringdist method applied to every column (default
+#'   `"jw"`). Only a scalar is honored today; the named-by-column vector
+#'   form is a reserved shape for forthcoming per-column comparators.
 #'
 #' @return data.table with one row per input pair (in input order) carrying
 #'   `sim_sf_<col>` and `sim_fs_<col>` columns for each col in `columns`.
@@ -236,6 +236,13 @@
       "String similarity columns require the {.pkg stringdist} package.",
       "i" = "Install it with {.code install.packages('stringdist')}.",
       "i" = "Or call {.code match_features(..., include_string_sim = FALSE)}."
+    ))
+  }
+  if (length(method) != 1L) {
+    cli::cli_abort(c(
+      "{.arg method} must be a single stringdist method.",
+      "i" = "Per-column (named-vector) methods are a reserved shape, not yet \\
+             implemented; pass a scalar such as {.val jw}."
     ))
   }
   if (is.null(target_id)) target_id <- base_id

@@ -1,0 +1,256 @@
+---
+title: "Working at scale with DuckDB"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Working at scale with DuckDB}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  message  = FALSE,
+  warning  = FALSE
+)
+```
+
+Every other article in this set works on a table that fits in memory. That is the
+right tool for a few hundred thousand records, and most jobs never grow past it.
+But some do. A business directory published every year for two decades is tens of
+millions of listings, and the moment the table no longer fits in RAM the
+in-memory backend stops being an option. The matching problem has not changed.
+What changed is the bench it sits on.
+
+joinery's answer is that the verbs do not care where the table lives. Hand them a
+DuckDB table instead of a data frame and the same code runs: the database holds
+the records, does the large joins on disk, and hands back only what you ask for.
+You write the strategy once and it runs on either backend, so you can prototype on
+a small in-memory slice and run the full corpus through DuckDB without rewriting a
+line of matching logic.
+
+This article shows that swap on a small panel you can actually run, then explains
+the one new object you need at scale and closes with what the same code did on a
+real corpus of 51 million listings.
+
+```{r load}
+library(joinery)
+library(duckdb)
+library(DBI)
+library(dplyr)
+library(data.table)
+```
+
+## The same job, a bigger bench
+
+We use `workshop_panel`, the multi-year panel of woodworking workshops from the
+[matching across years and sources](staged.html) article. That article explains
+*why* the strategies below are shaped the way they are: an exact pass for the
+clean rows, a fuzzy pass for drifting names, a mover pass that blocks on a rare
+name token to reach across relocations. Here the strategies are a given. The
+subject is the backend underneath them.
+
+The panel is small enough to run in seconds, which is the point: it lets you watch
+the backend swap with your own eyes before you trust it on something you cannot
+hold in memory.
+
+```{r data}
+c(rows = nrow(workshop_panel),
+  workshops = uniqueN(workshop_panel$true_entity),
+  years = uniqueN(workshop_panel$year))
+```
+
+## Putting the table in DuckDB
+
+A DuckDB table is just a connection plus a lazy reference to a named table. You
+write your data in once, then point `tbl()` at it. Everything downstream treats
+that reference exactly as it would a data frame.
+
+```{r connect}
+con <- dbConnect(duckdb::duckdb(), ":memory:")
+dbWriteTable(con, "panel", as.data.frame(workshop_panel), overwrite = TRUE)
+
+panel_db <- tbl(con, "panel")
+```
+
+A real job points the connection at a file on disk rather than `":memory:"`, so
+the database, the temporary tables, and the intermediate joins all live on disk
+and never have to fit in RAM at once. Nothing else about the code changes.
+
+## The same verbs, unchanged
+
+Here are the three staged strategies, identical to the staged-search article.
+
+```{r strategies}
+exact <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by = c("postcode_area", "trade")
+)
+
+fuzzy <- search_strategy(
+  workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
+  proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.55
+)
+
+mover <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by     = list(block_on_tokens("workshop", max_df = 50, min_nchar = 4),
+                      "trade"),
+  rarity_scope = "global",
+  threshold    = 0.6
+)
+```
+
+Now run the staged search. This is the same `multi_stage_search()` call as the
+in-memory article, with one addition: `control = duckdb_control()` says how the
+run should be carved up on the database. We will look at that object in a moment;
+the default is fine for a panel this size.
+
+```{r run}
+g <- multi_stage_search(
+  panel_db, panel_db,
+  base_id = "record_id", target_id = "record_id",
+  list(exact = exact, fuzzy = fuzzy, mover = mover),
+  self = TRUE, source_by = "year", collapse = "rep",
+  control = duckdb_control(progress = FALSE)
+)
+```
+
+The result is a lazy DuckDB table, not a data frame. Nothing has been pulled into
+R yet. The entity grouping lives in the database until you ask for it with
+`collect()`, which is the moment the plan runs and uses memory. On a corpus of
+millions you `collect()` the grouping (one row per record, small) rather than the
+intermediate joins, so what comes back to R stays modest no matter how big the
+input was.
+
+```{r collect}
+grouping <- collect(g)
+head(grouping, 4)
+```
+
+The columns are exactly the ones the in-memory backend returns: `entity` is the
+recovered identity, `source` and `covered_sources` carry the year and the
+trajectory length, `stage` records which pass attached the record. From here it is
+an ordinary collected table, so score it exactly as the in-memory article does, by
+checking how many true workshops land in a single entity.
+
+```{r score}
+intact <- as.data.table(grouping)[, .(record_id = id, entity)] |>
+  merge(as.data.table(workshop_panel)[, .(record_id, true_entity)],
+        by = "record_id")
+intact[, .(n_entities = uniqueN(entity)), by = true_entity][
+  , .(intact = sum(n_entities == 1), total = .N)]
+```
+
+This is the result that matters most in the whole article: it is **identical** to
+the in-memory run, down to the per-stage counts. The backend changed where the
+work happened, not what it found. The diagnostic verbs follow the table too, so
+`compare_stages()` reads the DuckDB result with no special handling.
+
+```{r compare}
+compare_stages(g, base = panel_db, target = panel_db)
+```
+
+When you are finished, close the connection. A file-backed database also flushes
+to disk here.
+
+```{r disconnect}
+dbDisconnect(con, shutdown = TRUE)
+```
+
+## Controlling how the run is carved up
+
+On `r nrow(workshop_panel)` rows the defaults are invisible. On 50 million they are the difference
+between a run that finishes and one that runs the machine out of memory. That is
+what `duckdb_control()` is for. It is worth being precise about what it does and
+does not touch.
+
+The strategy decides **what matches**: which columns, how they are tokenized, how
+rare a shared token has to be, where the threshold sits. The control decides
+**how the run executes**: how the table is broken into pieces, how big those
+pieces are, what happens when one of them fails. These are deliberately separate.
+The same strategy needs heavy carving at 50 million rows and none at a thousand,
+so how the work is split can never be a matching decision. You pass the control
+to the same verbs, as `control =`.
+
+```{r control}
+ctrl <- duckdb_control(
+  target_batch_size = 5e5,                 # rows per piece; NULL auto-tunes from memory
+  chunk_by          = NULL,                 # key the scoring join splits on; NULL auto-derives
+  chunk_strategy    = "block_consolidated", # how whole blocks are packed into pieces
+  on_error          = "skip"                # what to do if one piece fails
+)
+```
+
+Three ideas are worth understanding before you tune anything.
+
+**Splitting is safe in two different ways, and the backend knows the difference.**
+Turning text into tokens happens one row at a time, so that step can be split
+anywhere. Finding matching pairs is different: a pair can only form between two
+records in the same block, so a block can never be split across pieces or the
+pairs that cross the split would simply vanish. The backend respects that
+automatically. It packs whole blocks into each scoring piece and never cuts one in
+half. Two knobs steer that packing. `chunk_by` names the key the scoring join
+splits on; left at `NULL` it derives a sensible one when the table is large and
+leaves small tables in one piece. `chunk_strategy` chooses how whole blocks are
+grouped into pieces: the default `"block_consolidated"` packs small blocks
+together to keep the piece count down, while `"block_first"` isolates blocks and
+`"even"` ignores block structure entirely.
+
+**A bad block should not sink the whole run.** On a corpus this size there is
+always one pathological block, a postcode crammed with boilerplate names, that
+blows up into far more pairs than the rest. `on_error = "skip"` records that piece
+and moves on, so a single bad block costs you that block, not the twelve hours
+that came before it. `"retry"` gives it one more attempt with more conservative
+settings first; `"stop"` re-raises, which is what you want while you are still
+debugging a strategy.
+
+**Progress reports itself on long jobs.** When a run is large enough to take real
+time, the backend prints which piece it is on out of how many, so a multi-hour job
+is never a silent prompt. You can force it on or off with `progress`.
+
+## At scale: a real directory
+
+The synthetic panel above is the mechanism. Here is what the same mechanism did on
+the corpus it was built for.
+
+The motivating job was a national business directory, published yearly for two
+decades: roughly **51 million listings**, the same firms reappearing year after
+year under names and addresses that drift, get re-spelled, and relocate. The goal
+was one panel that follows each firm through time, the same goal as the small
+example, three orders of magnitude larger.
+
+The shape of the work was exactly the staged search you just ran, with the
+database doing the carrying:
+
+- Block by region and industry, so a firm is only ever compared against plausible
+  neighbours rather than the whole country.
+- Deduplicate within each year first, then link across years in increasingly
+  tolerant passes, collapsing each firm as it is found so later passes search a
+  smaller space. This is the `collapse = "rep"` bridge from the small example,
+  earning its keep across twenty years of drift instead of five.
+- Fill short gaps in each firm's trajectory afterward, so a firm missing from a
+  single year's directory is not mistaken for two separate firms.
+
+That pipeline resolved the 51 million listings into about **7.5 million distinct
+firms**, with roughly **2% of panel rows** reconstructed as short within-firm gaps.
+The same `duckdb_control()` failure isolation above mattered in practice: on a
+corpus that size a handful of dense blocks misbehave, and skipping them kept the
+run moving instead of forcing a restart from the top.
+
+The lesson is the one this article opened with. The strategy you debug on a
+thousand rows in memory is the strategy you run on fifty million on disk. Only the
+control around it changes.
+
+## Where to look next
+
+- The strategies used here, and the reasoning behind the exact, fuzzy, and mover
+  passes, are the subject of [matching across years and sources](staged.html).
+- The individual matching tools (containment, token blocking, global rarity,
+  phonetic encoders) get their full treatment in the
+  [features article](features.html).
+- Deciding how strict to be, and what a wrong or missed link costs, is the
+  [calibration article](calibration.html). It runs on a database backend too.

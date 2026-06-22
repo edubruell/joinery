@@ -5,7 +5,7 @@
 \alias{workshop_listings}
 \title{Workshop external directory (target) for record linkage examples}
 \format{
-A tibble with 844 rows and 8 variables:
+A tibble with 894 rows and 8 variables:
 \describe{
 \item{listing_id}{Character identifier for listings (e.g. "L00042")}
 \item{workshop}{Directory rendering of the business name, often messy}

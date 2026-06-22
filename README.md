@@ -9,7 +9,7 @@
 
 **joinery** provides a tidy, declarative interface for **heuristic index-based record linkage**, **fuzzy joins**, and **duplicate detection**.
 It uses token-based indexing, flexible text normalization, phonetic encoders, and optional blocking to match imperfect or inconsistent records.
-The package is  inspired by the ideas behind Thorsten Doherr’s **searchengine** project (see: [https://github.com/ThorstenDoherr/searchengine/](https://github.com/ThorstenDoherr/searchengine/)).
+The package is inspired by the ideas behind Thorsten Doherr's **searchengine** project (see: [https://github.com/ThorstenDoherr/searchengine/](https://github.com/ThorstenDoherr/searchengine/)).
 
 Like good woodworking, the goal is to make the joins clean, without reaching for the mallet.
 
@@ -17,7 +17,7 @@ Like good woodworking, the goal is to make the joins clean, without reaching for
 
 Most record linkage tools rely on edit distances or probabilistic pairwise comparison after blocking. This works well for clean data and short strings, but often breaks down for messy administrative data where rare tokens matter more than character-level similarity.
 
-**joinery** follows a different paradigm inspired by Doherr’s *SearchEngine*:
+**joinery** follows a different paradigm inspired by Doherr's *SearchEngine*:
 
 - Matching is framed as **search and candidate retrieval**, not exhaustive pairwise comparison.
 - Records are decomposed into tokens weighted by their **informativeness (rarity)**.
@@ -41,9 +41,13 @@ install.packages("devtools")   # if needed
 devtools::install_github("edubruell/joinery")
 ```
 
-## Minimal Example
+## Minimal example
 
-This example uses the package’s built-in sample data. The **Getting Started** vignette walks the same path step by step and scores the result against a known answer key (`target_example$actual_link` holds the true link for each copied record).
+This example uses the package's built-in sample data. The
+[Getting started](https://edubruell.github.io/joinery/articles/joinery.html)
+vignette walks the same path step by step and scores the result against a known
+answer key (`target_example$actual_link` holds the true link for each copied
+record).
 
 ```r
 library(joinery)
@@ -109,7 +113,19 @@ staged <- multi_stage_search(
 
 ## Documentation
 
-A step-by-step tutorial is available in the Getting Started vignette:
+The [package website](https://edubruell.github.io/joinery/) carries the full
+guide. Start with
+[Getting started](https://edubruell.github.io/joinery/articles/joinery.html),
+which walks the whole path on a pair of built-in tables and scores the result
+against a known answer key. From there, five articles each take on one problem:
+
+- [Beyond the basics: fuzzy and exact strategies](https://edubruell.github.io/joinery/articles/features.html). Containment, region-free movers, phonetic matching, and staging them together.
+- [Matching across years and sources](https://edubruell.github.io/joinery/articles/staged.html). Pool a multi-year panel and follow each record through time.
+- [Calibrating a false-positive filter](https://edubruell.github.io/joinery/articles/calibration.html). Train a model on labelled pairs for when one threshold is not enough.
+- [Embedding-based matching](https://edubruell.github.io/joinery/articles/embeddings.html). Match on meaning when two records share no tokens at all.
+- [Working at scale with DuckDB](https://edubruell.github.io/joinery/articles/duckdb.html). Run the same strategies on a database backend when the table will not fit in memory.
+
+The tutorial also ships as a vignette:
 
 ```r
 vignette("joinery", package = "joinery")

@@ -5,7 +5,7 @@
 \alias{workshop_register}
 \title{Workshop guild register (base) for record linkage examples}
 \format{
-A tibble with 982 rows and 15 variables:
+A tibble with 1,052 rows and 15 variables:
 \describe{
 \item{reg_no}{Character registration number, the base id. Most are
 \code{"GMC-#####"}; planted duplicates, homonyms, and shared-venue rows

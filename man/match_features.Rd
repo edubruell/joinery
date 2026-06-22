@@ -21,10 +21,11 @@ table for cross-table candidate matches), \code{target_id} (ID column
 in \code{target}, defaults to \code{id}), \code{include_string_sim} (logical;
 when \code{TRUE} (default) emits \verb{sim_sf_<col>} / \verb{sim_fs_<col>}
 per column via \code{stringdist::stringsim()} - requires the
-\code{stringdist} suggested package), \code{method} (stringdist method:
-a scalar applied to every column (default \code{"jw"}), or a named
-character vector selecting a per-column method - a scalar is the
-degenerate single-element case), and \code{include_block_stats} (logical; whether to
+\code{stringdist} suggested package), \code{method} (stringdist method
+applied to every column, default \code{"jw"}. Only a scalar is honored
+today; the argument shape also reserves a named character vector for
+per-column methods, the additive path to the per-column comparators a
+future probabilistic strategy will use), and \code{include_block_stats} (logical; whether to
 compute \code{cnt} / \code{icnt} / \code{ipos}). The \code{\link{Search_Strategy}} method
 additionally accepts \code{top_n} (named integer / list controlling
 per-column top-N counts for the \code{m_/f_/s_} columns; use a

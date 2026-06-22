@@ -220,7 +220,27 @@ For detailed guidance on specific topics, consult:
 - **`notes/duckdb_backend.md`** — Design philosophy, batch execution architecture, no-SQL-translation approach.
 - **`notes/duckdb_performance.md`** — Performance tuning guide, batch size recommendations, optimization strategies.
 
-**Current Work (v0.8 practicality test):**
+**Current Work (v0.9 — documentation push to 1.0):**
+- **`notes/v09/`** — **The docs build queue** (the current focus). Where `notes/v08/`
+  was a build queue for *code*, this is the build queue for *docs*: the public
+  surface (README, getting-started vignette, articles, reference pages, the pkgdown
+  site) gating a 1.0 release. `00_index.md` is the single-source-of-truth status
+  table (Diátaxis frame, house-voice rules); `TODO_docs_pass.md` is the live
+  checklist. Shipped so far: pkgdown skeleton, getting-started vignette
+  (`vignettes/joinery.Rmd`), README refresh, the workshop example data
+  (`workshop_register`/`workshop_listings`), the features article, the embeddings
+  article (drafted), and the v0.9 `NEWS.md`. **Remaining 1.0 gates:** the P1
+  example data (`workshop_panel` + `match_labels_example`), the calibration and
+  DuckDB articles, glossary render, navbar wiring, and a docs-QA pass. House voice
+  is mandatory ([[feedback_docs_writing_style]], [[feedback_woodworking_voice]]):
+  no em dashes, problem-first, plain language, no internal jargon (`§`/file-path/
+  stage refs) in user prose. **Start here for any docs work.**
+- **`notes/post_release/`** — Forward-looking scoping notes for *after* 1.0
+  (ecosystem/positioning, engine/algorithm extensions, backends/scale/interop, a
+  probabilistic-strategy addendum, an implementation roadmap). Not 1.0 work; read
+  only when planning beyond the release.
+
+**Background — v0.8 (the now-shipped Part-A code spine + the YP stress test):**
 - **`notes/yp_panel_joinery_plan.md`** — Plan for the full German Yellow-Pages panel (all years, all branches) on joinery's DuckDB backend, blocked by `(plz2, wz08_3)`. The first real-life stress test of v0.8. A **frozen v1 hand-rolled baseline panel now exists** — built by the `localwip/yp_panel/` scripts (single-shot → fuzzy dedup → Stage-E one-year extra-merge → `48_build_panel.R`): **51,315,109 rows | 7,468,975 entities | 2.0% imputed (K=5)**. v1 is the comparison target for the declarative rebuild ([[v08_second_pass_yp]]). **Read this before doing any YP-related work.**
 - **`notes/v08/`** — **The build queue.** Turns `v08_implementation_plan.md` Part A into an ordered set of PR-sized, buildable implementation stages (`00_index.md` is the single-source-of-truth status table + conventions; `01`–`08` are the staged plans). Each stage carries exact file:line targets, new signatures, Collate edits, a test plan, and a fresh-context audit prompt. The spine (01 `resolve_entities` → … → 08 `plan_strategy`) is **complete: 01–08 all implemented and fresh-context audited (GO)** as of 2026-06-12. The naming axis (§34): staged verbs pair on dedup/search — `multi_stage_dedup` (06) / `multi_stage_search` (07, the hard-rename of the former `multi_stage_match`), both thin configs over `R/internal_staging.R`. One carried-forward follow-up stays open: Stage-01 #2 (DuckDB `resolve_entities` coverage gap for the empty-without-vertices type + untested `vertices` singleton-fold INSERT). The remaining v0.8 work is the independent Part B–D track (calibration/preparer/recommendation polish) and the Part-A acceptance test. **Start here before implementing any Part-A verb.**
 - **`notes/v08_lessons.md`** — Running log of design-relevant insights surfaced *while* running the YP build. Captures rough edges in `block_by`, audit verbs, progress reporting, docs framing. The arc lands at §29–§35: §29–§31 named the **one feature** (staged entity resolution) that became the now-shipped Part-A spine; §32 (dedup & search are two tails on one scoring kernel), §33 (chunked processing must announce the current chunk), §34 (composite verbs name along the dedup/search axis), §35 (cross-year self-search exact front must be rarity-free, [[feedback_self_search_rarity_free_front]]). Most actionable items have landed (Part A 01–08); the doc is now mostly a historical design log plus the live §35 lever.

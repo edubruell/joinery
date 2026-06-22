@@ -56,10 +56,12 @@ P_MATCHED      <- 0.72   # share of register workshops that appear in listings
 P_NEW          <- 0.16   # target-only listings, as a share of matched count
 TIER_WEIGHTS   <- c(clean = 0.45, slogan = 0.15, variant = 0.22,
                     mover = 0.10, phonetic = 0.08)
-N_REG_DUPS     <- 45L    # planted within-register duplicates (for detect_duplicates)
+N_REG_DUPS     <- 65L    # planted within-register duplicates (for detect_duplicates)
 N_HUBS         <- 6L     # shared-venue hub clusters (containment-blocker trap)
 N_CATEGORY     <- 8L     # bare-category listings (min_containment_tokens trap)
-N_HOMONYM_SET  <- 14L    # homonym clusters per difficulty tier
+N_HOMONYM_SET  <- 14L    # area/total homonym clusters per tier (do not co-block)
+N_HOMONYM_BLOCK <- 26L   # co-blocking homonym clusters (same block, different owner)
+K_HOMONYM_BLOCK <- 3L    # siblings per co-blocking cluster -> within-block disambiguation
 
 # =============================================================================
 # 1. Vocabulary -- UK geography, SIC, addresses, hubs, homonym + phonetic tables
@@ -275,17 +277,28 @@ make_homonym_cluster <- function(surname, trade, tier, k = 2L) {
   )
 }
 
-homonym_spec <- pmap_dfr(
-  expand_grid(
-    tier = c("homonym_area", "homonym_block", "homonym_total"),
-    i = seq_len(N_HOMONYM_SET)
-  ),
-  function(tier, i) make_homonym_cluster(
-    surname = common_surnames[(i - 1) %% length(common_surnames) + 1],
-    trade   = trade_sic$trade[(i - 1) %% nrow(trade_sic) + 1],
-    tier    = tier)
-) |>
-  mutate(cluster = paste(tier, surname, trade, sep = "|"))
+# Per-tier cluster counts and sibling counts. The block tier is enriched (more
+# clusters, k = 3 siblings) so listings retrieve several same-name candidates and
+# the within-block disambiguation features (cnt/icnt/ipos) carry signal; the
+# area/total tiers stay k = 2 since their siblings deliberately do not co-block.
+# The cluster key is a per-tier counter (not surname+trade), so two clusters that
+# happen to reuse a surname/trade pair stay distinct entities with distinct reg_no.
+build_homonym_tier <- function(tier, n_clusters, k) {
+  pmap_dfr(tibble(j = seq_len(n_clusters)), function(j) {
+    cl <- make_homonym_cluster(
+      surname = common_surnames[(j - 1) %% length(common_surnames) + 1],
+      trade   = trade_sic$trade[(j - 1) %% nrow(trade_sic) + 1],
+      tier    = tier, k = k)
+    cl$cluster <- paste(tier, j, sep = "|")
+    cl
+  })
+}
+
+homonym_spec <- bind_rows(
+  build_homonym_tier("homonym_area",  N_HOMONYM_SET,    2L),
+  build_homonym_tier("homonym_block", N_HOMONYM_BLOCK,  K_HOMONYM_BLOCK),
+  build_homonym_tier("homonym_total", N_HOMONYM_SET,    2L)
+)
 
 homonym_reg <- homonym_spec |>
   mutate(

@@ -129,7 +129,33 @@ method(
 
   block_by <- strategy@block_by
 
-  # Perform join (blocked or cartesian)
+  # Empty-result schema, typed to the id columns (ids may be character/integer).
+  empty_result <- function() {
+    data.table::data.table(
+      base_id   = base_dt$id[0],
+      target_id = target_dt$id[0],
+      score     = numeric()
+    )
+  }
+
+  # Score one base block against one target block as a single matrix product.
+  # The embeddings are already normalised (when strategy@normalize is TRUE), so
+  # the dot product is the cosine similarity. Stacking the per-record vectors
+  # into matrices turns the whole all-pairs comparison into one tcrossprod()
+  # instead of a per-row mapply over the join.
+  pair_scores <- function(bdt, tdt) {
+    if (nrow(bdt) == 0L || nrow(tdt) == 0L) return(empty_result())
+    bmat <- do.call(rbind, bdt$embedding)   # n_base   x d
+    tmat <- do.call(rbind, tdt$embedding)   # n_target x d
+    sim  <- tcrossprod(bmat, tmat)          # n_base   x n_target
+    # as.vector(sim) is column-major: base varies fastest within each target.
+    data.table::data.table(
+      base_id   = rep(bdt$id, times = nrow(tdt)),
+      target_id = rep(tdt$id, each  = nrow(bdt)),
+      score     = as.vector(sim)
+    )
+  }
+
   if (!is.null(block_by) && length(block_by) > 0) {
     # Validate blocking columns are present
     missing_base <- setdiff(block_by, names(base_dt))
@@ -142,22 +168,22 @@ method(
       cli::cli_abort("Blocking columns missing from target_embeddings: {.field {missing_target}}")
     }
 
-    # Blocked join: only compare records with matching block values
-    pairs <- base_dt[target_dt, on = block_by, allow.cartesian = TRUE, nomatch = NULL]
+    # Block-by-block matmul: only compare records sharing a block value.
+    bkey <- function(dt) do.call(paste, c(as.list(dt[, block_by, with = FALSE]), sep = "\r"))
+    base_dt[, ".bkey" := bkey(base_dt)]
+    target_dt[, ".bkey" := bkey(target_dt)]
+    common <- intersect(unique(base_dt$.bkey), unique(target_dt$.bkey))
+
+    if (length(common) == 0L) return(empty_result())
+
+    result <- data.table::rbindlist(lapply(common, function(k) {
+      pair_scores(base_dt[.bkey == k], target_dt[.bkey == k])
+    }))
   } else {
-    # Cartesian join: compare all pairs
-    base_dt[, .join_key := 1L]
-    target_dt[, .join_key := 1L]
-    pairs <- base_dt[target_dt, on = ".join_key", allow.cartesian = TRUE]
+    # Cartesian: every base against every target.
+    result <- pair_scores(base_dt, target_dt)
   }
 
-  # Compute cosine similarity
-  pairs[, score := mapply(function(b, t) {
-    sum(b * t)  # Dot product (vectors already normalized if strategy@normalize)
-  }, embedding, i.embedding, SIMPLIFY = TRUE)]
-
-  # Clean up and return
-  result <- pairs[, .(base_id = id, target_id = i.id, score)]
   result[]
 }
 

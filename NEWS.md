@@ -35,7 +35,8 @@ Recovers the same entity across different geographic blocks (movers, name drift,
 
 ### Embedding reuse
 
-* **Embed once, reuse on later calls**: the data.table and tibble backends now keep a per-session cache of embedding vectors, so a multi-stage run no longer re-embeds the same record on every stage (embedding is roughly 2000x more expensive than the retrieval it feeds). The cache is keyed by model and record content, so a record whose text changed re-embeds on its own. This brings the in-memory backends in line with the DuckDB backend, which already reused through its persisted `embeddings` column.
+* **Embed once, reuse on later calls**: the data.table and tibble backends now keep a per-session cache of embedding vectors, so a multi-stage run no longer re-embeds the same record on every stage (embedding generation is far more expensive than the retrieval it feeds, roughly 100x on a few thousand records). The cache is keyed by model and record content, so a record whose text changed re-embeds on its own. This brings the in-memory backends in line with the DuckDB backend, which already reused through its persisted `embeddings` column.
+* **Vectorized embedding scorer**: `score_embeddings()` (data.table / tibble backends) now computes all-pairs cosine similarity as a single matrix product per block instead of a per-row dot product over the join. Results are unchanged; scoring ~940k pairs drops from several seconds to under half a second.
 * **Two new package options**: `joinery.embedding_reuse` (default `TRUE`; set `FALSE` to embed fresh every time) and `joinery.embedding_cache_dir` (unset by default; set a path to persist the cache across R sessions). See `?joinery` for the full description.
 * **`clear_embedding_cache(disk = FALSE)`**: new exported helper to empty the in-session cache, and optionally the on-disk cache.
 

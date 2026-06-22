@@ -34,8 +34,36 @@ key values. Default is \code{NULL} (no blocking).}
 \item{weights}{Optional named numeric vector of weights for similarity scoring.
 Names should correspond to columns. Default is \code{numeric()} (uniform weights).}
 
-\item{rarity}{Character scalar specifying the rarity computation method.
-Default is \code{"inverse_freq"}.}
+\item{rarity}{Character scalar choosing how a token's rarity (its
+informativeness, the weight it carries in scoring) is computed from token
+counts. A shared rare token is strong evidence two records match; a shared
+common one is weak. The four methods differ in how hard they push common
+tokens down. Let \code{f} be the token's frequency, \code{df} its document frequency
+(how many records contain it), and \code{N} the record count, all measured over
+the scope set by \code{rarity_scope}. One of:
+\describe{
+\item{\code{"inverse_freq"}}{(default) \code{rarity = 1 / f}. Simple and robust: a
+token seen once is maximally rare, one seen often counts for little. A
+good first choice and what every other article uses.}
+\item{\code{"smoothed_inverse_freq"}}{\code{rarity = 1 / (f + 1)}. The same shape,
+damped so the very rarest tokens do not dominate quite as sharply. Reach
+for it when single-occurrence tokens (often typos) are swinging scores
+too much.}
+\item{\code{"tfidf"}}{\code{rarity = tf * idf} with \code{tf = f / sum(f)} and
+\code{idf = log(1 + N / df)}. Weighs a token by how few records carry it, not
+just its raw count. Use when the same token recurs at very different
+rates across columns or blocks and you want document spread to matter.}
+\item{\code{"bm25"}}{\code{rarity = log((N - df + 0.5) / (df + 0.5))}, the Okapi BM25
+inverse-document-frequency term. The most aggressive: it drives common
+tokens toward zero and turns \emph{negative} for a token in more than half the
+records, which actively penalises boilerplate. Use on corpora thick with
+shared legal-form or trade words ("Ltd", "Joinery") that you want
+suppressed hard.}
+}
+Default is \code{"inverse_freq"}; most linkages never need to change it. Inspect
+the token distribution with \code{\link[=rarity_distribution]{rarity_distribution()}} before switching, and
+note \code{rarity_scope} decides whether these counts are block-local or
+corpus-wide.}
 
 \item{rarity_scope}{Character scalar, \code{"block"} (default) or \code{"global"},
 selecting the scope over which a token's rarity (informativeness) is

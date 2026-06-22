@@ -1,8 +1,8 @@
 ---
-title: "Beyond the Basics: Fuzzy and Exact Strategies"
+title: "Beyond the basics: fuzzy and exact strategies"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Beyond the Basics: Fuzzy and Exact Strategies}
+  %\VignetteIndexEntry{Beyond the basics: fuzzy and exact strategies}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -37,9 +37,9 @@ library(dplyr)
 
 ## The data
 
-`workshop_register` is the clean base table: 982 entries from a fictional Guild
-of Master Craftsmen roll. `workshop_listings` is the messier directory side: 844
-listings, 729 of which refer to a known register entry (the `actual_link`
+`workshop_register` is the clean base table: 1,052 entries from a fictional Guild
+of Master Craftsmen roll. `workshop_listings` is the messier directory side: 894
+listings, 779 of which refer to a known register entry (the `actual_link`
 column). The matchable columns share names across both tables, so one strategy
 formula serves both sides. Block on `(postcode_area, trade)`.
 
@@ -51,14 +51,14 @@ The listings come in labelled tiers (`gen_tier`), each exercising one challenge:
 
 | Tier | n | Challenge |
 |---|---|---|
-| `clean` | 290 | Minimal distortion. |
-| `slogan` | 119 | Directory appends a marketing slogan after the name. |
-| `variant` | 96 | Abbreviations, punctuation, word reorderings. |
-| `mover` | 86 | Workshop relocated; listing is in a different `postcode_area`. |
-| `phonetic` | 21 | Name spelled by ear (Pennell / Penell). |
+| `clean` | 278 | Minimal distortion. |
+| `slogan` | 132 | Directory appends a marketing slogan after the name. |
+| `variant` | 103 | Abbreviations, punctuation, word reorderings. |
+| `mover` | 61 | Workshop relocated; listing is in a different `postcode_area`. |
+| `phonetic` | 38 | Name spelled by ear (Pennell / Penell). |
 | `hub_member` / `hub_trap` | 42 | A shared venue name baits over-linking. |
 | `category_trap` | 8 | A bare generic trade name, another over-linking bait. |
-| `homonym_*` | 84 | Different workshops with similar names. |
+| `homonym_*` | 134 | Different workshops with similar names. |
 | `new` | 98 | No match in the register. |
 
 The trap and homonym tiers carry no `actual_link` (there is nothing correct for
@@ -141,7 +141,7 @@ m_exact <- multi_stage_search(
 entity_recall(m_exact)
 ```
 
-All 119 slogan listings recovered, plus most of the clean tier, at no scoring
+All 132 slogan listings recovered, plus most of the clean tier, at no scoring
 cost. Movers and phonetic variants stay at zero, for two different reasons: a
 phonetic spelling is not a subset of anything (containment has no notion of
 "close"), and a mover never shares a `postcode_area` block with its register
@@ -249,7 +249,7 @@ where the register name is short:
 entity_recall(m_guarded, tiers = "slogan")
 ```
 
-Slogan recovery drops from 119 to 106. The thirteen we lost are workshops whose
+Slogan recovery drops from 132 to 116. The sixteen we lost are workshops whose
 register name is only two tokens ("Pollard Joinery"), so their genuine slogan
 listings can no longer clear the cardinality floor either. The guard cannot tell
 a two-token shop from a two-token mall. Tightening exact matching to keep out the
@@ -282,8 +282,8 @@ m_staged <- multi_stage_search(
 entity_recall(m_staged)
 ```
 
-Slogan recovery is back to 119: the strict exact pass took the long names safely,
-and the fuzzy pass picked up the thirteen short ones it had skipped, along with
+Slogan recovery is back to 132: the strict exact pass took the long names safely,
+and the fuzzy pass picked up the sixteen short ones it had skipped, along with
 more of the variant tier. You kept the precision of exact matching on the bulk of
 the work and spent the expensive fuzzy scorer only on the residual.
 
@@ -403,11 +403,15 @@ more per record recovered, which is exactly why you order them strict-to-loose.
 ## Where to look next
 
 - **Large datasets**: the same strategies run on a DuckDB backend with no formula
-  changes. See *Working at scale with DuckDB*.
+  changes, the subject of the forthcoming article on working at scale with DuckDB.
 - **Names that describe the same thing in different words**: when two records
   share no tokens and no sounds (synonyms, free text, different languages), token
   and phonetic matching both fail. `embedding_strategy()` matches on vector
-  similarity instead. See *Embedding-based matching*.
+  similarity instead. See [embedding-based matching](embeddings.html).
 - **Separating look-alikes that are not the same business**: the homonym tiers
   need more than a threshold. A calibrated post-match filter learns the
-  difference from labelled pairs. See *Calibrating a false-positive filter*.
+  difference from labelled pairs. See
+  [calibrating a false-positive filter](calibration.html).
+- **Following workshops across years**: the same staged search links one pooled,
+  multi-year table to itself. See
+  [matching across years and sources](staged.html).

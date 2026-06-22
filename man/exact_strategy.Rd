@@ -19,8 +19,13 @@ exact_strategy(
 
 \item{block_by}{Optional character vector of blocking columns.}
 
-\item{rarity}{Character scalar rarity metric, used only by the containment
-guard. Default \code{"inverse_freq"}.}
+\item{rarity}{Character scalar rarity metric, used only by the
+\code{min_base_rarity} containment guard to measure how much identifying weight a
+base record's tokens carry. One of \code{"inverse_freq"} (default),
+\code{"smoothed_inverse_freq"}, \code{"tfidf"}, or \code{"bm25"}; see
+\code{\link[=search_strategy]{search_strategy()}} for what each formula does. Plain equality and forward
+containment without a \code{min_base_rarity} floor never consult it, so the
+default is almost always fine.}
 
 \item{containment}{One of \code{"off"} (set-equality, default), \code{"forward"}
 (link when the base record's tokens are a subset of the target's), or

@@ -191,8 +191,13 @@ method(print.Search_Strategy, Exact_Strategy) <- function(x, ...) {
 #' @param ... Two-sided formulas `column ~ step1 + step2`, identical in form to
 #'   [search_strategy()].
 #' @param block_by Optional character vector of blocking columns.
-#' @param rarity Character scalar rarity metric, used only by the containment
-#'   guard. Default `"inverse_freq"`.
+#' @param rarity Character scalar rarity metric, used only by the
+#'   `min_base_rarity` containment guard to measure how much identifying weight a
+#'   base record's tokens carry. One of `"inverse_freq"` (default),
+#'   `"smoothed_inverse_freq"`, `"tfidf"`, or `"bm25"`; see
+#'   [search_strategy()] for what each formula does. Plain equality and forward
+#'   containment without a `min_base_rarity` floor never consult it, so the
+#'   default is almost always fine.
 #' @param containment One of `"off"` (set-equality, default), `"forward"`
 #'   (link when the base record's tokens are a subset of the target's), or
 #'   `"bidirectional"` (either direction). Whether it helps depends on the data;
