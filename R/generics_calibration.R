@@ -71,7 +71,7 @@ prepare_auxiliary_registry <- new_generic(
 #'   when `TRUE` (default) emits `sim_sf_<col>` / `sim_fs_<col>`
 #'   per column via `stringdist::stringsim()` - requires the
 #'   `stringdist` suggested package), `method` (stringdist method
-#'   applied to every column, default `"jw"`. Only a scalar is honored
+#'   applied to every column, default `"jw"`. Only a scalar is honoured
 #'   today; the argument shape also reserves a named character vector for
 #'   per-column methods, the additive path to the per-column comparators a
 #'   future probabilistic strategy will use), and `include_block_stats` (logical; whether to

@@ -25,7 +25,7 @@
 #' - A smoothing configuration that describes how rIP values are transformed
 #'   before scoring.
 #'
-#' All operational behavior (tokenization, rarity computation,
+#' All operational behaviour (tokenization, rarity computation,
 #' duplicate detection, candidate search) is handled by S7 generics such
 #' as `prepare_search_data()`, `compute_rarity()`,
 #' `detect_duplicates()`, and `search_candidates()`.
@@ -374,7 +374,7 @@ expr_to_step <- function(expr) {
 #'   measured. `"block"` measures rarity within each block (the historical and
 #'   only previous behaviour). `"global"` measures it across the whole corpus, so
 #'   a token's informativeness no longer depends on which block it lands in. This
-#'   is the chain defense for region-free linking: a globally common name (think
+#'   is the chain defence for region-free linking: a globally common name (think
 #'   a franchise) gets low global rarity and is dropped by `min_rarity`, while a
 #'   distinctive brand reads as a strong link signal regardless of where it
 #'   appears. Only the rarity metric and the `min_rarity` gate follow this

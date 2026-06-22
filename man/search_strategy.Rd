@@ -70,7 +70,7 @@ selecting the scope over which a token's rarity (informativeness) is
 measured. \code{"block"} measures rarity within each block (the historical and
 only previous behaviour). \code{"global"} measures it across the whole corpus, so
 a token's informativeness no longer depends on which block it lands in. This
-is the chain defense for region-free linking: a globally common name (think
+is the chain defence for region-free linking: a globally common name (think
 a franchise) gets low global rarity and is dropped by \code{min_rarity}, while a
 distinctive brand reads as a strong link signal regardless of where it
 appears. Only the rarity metric and the \code{min_rarity} gate follow this

@@ -32,7 +32,7 @@ sequence, e.g. \code{"gatan"} → \code{"GATA"} (Swedish), \code{"strasse"} → 
 (German)
 }
 
-By separating exact vs. suffix behavior and tagging each entry with an ISO
+By separating exact vs. suffix behaviour and tagging each entry with an ISO
 language code, \pkg{joinery} can normalize addresses \emph{without} incorrect
 transformations (e.g. preventing \code{"LINCOLN"} → \code{"LANE"}, or \code{"VICTOR"} →
 \code{"RUE"}). This structure enables high-precision multilingual address cleaning.

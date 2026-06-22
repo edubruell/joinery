@@ -208,7 +208,7 @@
 #'   sequence, e.g. `"gatan"` → `"GATA"` (Swedish), `"strasse"` → `"STRASSE"`
 #'   (German)
 #'
-#' By separating exact vs. suffix behavior and tagging each entry with an ISO
+#' By separating exact vs. suffix behaviour and tagging each entry with an ISO
 #' language code, \pkg{joinery} can normalize addresses *without* incorrect
 #' transformations (e.g. preventing `"LINCOLN"` → `"LANE"`, or `"VICTOR"` →
 #' `"RUE"`). This structure enables high-precision multilingual address cleaning.

@@ -52,7 +52,7 @@ A \code{data.table} with columns:
 }
 }
 \description{
-Analyzes a DuckDB table and generates a batch plan (data.table) that defines
+Analyses a DuckDB table and generates a batch plan (data.table) that defines
 how to split the table into atomic processing units. Each row of the plan
 represents one batch with row counts, optional row-number windows, and block
 identifiers (if blocking is used).

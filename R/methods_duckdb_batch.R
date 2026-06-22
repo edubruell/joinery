@@ -5,7 +5,7 @@ if (!rlang::is_installed(c("duckdb", "DBI", "dplyr", "dbplyr"))) {
 
 #' Create a Batch Plan for DuckDB Table Processing
 #'
-#' Analyzes a DuckDB table and generates a batch plan (data.table) that defines
+#' Analyses a DuckDB table and generates a batch plan (data.table) that defines
 #' how to split the table into atomic processing units. Each row of the plan
 #' represents one batch with row counts, optional row-number windows, and block
 #' identifiers (if blocking is used).

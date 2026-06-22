@@ -22,7 +22,7 @@ in \code{target}, defaults to \code{id}), \code{include_string_sim} (logical;
 when \code{TRUE} (default) emits \verb{sim_sf_<col>} / \verb{sim_fs_<col>}
 per column via \code{stringdist::stringsim()} - requires the
 \code{stringdist} suggested package), \code{method} (stringdist method
-applied to every column, default \code{"jw"}. Only a scalar is honored
+applied to every column, default \code{"jw"}. Only a scalar is honoured
 today; the argument shape also reserves a named character vector for
 per-column methods, the additive path to the per-column comparators a
 future probabilistic strategy will use), and \code{include_block_stats} (logical; whether to
