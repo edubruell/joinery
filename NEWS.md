@@ -1,10 +1,26 @@
 # joinery 1.0.0
 
 First stable release. The token core, the DuckDB backend, embedding matching,
-diagnostics, and calibration are feature-complete and the public API is stable,
-with a full set of articles and a reference site. The headline addition this
-cycle is staged entity resolution, alongside region-free linking and an
-always-on cost guard.
+diagnostics, and calibration are feature-complete and the public API is stable.
+This release adds the documentation that makes the package usable end to end.
+
+### Documentation
+
+* **Reference site** built with pkgdown: a grouped function index, a getting-started vignette, a concept glossary, and five how-to articles (fuzzy and exact strategies, matching across years and sources, calibration, embeddings, and working at scale with DuckDB).
+* **Runnable examples** on every entry-point verb.
+
+### Example data
+
+* **`workshop_register`**, **`workshop_listings`**, **`workshop_panel`**, **`match_labels_example`**: synthetic woodworking-workshop data with planted difficulty tiers and ground-truth links, used throughout the articles. Each tier (containment, movers, phonetic twins, hub tokens) has a minority that measurably benefits from the feature it exercises.
+
+---
+
+# joinery 0.9.0
+
+## Phase 0.9: Staged linkage and region-free matching
+
+Staged entity resolution, region-free linking across blocks, and an always-on
+cost guard, plus embedding reuse and faster preparers.
 
 ### Staged entity resolution
 
@@ -47,15 +63,6 @@ Follow an entity across geographic blocks (movers, name drift, year to year) wit
 
 * **Missing-column reweighting**: when a column is empty for a record, its weight is shared among the present columns rather than dropped, so scores stay in range.
 * **Earlier errors**: `search_candidates()` rejects overlapping id spaces and `prepare_search_data()` rejects duplicate ids, both of which corrupt results silently otherwise.
-
-### Example data
-
-* **`workshop_register`**, **`workshop_listings`**, **`workshop_panel`**, **`match_labels_example`**: synthetic woodworking-workshop data with planted difficulty tiers and ground-truth links, used throughout the articles. Each tier (containment, movers, phonetic twins, hub tokens) has a minority that measurably benefits from the feature it exercises.
-
-### Documentation
-
-* **Reference site** built with pkgdown: a grouped function index, a getting-started vignette, a concept glossary, and five how-to articles (fuzzy and exact strategies, matching across years and sources, calibration, embeddings, and working at scale with DuckDB).
-* **Runnable examples** on every entry-point verb.
 
 ### Bug fixes
 
