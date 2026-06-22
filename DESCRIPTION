@@ -1,7 +1,7 @@
 Package: joinery
 Type: Package
 Title: Heuristic Index-Based Record Linkage in R
-Version: 0.9.0
+Version: 1.0.0
 Authors@R: person("Eduard", "Brüll", email = "eduard.bruell@zew.de", role = c("aut", "cre"))
 Description: Index-based heuristic record linkage for R.
 URL: https://edubruell.github.io/joinery/, https://github.com/edubruell/joinery
