@@ -1,0 +1,133 @@
+---
+title: "Glossary"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Glossary}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+joinery has a small vocabulary that the articles and the reference pages lean on.
+This page is the single place to look a term up: one short definition each, and
+the verb or argument it attaches to. Terms are ordered alphabetically for lookup.
+For the order they appear in a real workflow, read the
+[getting started](joinery.html) article instead.
+
+A note on naming. The word "join" runs through the package because the work is
+the woodworker's: take two pieces cut at different times, on different machines,
+and make them meet so cleanly the seam disappears. The terms below are the
+measurements and the jigs that get a join to fit.
+
+---
+
+**aIP (asymmetric identification potential).** A calibration-side token weight
+from Doherr (2023), computed across two registries. Used by `match_features()` to
+build per-pair features. Specialist, calibration only.
+
+**Block / blocking (`block_by`).** A stable key, such as a region or an industry
+code, that records must agree on before they are compared. It restricts the
+comparison to within-block pairs, which cuts cost at a small recall risk. Use
+`plan_strategy()` to choose one.
+
+**Candidate / candidate match.** A record pair the search proposes as a possible
+match, with a score. Produced by `search_candidates()`. A candidate is not yet a
+confirmed match; the threshold, and optionally calibration, decides.
+
+**Containment.** A relaxed exact match where one record's token set is a subset of
+another's, rather than equal. Off by default on `exact_strategy()`
+(`containment = "off" | "forward" | "bidirectional"`); it over-links on noisy
+data.
+
+**Document frequency (df).** How many records a token appears in within its
+column and block. High df means common and uninformative. The `max_token_df`
+lever drops tokens above a df cap before scoring; `rarity_distribution()` reports
+df.
+
+**Entity.** A group of records that are the same real-world thing: the connected
+component of the match graph. A duplicate group within a table, or a matched
+cluster across tables, is an entity. Produced by `resolve_entities()`.
+
+**Exact strategy.** A strategy that links records only when their token sets are
+identical within a block, with no scoring or threshold. Cheap, robust to empty
+columns, and the usual front stage of a staged run. Built by `exact_strategy()`.
+
+**Feedback weighting (`feedback_strength`).** An optional adjustment that nudges a
+pair's score by the proportion of its tokens that matched. Off by default (0).
+
+**Fuzzy match.** The scored, threshold-based matching of a `search_strategy()`, as
+opposed to the all-or-nothing exact match. It is "fuzzy" because near-misses still
+score and can clear the threshold.
+
+**Ledger.** The directed record of every link a staged cross-source search made,
+with the stage and direction of each, attached to a `multi_stage_search()` result
+as the `ledger` attribute. The audit trail behind the entity grouping.
+
+**Match graph / edge list.** The set of scored record pairs viewed as a graph
+whose nodes are records and whose edges are matches. `resolve_entities()` turns it
+into entities.
+
+**Rarity.** How informative a token is, computed per column and block. The default
+metric is `inverse_freq`. This is the core quantity behind scoring: rare shared
+tokens score high. Set with `rarity =` on the strategy; reported by
+`compute_rarity()`.
+
+**Rarity prefilter (`min_rarity`, `max_token_df`).** Two cut levers applied to the
+token table before the overlap join. `min_rarity` floors the rarity metric;
+`max_token_df` caps raw document frequency. Both tame the fan-out from common
+tokens. Set them from `rarity_distribution()`.
+
+**Representative (`rep`, `rep_by`).** The one record chosen to stand for an entity
+(rank 1). Chosen by best score, then a priority column `rep_by`, then the smallest
+id. `deduplicate_table()` keeps representatives.
+
+**Residual / unmatched.** The records a pass did not match, carried into a later,
+looser pass. `extract_unmatched()` produces them; `materialize_records()`
+rehydrates a set of ids back into full rows.
+
+**rIP (relative identification potential).** A token's share of its field's
+evidence within a record: `rIP = rarity / sum(rarity)` over the record's token set
+in that column. Scoring multiplies rIP by the column weight and sums over shared
+tokens.
+
+**Score.** A pair's match strength: the sum over shared tokens of `rIP * weight`.
+It sits in `[0, sum(weights)]`, or `[0, 1]` with normalised weights. Decomposed by
+`explain_match()`.
+
+**Smoothing (`smooth_rip_*`).** An optional transform applied to rIP before
+scoring (`smooth_rip_identity`, `smooth_rip_log`, `smooth_rip_offset`,
+`smooth_rip_softmax`), reshaping how within-record token weight is distributed.
+The default is identity.
+
+**Source (`source_by`).** In a multi-source search, the column or columns
+recording where each row came from, such as a year or a register. It lets links
+be tagged within-source or cross-source and lets the grouping report how many
+sources an entity covers.
+
+**Stage.** One pass of a staged workflow with one strategy. Stages run in order,
+each on the residual, and optionally the collapsed representatives, of the last.
+Run with `multi_stage_dedup()` or `multi_stage_search()`; diagnosed with
+`compare_stages()`.
+
+**Strategy.** A declarative object describing how to match: the per-column
+preparation pipelines, blocking, rarity metric, weights, and threshold. Built by
+`search_strategy()`, `exact_strategy()`, or `embedding_strategy()`. It holds no
+data and runs nothing itself; the verbs interpret it.
+
+**Threshold.** The minimum score to keep a pair. Either the strategy default or a
+per-call override. `summarise_matches()` helps set it.
+
+**Token.** A piece of a field's text after preparation: the unit everything
+matches on. `word_tokens()`, `numeric_tokens()`, and the other preparers make
+them; `inspect_tokens()` shows them.
+
+**Token set vs. bag.** joinery scores on token *sets*, the distinct tokens per
+record and column, not bags, so repeating a token within one record does not
+inflate a score.
+
+**Weight (`weights`).** A column's share of the total score: a named numeric
+vector on the strategy, uniform if omitted. A column's weight is also the most it
+can cost a pair when that column disagrees or is empty.
