@@ -1,0 +1,429 @@
+# joinery
+
+[![License:
+MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **Crafting joins that fit.** Heuristic record linkage and fuzzy joins
+> for R.
+
+## Overview
+
+**joinery** provides a tidy, declarative interface for **heuristic
+index-based record linkage**, **fuzzy joins**, and **duplicate
+detection**. It uses token-based indexing, flexible text normalization,
+phonetic encoders, and optional blocking to match imperfect or
+inconsistent records. The package is inspired by the ideas behind
+Thorsten Doherr’s **searchengine** project (see:
+<https://github.com/ThorstenDoherr/searchengine/>).
+
+Like good woodworking, the goal is to make the joins clean, without
+reaching for the mallet.
+
+## How joinery differs from classical record linkage
+
+Most record linkage tools rely on edit distances or probabilistic
+pairwise comparison after blocking. This works well for clean data and
+short strings, but often breaks down for messy administrative data where
+rare tokens matter more than character-level similarity.
+
+**joinery** follows a different paradigm inspired by Doherr’s
+*SearchEngine*:
+
+- Matching is framed as **search and candidate retrieval**, not
+  exhaustive pairwise comparison.
+- Records are decomposed into tokens weighted by their **informativeness
+  (rarity)**.
+- Similarity comes from **overlap of informative tokens**, not string
+  distance.
+- Candidate generation and scoring are the same operation.
+- Matching is **directional**; one table defines token frequencies, the
+  other provides search queries.
+
+This approach works especially well when:
+
+- Names are long, noisy, or inconsistently formatted.
+- Rare identifiers should dominate common boilerplate terms.
+- No labeled training data is available.
+- Matching proceeds in multiple, increasingly tolerant stages.
+
+It also runs where the data does not fit in memory. The same strategy
+you prototype on an in-memory table runs unchanged against a **DuckDB**
+database, which does the large joins out-of-core, on disk, a piece at a
+time. Little else in R links and resolves entities this way: in practice
+it has turned a 51-million-row business directory, a job that would
+classically call for a cluster, into an overnight run on a laptop.
+
+joinery is not a drop-in replacement for probabilistic linkage engines.
+It is a complementary tool for **transparent, strategy-driven matching**
+where robustness and explainability matter more than calibrated match
+probabilities.
+
+To place it among the alternatives: reach for **fuzzyjoin** or
+**zoomerjoin** when you need string- or edit-distance joins on short,
+mostly clean fields; reach for **fastLink** or **reclin2** when you need
+a Fellegi-Sunter model with calibrated m/u match probabilities. Reach
+for joinery when records are long and messy, rare tokens carry the
+signal, and you want to see exactly why a pair matched. A probabilistic
+scoring strategy is on the roadmap, so that boundary is expected to
+narrow over time.
+
+## Installation
+
+``` r
+
+install.packages("devtools")   # if needed
+devtools::install_github("edubruell/joinery")
+```
+
+## Minimal example
+
+This example uses the package’s built-in sample data. The [Getting
+started](https://edubruell.github.io/joinery/articles/joinery.html)
+vignette walks the same path step by step and scores the result against
+a known answer key (`target_example$actual_link` holds the true link for
+each copied record).
+
+``` r
+
+library(joinery)
+
+# Load example data (shipped as tibbles; joinery also takes data.frames / data.table / DuckDB)
+data("base_example")
+data("target_example")
+
+# Define a simple first-pass strategy
+strat <- search_strategy(
+  Nachname   ~ normalize_text() + word_tokens(min_nchar = 3),
+  Vorname    ~ normalize_text() + word_tokens(min_nchar = 3),
+  Strasse    ~ normalize_street(lang = "de") + word_tokens(min_nchar = 3),
+  Hausnummer ~ numeric_tokens,
+  Ort        ~ normalize_text(),
+  block_by   = "Kreis",
+  threshold  = 0.8
+)
+
+# Inspect the tokenization
+inspect_tokens(base_example, "id_base", strat, Vorname)
+
+# Detect and collapse duplicates within the base data
+duplicates    <- detect_duplicates(base_example, id = "id_base", strategy = strat)
+base_dedupped <- deduplicate_table(base_example, duplicates, id = "id_base")
+
+# Cross-table candidate matches
+matches <- search_candidates(
+  base_dedupped,
+  target_example,
+  base_id   = "id_base",
+  target_id = "id_target",
+  strategy  = strat
+)
+
+# Check the result, then read the residuals
+summarise_matches(matches, threshold = 0.8)
+extract_unmatched(base_dedupped, "id_base", matches)
+extract_unmatched(target_example, "id_target", matches)
+```
+
+### Stage exact, then fuzzy
+
+A cheap, strict exact pass first, then a tolerant fuzzy pass only on
+what is left:
+
+``` r
+
+staged <- multi_stage_search(
+  base_dedupped,
+  target_example,
+  base_id   = "id_base",
+  target_id = "id_target",
+  strategies = list(
+    exact = exact_strategy(
+      Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+      Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),
+      Ort      ~ normalize_text(),
+      block_by = "Kreis"
+    ),
+    fuzzy = strat
+  )
+)
+```
+
+## Documentation
+
+The [package website](https://edubruell.github.io/joinery/) carries the
+full guide. Start with [Getting
+started](https://edubruell.github.io/joinery/articles/joinery.html),
+which walks the whole path on a pair of built-in tables and scores the
+result against a known answer key. From there, five articles each take
+on one problem:
+
+- [Beyond the basics: fuzzy and exact
+  strategies](https://edubruell.github.io/joinery/articles/features.html).
+  Containment, region-free movers, phonetic matching, and staging them
+  together.
+- [Matching across years and
+  sources](https://edubruell.github.io/joinery/articles/staged.html).
+  Pool a multi-year panel and follow each record through time.
+- [Calibrating a false-positive
+  filter](https://edubruell.github.io/joinery/articles/calibration.html).
+  Train a model on labelled pairs for when one threshold is not enough.
+- [Embedding-based
+  matching](https://edubruell.github.io/joinery/articles/embeddings.html).
+  Match on meaning when two records share no tokens at all.
+- [Working at scale with
+  DuckDB](https://edubruell.github.io/joinery/articles/duckdb.html). Run
+  the same strategies on a database backend when the table will not fit
+  in memory.
+
+The tutorial also ships as a vignette:
+
+``` r
+
+vignette("joinery", package = "joinery")
+```
+
+## License
+
+MIT
+
+# Package index
+
+## Strategies
+
+Declare how matching works. A strategy holds preparation pipelines,
+blocking, weights, and a threshold; it runs nothing itself.
+
+- [`search_strategy()`](https://edubruell.github.io/joinery/reference/search_strategy.md)
+  : Define a Search Strategy for Record Linkage
+- [`exact_strategy()`](https://edubruell.github.io/joinery/reference/exact_strategy.md)
+  : Define an Exact Matching Strategy
+- [`embedding_strategy()`](https://edubruell.github.io/joinery/reference/embedding_strategy.md)
+  : Create an Embedding Strategy
+- [`block_on_tokens()`](https://edubruell.github.io/joinery/reference/block_on_tokens.md)
+  : Block on a Column's Rare Tokens (region-free blocking)
+- [`smooth_rip_identity()`](https://edubruell.github.io/joinery/reference/smooth_rip.md)
+  [`smooth_rip_log()`](https://edubruell.github.io/joinery/reference/smooth_rip.md)
+  [`smooth_rip_offset()`](https://edubruell.github.io/joinery/reference/smooth_rip.md)
+  [`smooth_rip_softmax()`](https://edubruell.github.io/joinery/reference/smooth_rip.md)
+  : Configure rIP smoothing for a search strategy
+
+## Text preparation
+
+Turn a column’s text into tokens. Used inside a strategy formula (column
+~ step1 + step2).
+
+- [`normalize_text()`](https://edubruell.github.io/joinery/reference/normalize_text.md)
+  : Normalize text for matching
+- [`normalize_street()`](https://edubruell.github.io/joinery/reference/normalize_street.md)
+  : Normalize street names across languages
+- [`normalize_date()`](https://edubruell.github.io/joinery/reference/normalize_date.md)
+  : Normalize dates to ISO 8601 format (YYYY-MM-DD)
+- [`approximate_date()`](https://edubruell.github.io/joinery/reference/approximate_date.md)
+  : Approximate dates by rounding to coarser time units
+- [`word_tokens()`](https://edubruell.github.io/joinery/reference/word_tokens.md)
+  : Split text into word tokens
+- [`numeric_tokens()`](https://edubruell.github.io/joinery/reference/numeric_tokens.md)
+  : Tokenize numeric fields, expanding ranges into individual numbers
+- [`date_tokens()`](https://edubruell.github.io/joinery/reference/date_tokens.md)
+  : Extract date components as tokens
+- [`fuzzy_tokens()`](https://edubruell.github.io/joinery/reference/fuzzy_tokens.md)
+  : Collapse near-duplicate tokens to a canonical form
+- [`generate_ngrams()`](https://edubruell.github.io/joinery/reference/generate_ngrams.md)
+  : Generate character n-grams from text
+- [`token_shapes()`](https://edubruell.github.io/joinery/reference/token_shapes.md)
+  : Convert tokens to shape signatures
+- [`extract_initials()`](https://edubruell.github.io/joinery/reference/extract_initials.md)
+  : Extract initials from tokens
+- [`as_metaphone()`](https://edubruell.github.io/joinery/reference/as_metaphone.md)
+  : Encode text phonetically with Metaphone
+- [`as_soundex()`](https://edubruell.github.io/joinery/reference/as_soundex.md)
+  : Encode text phonetically with Soundex
+- [`as_cologne()`](https://edubruell.github.io/joinery/reference/as_cologne.md)
+  : Encode text phonetically with the Cologne procedure
+- [`strip_vowels()`](https://edubruell.github.io/joinery/reference/strip_vowels.md)
+  : Strip vowels from text (consonant skeleton)
+- [`filter_stopwords()`](https://edubruell.github.io/joinery/reference/filter_stopwords.md)
+  : Filter out stopwords from token lists
+- [`find_stopwords()`](https://edubruell.github.io/joinery/reference/find_stopwords.md)
+  : Discover candidate stopwords from a prepared token table
+- [`drop_numeric_tokens()`](https://edubruell.github.io/joinery/reference/drop_numeric_tokens.md)
+  : Drop numeric (house-number) tokens from token lists
+- [`drop_short_tokens()`](https://edubruell.github.io/joinery/reference/drop_short_tokens.md)
+  : Drop short tokens from token lists
+- [`use_dictionary()`](https://edubruell.github.io/joinery/reference/use_dictionary.md)
+  : Map tokens to canonical groups with a lookup table
+
+## Matching
+
+Find duplicates within a table, candidates across tables, resolve pairs
+into entities, and stage passes together.
+
+- [`detect_duplicates()`](https://edubruell.github.io/joinery/reference/detect_duplicates.md)
+  : Detect Duplicate Records
+- [`deduplicate_table()`](https://edubruell.github.io/joinery/reference/deduplicate_table.md)
+  : Deduplicate a Table
+- [`search_candidates()`](https://edubruell.github.io/joinery/reference/search_candidates.md)
+  : Search for Candidate Matches Between Tables
+- [`extract_unmatched()`](https://edubruell.github.io/joinery/reference/extract_unmatched.md)
+  : Extract Unmatched Records
+- [`materialize_records()`](https://edubruell.github.io/joinery/reference/materialize_records.md)
+  : Materialize Records by ID
+- [`resolve_entities()`](https://edubruell.github.io/joinery/reference/resolve_entities.md)
+  : Group Matched Pairs into Entities
+- [`multi_stage_dedup()`](https://edubruell.github.io/joinery/reference/multi_stage_dedup.md)
+  : Staged Duplicate Detection (within one table)
+- [`multi_stage_search()`](https://edubruell.github.io/joinery/reference/multi_stage_search.md)
+  : Staged Search Across Tables or Sources
+- [`prepare_search_data()`](https://edubruell.github.io/joinery/reference/prepare_search_data.md)
+  : Prepare Data for Record Linkage Search
+- [`compute_rarity()`](https://edubruell.github.io/joinery/reference/compute_rarity.md)
+  : Compute Token Rarity for Record Linkage
+
+## Diagnostics
+
+Check a strategy before you run it, and inspect what it found.
+
+- [`inspect_tokens()`](https://edubruell.github.io/joinery/reference/inspect_tokens.md)
+  : Inspect Tokens for a Specific Column
+- [`plan_strategy()`](https://edubruell.github.io/joinery/reference/plan_strategy.md)
+  : Plan a Search Strategy from Raw Inputs
+- [`audit_strategy()`](https://edubruell.github.io/joinery/reference/audit_strategy.md)
+  : Audit a Search Strategy Against Data
+- [`rarity_distribution()`](https://edubruell.github.io/joinery/reference/rarity_distribution.md)
+  : Read the Token Rarity Distribution
+- [`summarise_matches()`](https://edubruell.github.io/joinery/reference/summarise_matches.md)
+  : Summarise a Match Result
+- [`explain_match()`](https://edubruell.github.io/joinery/reference/explain_match.md)
+  : Explain a Single Match
+- [`sample_matches()`](https://edubruell.github.io/joinery/reference/sample_matches.md)
+  : Sample Matches for Review
+- [`compare_stages()`](https://edubruell.github.io/joinery/reference/compare_stages.md)
+  : Compare Stages of a Multi-Stage Match
+- [`recommendations()`](https://edubruell.github.io/joinery/reference/recommendations.md)
+  : Recommendations from a Diagnostic Object
+
+## Plots
+
+Visualise a diagnostic result. Each verb returns data; these draw it.
+The default plot() method of each diagnostic class calls the most useful
+one of these.
+
+- [`score_histogram()`](https://edubruell.github.io/joinery/reference/score_histogram.md)
+  : Bar chart of the pre-binned score distribution
+- [`score_density()`](https://edubruell.github.io/joinery/reference/score_density.md)
+  : Kernel density of the score distribution
+- [`coverage_plot()`](https://edubruell.github.io/joinery/reference/coverage_plot.md)
+  : Bar chart of match coverage (base and/or target)
+- [`cluster_size_plot()`](https://edubruell.github.io/joinery/reference/cluster_size_plot.md)
+  : Bar chart of cluster-size distribution (duplicates only)
+- [`ambiguity_plot()`](https://edubruell.github.io/joinery/reference/ambiguity_plot.md)
+  : Bar chart of candidates-per-record distribution (candidates only)
+- [`top_gap_density()`](https://edubruell.github.io/joinery/reference/top_gap_density.md)
+  : Bar chart of top-1 vs top-2 score gap distribution (candidates only)
+- [`rarity_histogram()`](https://edubruell.github.io/joinery/reference/rarity_histogram.md)
+  : Bar chart of median token rarity per column
+- [`token_frequency_plot()`](https://edubruell.github.io/joinery/reference/token_frequency_plot.md)
+  : Bar chart of average tokens per record per column
+- [`block_size_plot()`](https://edubruell.github.io/joinery/reference/block_size_plot.md)
+  : Bar chart of block sizes (requires block_by on strategy)
+- [`vocab_overlap_plot()`](https://edubruell.github.io/joinery/reference/vocab_overlap_plot.md)
+  : Bar chart of vocabulary overlap between base and target per column
+- [`similarity_histogram()`](https://edubruell.github.io/joinery/reference/similarity_histogram.md)
+  : Histogram of sampled pairwise cosine similarities
+- [`norm_plot()`](https://edubruell.github.io/joinery/reference/norm_plot.md)
+  : Bar chart of embedding norm quantiles
+- [`contribution_plot()`](https://edubruell.github.io/joinery/reference/contribution_plot.md)
+  : Horizontal bar chart of per-column score contributions
+- [`token_contribution_plot()`](https://edubruell.github.io/joinery/reference/token_contribution_plot.md)
+  : Horizontal bar chart of per-token score contributions, coloured by
+  column
+- [`stage_coverage_plot()`](https://edubruell.github.io/joinery/reference/stage_coverage_plot.md)
+  : Line plot of cumulative base coverage by stage
+- [`stage_score_plot()`](https://edubruell.github.io/joinery/reference/stage_score_plot.md)
+  : Grouped bar chart of score distributions by stage
+- [`frontier_plot()`](https://edubruell.github.io/joinery/reference/frontier_plot.md)
+  : Cost/recall frontier scatter for a strategy plan
+
+## Calibration
+
+Train and evaluate a false-positive filter on labelled pairs.
+
+- [`export_for_labelling()`](https://edubruell.github.io/joinery/reference/export_for_labelling.md)
+  : Export a match sample to CSV for manual labelling
+- [`import_labels()`](https://edubruell.github.io/joinery/reference/import_labels.md)
+  : Import a labelled CSV back into a feature/label table
+- [`match_features()`](https://edubruell.github.io/joinery/reference/match_features.md)
+  : Build a per-pair feature table for calibration
+- [`fit_filter()`](https://edubruell.github.io/joinery/reference/fit_filter.md)
+  : Fit a false-positive filter on labelled match pairs
+- [`apply_filter()`](https://edubruell.github.io/joinery/reference/apply_filter.md)
+  : Apply a fitted filter to match features
+- [`calibrate_matches()`](https://edubruell.github.io/joinery/reference/calibrate_matches.md)
+  : Calibrate matches end-to-end (features -\> filter -\> apply)
+- [`calibrate()`](https://edubruell.github.io/joinery/reference/calibrate.md)
+  : Evaluate a fitted filter on labelled pairs
+- [`joinery_recipe()`](https://edubruell.github.io/joinery/reference/joinery_recipe.md)
+  : Build a tidymodels recipe for calibration features
+
+## Embeddings
+
+Vector-based matching for the embedding strategy.
+
+- [`compute_embeddings()`](https://edubruell.github.io/joinery/reference/compute_embeddings.md)
+  : Compute Embeddings for Records
+- [`score_embeddings()`](https://edubruell.github.io/joinery/reference/score_embeddings.md)
+  : Score Embedding Pairs Using Cosine Similarity
+- [`clear_embedding_cache()`](https://edubruell.github.io/joinery/reference/clear_embedding_cache.md)
+  : Clear the embedding reuse cache
+
+## DuckDB backend control
+
+Tuning for the out-of-core DuckDB backend.
+
+- [`duckdb_control()`](https://edubruell.github.io/joinery/reference/duckdb_control.md)
+  : DuckDB Execution Control
+- [`duckdb_batch_plan()`](https://edubruell.github.io/joinery/reference/duckdb_batch_plan.md)
+  : Create a Batch Plan for DuckDB Table Processing
+- [`batch_map()`](https://edubruell.github.io/joinery/reference/batch_map.md)
+  : Apply a function to DuckDB table batches
+- [`drop_joinery_temp_tables()`](https://edubruell.github.io/joinery/reference/drop_joinery_temp_tables.md)
+  : Drop all temporary DuckDB tables created by joinery
+
+## Example data
+
+Synthetic datasets used throughout the documentation.
+
+- [`base_example`](https://edubruell.github.io/joinery/reference/base_example.md)
+  : Base dataset for record linkage example
+- [`target_example`](https://edubruell.github.io/joinery/reference/target_example.md)
+  : Target dataset for record linkage example
+- [`workshop_register`](https://edubruell.github.io/joinery/reference/workshop_register.md)
+  : Workshop guild register (base) for record linkage examples
+- [`workshop_listings`](https://edubruell.github.io/joinery/reference/workshop_listings.md)
+  : Workshop external directory (target) for record linkage examples
+- [`workshop_panel`](https://edubruell.github.io/joinery/reference/workshop_panel.md)
+  : Multi-year workshop panel for cross-year linkage examples
+- [`match_labels_example`](https://edubruell.github.io/joinery/reference/match_labels_example.md)
+  : Labelled candidate pairs for calibration examples
+- [`street_types`](https://edubruell.github.io/joinery/reference/street_types.md)
+  : Multilingual Street-Type Normalization Dictionary
+- [`street_stopwords`](https://edubruell.github.io/joinery/reference/street_stopwords.md)
+  : Multilingual Street-Name Stopwords
+
+# Articles
+
+### All vignettes
+
+- [Calibrating a false-positive
+  filter](https://edubruell.github.io/joinery/articles/calibration.md):
+- [Working at scale with
+  DuckDB](https://edubruell.github.io/joinery/articles/duckdb.md):
+- [Embedding-based
+  matching](https://edubruell.github.io/joinery/articles/embeddings.md):
+- [Beyond the basics: fuzzy and exact
+  strategies](https://edubruell.github.io/joinery/articles/features.md):
+- [Glossary](https://edubruell.github.io/joinery/articles/glossary.md):
+- [Getting started with
+  joinery](https://edubruell.github.io/joinery/articles/joinery.md):
+- [Matching across years and
+  sources](https://edubruell.github.io/joinery/articles/staged.md):

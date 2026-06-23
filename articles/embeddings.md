@@ -1,0 +1,313 @@
+# Embedding-based matching
+
+Every other strategy in joinery matches on surface form: shared tokens,
+shared sounds, shared subsets. That works until two records mean the
+same thing while sharing none of the same words. “J. Pollard,
+Cabinetmaker” and “Pollard Bespoke Furniture” are the same workshop to a
+human and a total mismatch to a token scorer. Embeddings are how you
+match on meaning instead of spelling.
+
+This article shows when that helps, what it costs, and where it quietly
+fails. It uses the same `workshop_register` / `workshop_listings` pair
+as the other articles, so you can read the behaviour off the page.
+
+## What an embedding is
+
+An **embedding** turns a piece of text into a list of numbers (a vector)
+that captures its meaning. A good embedding model places texts that mean
+similar things close together in that number space and texts that mean
+different things far apart. So once every record is a vector, “are these
+two records similar?” becomes “are these two vectors close?”, which is a
+single arithmetic operation (cosine similarity) rather than a token
+comparison.
+
+The useful part is that closeness survives a change of words.
+“Cabinetmaker” and “bespoke furniture maker” land near each other even
+though they share no tokens, because the model learned they mean roughly
+the same trade. That is the one thing token and phonetic matching cannot
+do.
+
+You do not train anything. You send each record’s text to a pre-trained
+embedding model and get its vector back. joinery does this through the
+[tidyllm](https://edubruell.github.io/tidyllm/) package, which talks to
+embedding providers (OpenAI, Mistral, Voyage, or a local model via
+Ollama). Which model you use, and how to set it up, is covered in
+tidyllm’s own guide: [Embedding Models in
+tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html).
+Read that first if you have not used embeddings before; it explains the
+providers, the API keys, and how to run a model locally for free.
+
+One thing to know before you start: embeddings are powerful and need
+almost no configuration, but they are not free. Turning text into
+vectors (**generation**) calls an external model and is the expensive,
+slow step. On a few thousand records that is seconds; on millions it is
+the cost that dominates everything. The rest of this article is about
+getting the power without paying that bill twice.
+
+``` r
+
+library(joinery)
+library(tidyllm)
+library(dplyr)
+```
+
+## The one-call matcher
+
+You name the model and the columns to embed, and you are done. There is
+no preparer pipeline, no rarity tuning, no blocking required. Here we
+use a local Ollama model; swap in any provider tidyllm supports.
+
+``` r
+
+emb_model <- ollama(.model = "mxbai-embed-large")
+
+st_embed <- embedding_strategy(
+  columns         = c("workshop", "proprietor", "town"),
+  embedding_model = emb_model,
+  threshold       = 0.80
+)
+```
+
+[`embedding_strategy()`](https://edubruell.github.io/joinery/reference/embedding_strategy.md)
+folds the three named columns into one text string per record, embeds
+it, and scores a pair by the cosine similarity of their two vectors.
+[`search_candidates()`](https://edubruell.github.io/joinery/reference/search_candidates.md)
+then returns every cross-table pair scoring at or above the `threshold`.
+
+``` r
+
+m <- search_candidates(
+  workshop_register, workshop_listings,
+  base_id = "reg_no", target_id = "listing_id",
+  strategy = st_embed
+)
+```
+
+On the linkable listings this recovers around 88% of the true matches
+with zero configuration: no token rules, no phonetic encoders, no
+`block_by`. The single vector folds name, proprietor, and town into one
+signal and gets most of the way on its own. This is what makes
+embeddings seductive, and it is a genuinely good first cut on small,
+reasonably clean data.
+
+## The bill is all in generation
+
+It is worth seeing where the time actually goes, because it changes how
+you use the tool. There are two cost axes, and they are about 100x
+apart.
+
+``` r
+
+# Generation: text -> vectors, one HTTP round-trip per batch to the model.
+system.time({
+  base_emb   <- compute_embeddings(workshop_register, "reg_no", st_embed)
+  target_emb <- compute_embeddings(workshop_listings, "listing_id", st_embed)
+})
+#>    user  system elapsed
+#>   0.6     0.1    40.1        # ~1,950 records, ~49 records/sec
+
+# Retrieval: scoring every pair from vectors you already have. One matmul.
+system.time(
+  score_embeddings(base_emb, target_emb, st_embed)
+)
+#>    user  system elapsed
+#>   0.36    0.02   0.40        # ~940k pairs
+```
+
+Generation took about 40 seconds; scoring every pair took under half a
+second. So when people say “embeddings are expensive” they mean
+**generation** is expensive, and it is expensive because it is an
+external call, not because of anything joinery does. Everything
+downstream, the scoring, the thresholding, the sweep below, is
+effectively free once the vectors exist.
+
+This is the whole reason the next two sections matter. The lever that
+controls cost is never “score faster”, it is “embed fewer rows, and
+never embed the same row twice”.
+
+## Embed once, reuse forever
+
+joinery remembers vectors it has already computed. The first call to a
+verb that needs embeddings pays the generation cost; later calls reuse
+the vectors instead of re-embedding. A multi-stage run, a re-run with a
+different threshold, or a second verb on the same data all reuse
+silently.
+
+``` r
+
+# First call: pays generation.
+search_candidates(workshop_register, workshop_listings,
+                  "reg_no", "listing_id", st_embed)
+
+# Same data again at a stricter threshold: re-embeds nothing, returns instantly.
+search_candidates(workshop_register, workshop_listings,
+                  "reg_no", "listing_id",
+                  embedding_strategy(
+                    columns = c("workshop", "proprietor", "town"),
+                    embedding_model = emb_model,
+                    threshold = 0.90
+                  ))
+```
+
+The cache is keyed by the model and the record’s text, so it does the
+safe thing automatically: change a record’s text and only that record
+re-embeds; switch to a different model and nothing stale is reused.
+
+By default the cache lives for the R session. To keep vectors across
+sessions, so tomorrow’s run does not re-pay today’s bill, point it at a
+directory:
+
+``` r
+
+options(joinery.embedding_cache_dir = "~/.cache/joinery-embeddings")
+```
+
+Now every vector is also written to disk and reloaded on the next run.
+To force a clean re-embed or reclaim memory in a long session, clear it:
+
+``` r
+
+clear_embedding_cache()             # session cache
+clear_embedding_cache(disk = TRUE)  # session and disk
+```
+
+The DuckDB backend does the same thing its own way: it stores vectors in
+a real column on the table and skips rows that already have one. Either
+way, the rule is the same. Embed once.
+
+## The ceiling: where meaning is too blunt
+
+Embeddings get you most of the way at no effort, which invites the
+question of how far you can push them. Walk the threshold up and watch
+precision and recall trade off. This sweep is free once the vectors
+exist, so it costs nothing to look.
+
+| threshold | accepted | precision | recall |
+|-----------|----------|-----------|--------|
+| 0.60      | 893      | 0.79      | 0.91   |
+| 0.70      | 884      | 0.80      | 0.91   |
+| 0.75      | 847      | 0.83      | 0.91   |
+| 0.80      | 773      | 0.89      | 0.88   |
+| 0.85      | 695      | 0.91      | 0.81   |
+| 0.90      | 537      | 0.92      | 0.63   |
+| 0.95      | 266      | 0.94      | 0.32   |
+
+Read down the column: precision climbs to about 0.94 and then flattens.
+Past about 0.85 each step up buys almost no precision and gives up
+recall fast. That ceiling is not a tuning problem you can fix with a
+better threshold. It is structural.
+
+The records stuck under that ceiling are the genuine look-alikes: two
+unrelated “Oakwood Joinery” workshops in different towns, a common
+proprietor surname, a generic trade. The `workshop_listings` data plants
+these on purpose in its `homonym_*` tiers. An embedding pulls these
+pairs close together because they really do read alike, and no threshold
+can separate “alike because same business” from “alike because similar
+name”. The model compressed away the distinction.
+
+This is exactly the distinction joinery’s token and rarity machinery is
+built to make. A rare shared token (“Oakwood” appearing in only two
+records) is strong evidence; a common one (“Joinery” in hundreds) is
+weak. Rarity scoring reads that difference directly, which is why a
+token strategy can hold two same-name workshops apart where an embedding
+fuses them. Embeddings are a floor to build on, not a ceiling to chase.
+
+## Where embeddings belong: the residual
+
+The honest place for embeddings is not as the primary matcher but as the
+last stage. Cheap token and phonetic passes do the bulk of the work and
+cost almost nothing, then embeddings mop up the residual, the records
+where the surface forms genuinely disagree but the meaning matches.
+Because you only embed the small residual, the generation bill stays
+small.
+
+[`multi_stage_search()`](https://edubruell.github.io/joinery/reference/multi_stage_search.md)
+runs strategies in order, and each stage only sees what the earlier
+stages left behind. Put the cheap, precise strategies first and the
+embedding stage last:
+
+``` r
+
+st_exact <- exact_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  containment            = "forward",
+  min_containment_tokens = 3,
+  block_by               = c("postcode_area", "trade")
+)
+
+st_fuzzy <- search_strategy(
+  workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by  = c("postcode_area", "trade"),
+  threshold = 0.7
+)
+
+m_staged <- multi_stage_search(
+  workshop_register, workshop_listings,
+  base_id = "reg_no", target_id = "listing_id",
+  strategies = list(st_exact, st_fuzzy, st_embed)
+)
+```
+
+The exact and fuzzy passes recover the typos, slogans, and reorderings
+for free. The embedding stage runs only on the listings neither could
+place, which is the small set where the words truly differ. That is the
+pattern to remember: tokens for the bulk, embeddings for the remainder.
+
+There is a catch worth stating plainly. The residual is the **hard**
+set. It is enriched for exactly the near-twins and homonyms that sit
+under the precision ceiling, so an embedding stage on the residual is
+working in its weakest region. Do not trust raw top-scoring pairs there.
+Pair the embedding stage with a higher threshold, and lean on the
+calibrated false-positive filter, which is built for this and reads
+embedding features (`cosine_sim`, the per-record vector norms) directly.
+See [calibrating a false-positive
+filter](https://edubruell.github.io/joinery/articles/calibration.md) for
+how to fit one. Calibration is the precision answer that the threshold
+alone cannot give you.
+
+## Scaling: blocking and the cost wall
+
+Everything above runs in seconds because the data is small. Two things
+change as the data grows.
+
+Generation cost grows with the number of records, and it is the wall you
+hit first. The defence is the same one this article has built toward:
+only embed what you must. Stage embeddings last so you embed the
+residual, not the corpus, and keep the disk cache on so a row is
+embedded once across all your runs.
+
+Scoring cost grows with the number of *pairs*, which is the product of
+the two table sizes. Below a few hundred thousand records the all-pairs
+scan is fine, as the sub-second scoring figure above shows. Beyond that,
+give the embedding strategy a `block_by` so it only scores pairs within
+the same block, the same lever the token strategies use:
+
+``` r
+
+st_blocked <- embedding_strategy(
+  columns         = c("workshop", "proprietor", "town"),
+  embedding_model = emb_model,
+  threshold       = 0.80,
+  block_by        = c("postcode_area", "trade")
+)
+```
+
+Within a block the scan is exact: every pair is compared, nothing is
+missed. joinery does not yet use an approximate nearest-neighbour index,
+so for a very large corpus that you cannot block sensibly, the right
+tool is a dedicated vector store rather than joinery’s in-database scan.
+For the blocked, residual-sized problems embeddings are actually good
+at, the exact scan is both correct and fast enough.
+
+## Where to look next
+
+- **Cutting false positives**: the residual-rescue pattern needs a
+  precision filter. [Calibrating a false-positive
+  filter](https://edubruell.github.io/joinery/articles/calibration.md)
+  fits one from labelled pairs and uses the embedding similarity as a
+  feature.
+- **The token and phonetic strategies** that should run before the
+  embedding stage: [beyond the basics: fuzzy and exact
+  strategies](https://edubruell.github.io/joinery/articles/features.md).
+- **Choosing and configuring a model**: [Embedding Models in
+  tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html).

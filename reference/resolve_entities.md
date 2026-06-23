@@ -1,0 +1,120 @@
+# Group Matched Pairs into Entities
+
+Take a list of matched record pairs (an edge list) and turn it into
+entities: records that link directly or through a chain of links are
+grouped together, each group gets an `entity` number, and one record in
+each group is marked as its representative.
+
+This is the grouping step
+[`detect_duplicates()`](https://edubruell.github.io/joinery/reference/detect_duplicates.md)
+performs internally, exposed on its own so you can resolve any pair list
+into entities, for example the output of
+[`search_candidates()`](https://edubruell.github.io/joinery/reference/search_candidates.md)
+or a set of links you assembled yourself.
+
+## Usage
+
+``` r
+resolve_entities(
+  edges,
+  id_a,
+  id_b,
+  score = NULL,
+  vertices = NULL,
+  rep_by = NULL,
+  block_by = NULL,
+  ...
+)
+```
+
+## Arguments
+
+- edges:
+
+  A backend table of record-pair edges (one row per edge).
+
+- id_a, id_b:
+
+  Character scalars naming the two endpoint columns in `edges`.
+
+- score:
+
+  Optional character scalar naming a per-edge score column in `edges`.
+  When supplied, within-entity `rank` is ordered by descending best
+  score (the maximum over a vertex's incident edges) and that best score
+  is returned as an extra `score` column. When `NULL`, ranking falls
+  back to the `rep_by`/`id` rule.
+
+- vertices:
+
+  Optional. All vertex ids to include, so that ids absent from every
+  edge come back as their own singleton entity (rank 1, `rep` = self).
+  Either an atomic vector of ids, or a table with an `id` column (plus
+  any `rep_by` column). When `NULL`, only ids appearing in `edges` are
+  returned.
+
+- rep_by:
+
+  Optional character scalar naming a priority column (on the `vertices`
+  table) used to pick the canonical representative: the member with the
+  smallest `rep_by` wins, ties broken by smallest `id`.
+
+- block_by:
+
+  Optional character vector of columns in `edges` used to run connected
+  components per block (DuckDB backend).
+
+- ...:
+
+  Additional arguments passed to backend-specific methods.
+
+## Value
+
+One row per resolved vertex:
+
+- id:
+
+  The vertex id.
+
+- entity:
+
+  Integer entity (connected-component) label.
+
+- rep:
+
+  The canonical representative id of the entity.
+
+- rank:
+
+  Rank within the entity; rank 1 is the representative.
+
+- score:
+
+  Best incident-edge score per vertex (only when `score` is supplied).
+
+## Details
+
+The result does not depend on the order of rows in `edges`: the same
+pairs always produce the same `entity`, `rep`, and `rank`. Entity
+numbers are assigned by the smallest member id in each group. The
+representative (the rank-1 member) is chosen by highest best `score`
+when a score column is given, then by smallest `rep_by` when given, then
+by smallest `id`.
+
+## Examples
+
+``` r
+# r1-r2 and r2-r3 chain into one entity; r4-r5 form another
+edges <- data.table::data.table(
+  a = c("r1", "r2", "r4"),
+  b = c("r2", "r3", "r5")
+)
+resolve_entities(edges, id_a = "a", id_b = "b")
+#>        id entity    rep  rank
+#>    <char>  <int> <char> <int>
+#> 1:     r1      1     r1     1
+#> 2:     r2      1     r1     2
+#> 3:     r3      1     r1     3
+#> 4:     r4      2     r4     1
+#> 5:     r5      2     r4     2
+```
