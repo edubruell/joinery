@@ -228,6 +228,7 @@ method(print.Search_Strategy, Exact_Strategy) <- function(x, ...) {
 #' dups <- detect_duplicates(workshop_register, id = "reg_no", strategy = ex)
 #' head(dups)
 #'
+#' @aliases Exact_Strategy
 #' @export
 exact_strategy <- function(...,
                            block_by               = NULL,

@@ -26,12 +26,17 @@ Most record linkage tools rely on edit distances or probabilistic pairwise compa
 - Matching is **directional**; one table defines token frequencies, the other provides search queries.
 
 This approach works especially well when:
+
 - Names are long, noisy, or inconsistently formatted.
 - Rare identifiers should dominate common boilerplate terms.
 - No labeled training data is available.
 - Matching proceeds in multiple, increasingly tolerant stages.
 
+It also runs where the data does not fit in memory. The same strategy you prototype on an in-memory table runs unchanged against a **DuckDB** database, which does the large joins out-of-core, on disk, a piece at a time. Little else in R links and resolves entities this way: in practice it has turned a 51-million-row business directory, a job that would classically call for a cluster, into an overnight run on a laptop.
+
 joinery is not a drop-in replacement for probabilistic linkage engines. It is a complementary tool for **transparent, strategy-driven matching** where robustness and explainability matter more than calibrated match probabilities.
+
+To place it among the alternatives: reach for **fuzzyjoin** or **zoomerjoin** when you need string- or edit-distance joins on short, mostly clean fields; reach for **fastLink** or **reclin2** when you need a Fellegi-Sunter model with calibrated m/u match probabilities. Reach for joinery when records are long and messy, rare tokens carry the signal, and you want to see exactly why a pair matched. A probabilistic scoring strategy is on the roadmap, so that boundary is expected to narrow over time.
 
 
 ## Installation

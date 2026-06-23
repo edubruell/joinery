@@ -104,6 +104,7 @@ prepare_auxiliary_registry <- new_generic(
 #'                         target = workshop_register, target_id = "reg_no")
 #' feats
 #'
+#' @aliases Match_Features
 #' @export
 match_features <- new_generic(
   "match_features",

@@ -2,6 +2,7 @@
 % Please edit documentation in R/strategy_embedding.R
 \name{embedding_strategy}
 \alias{embedding_strategy}
+\alias{Embedding_Strategy}
 \title{Create an Embedding Strategy}
 \usage{
 embedding_strategy(

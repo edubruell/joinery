@@ -403,8 +403,12 @@ materialize_records <- new_generic(
 #'   * `collapse`: what happens between stages. `"none"` only carries the
 #'     still-unmatched records forward, while `"rep"` also collapses each group
 #'     found so far to a single representative, shrinking the search space for
-#'     the looser passes that follow.
-#'   * `rep_rule`: rule for choosing each group's representative.
+#'     the looser passes that follow. (A third mode that merges the token sets
+#'     of a whole group is reserved for a future release and not yet available.)
+#'   * `rep_rule`: rule for choosing each group's representative. Currently
+#'     `"canonical"` is the only rule wired; to set the representative yourself,
+#'     pass a priority column with `rep_by`. Other rules are reserved for a
+#'     future release.
 #'   * `rebind`: how the next stage's two sides are formed from the
 #'     representatives and the residual: `"explicit"`, `"self"`, or
 #'     `"accumulate"` (the path for incremental panel updates).

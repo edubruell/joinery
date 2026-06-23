@@ -1,0 +1,68 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Builds the pkgdown site and deploys it to the gh-pages branch.
+#
+# NOTE: this workflow includes a non-standard "Strip internal files" step.
+# pkgdown auto-renders every root-level *.md file, including CLAUDE.md (the
+# internal developer guide), into the public site. There is no pkgdown config
+# to exclude a single root markdown file, and CLAUDE.md must stay at the repo
+# root for Claude Code to load it. So we remove the rendered page and its
+# search-index entries after the build and before deploy.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+name: pkgdown.yaml
+
+permissions: read-all
+
+jobs:
+  pkgdown:
+    runs-on: ubuntu-latest
+    # Only restrict concurrency for non-PR jobs
+    concurrency:
+      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgdown, local::.
+          needs: website
+
+      - name: Build site
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+        shell: Rscript {0}
+
+      - name: Strip internal files from site
+        run: |
+          rm -f docs/CLAUDE.html docs/CLAUDE.md
+          # Drop any CLAUDE entries from the search index so search has no dead
+          # links. The first record is a sentinel whose path is an array, so
+          # only filter string paths.
+          if [ -f docs/search.json ]; then
+            jq 'map(select((.path | type != "string") or (.path | test("CLAUDE") | not)))' \
+              docs/search.json > docs/search.json.tmp \
+              && mv docs/search.json.tmp docs/search.json
+          fi
+
+      - name: Deploy to GitHub pages 🚀
+        if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4.5.0
+        with:
+          clean: false
+          branch: gh-pages
+          folder: docs

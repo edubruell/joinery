@@ -20,15 +20,16 @@ table types.}
 A character vector of removed table names, invisibly.
 }
 \description{
-Removes ephemeral tables generated during batch preprocessing steps
-(for example token tables created by \code{prepare_search_data()}).
-These tables follow a reserved prefix convention (such as
-\code{"_joinery_tokens_"} or \code{"_joinery_tmp_"}) and are safe to delete.
+The DuckDB backend writes ephemeral tables during batch preprocessing (for
+example the token tables built by \code{prepare_search_data()}). A clean run drops
+them when it finishes, but a run that is killed partway, or a machine that
+loses power mid-job, can leave them behind on disk. This sweeps them up.
 }
 \details{
-This function does not touch user tables. Only tables whose names
-begin with one of the specified prefixes are removed. Additional
-prefixes can be supplied to support future temporary table types.
+Each temporary table carries a reserved name prefix such as
+\code{"_joinery_tokens_"} or \code{"_joinery_tmp_"}. Only tables whose names begin with
+one of those prefixes are removed, so your own tables are never touched. Pass
+extra \code{prefixes} to cover temporary table types added in future.
 }
 \examples{
 \dontrun{

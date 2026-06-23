@@ -2,6 +2,7 @@
 % Please edit documentation in R/strategy_exact.R
 \name{exact_strategy}
 \alias{exact_strategy}
+\alias{Exact_Strategy}
 \title{Define an Exact Matching Strategy}
 \usage{
 exact_strategy(

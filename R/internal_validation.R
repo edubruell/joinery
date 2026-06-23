@@ -47,7 +47,8 @@ utils::globalVariables(c(
   # strategy_blocking.R (token-blocking explosion)
   "._btok", "._bdf", "._brar", "._row",
   # exact_methods_datatable.R / exact containment
-  "n_match", "n_base", "n_target", "rmass", "lhs_id", "._bid", "._tid",
+  "n_match", "n_base", "n_target", "n_base_c", "n_target_c",
+  "rmass", "lhs_id", "._bid", "._tid",
   # exact_methods_datatable.R (set-equality fingerprint links)
   "._id", "._rep",
   # internal_staging.R (staged resolve / ledger)

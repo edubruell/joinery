@@ -441,6 +441,7 @@ expr_to_step <- function(expr) {
 #' )
 #' strat
 #'
+#' @aliases Search_Strategy
 #' @export
 search_strategy <- function(...,
                             block_by   = NULL,

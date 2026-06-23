@@ -24,9 +24,13 @@ measurements and the jigs that get a join to fit.
 
 ---
 
-**aIP (asymmetric identification potential).** A calibration-side token weight
-from Doherr (2023), computed across two registries. Used by `match_features()` to
-build per-pair features. Specialist, calibration only.
+**aIP (asymmetric identification potential).** A measure of how strongly a shared
+token points to the same real-world thing, and one that can differ by direction.
+A token that is rare in one table but common in the other carries more weight when
+you search from the side where it is rare. That asymmetry is what the "a" stands
+for. joinery uses aIP only during calibration: `match_features()` computes it for
+each token to help a model judge which candidate pairs are true matches. The
+formula comes from Doherr (2023). Specialist, calibration only.
 
 **Block / blocking (`block_by`).** A stable key, such as a region or an industry
 code, that records must agree on before they are compared. It restricts the
@@ -35,7 +39,7 @@ comparison to within-block pairs, which cuts cost at a small recall risk. Use
 
 **Candidate / candidate match.** A record pair the search proposes as a possible
 match, with a score. Produced by `search_candidates()`. A candidate is not yet a
-confirmed match; the threshold, and optionally calibration, decides.
+confirmed match; the threshold, and optionally calibration, decide.
 
 **Containment.** A relaxed exact match where one record's token set is a subset of
 another's, rather than equal. Off by default on `exact_strategy()`
@@ -88,10 +92,11 @@ id. `deduplicate_table()` keeps representatives.
 looser pass. `extract_unmatched()` produces them; `materialize_records()`
 rehydrates a set of ids back into full rows.
 
-**rIP (relative identification potential).** A token's share of its field's
-evidence within a record: `rIP = rarity / sum(rarity)` over the record's token set
-in that column. Scoring multiplies rIP by the column weight and sums over shared
-tokens.
+**rIP (relative identification potential).** How much of a record's identifying
+power, within one field, sits on a single token. A record's tokens split that
+field's evidence among them, and a rare token takes a larger share than a common
+one: `rIP = rarity / sum(rarity)` over the record's tokens in that column. Scoring
+multiplies each shared token's rIP by the column weight and adds them up.
 
 **Score.** A pair's match strength: the sum over shared tokens of `rIP * weight`.
 It sits in `[0, sum(weights)]`, or `[0, 1]` with normalised weights. Decomposed by

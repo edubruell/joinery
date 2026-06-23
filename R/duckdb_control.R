@@ -172,6 +172,7 @@ method(print.Duckdb_Control, Duckdb_Control) <- function(x, ...) {
 #' dbDisconnect(con, shutdown = TRUE)
 #' }
 #'
+#' @aliases Duckdb_Control
 #' @export
 duckdb_control <- function(target_batch_size = NULL,
                            min_batch_size    = NULL,

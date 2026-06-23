@@ -180,6 +180,7 @@ method(print.Search_Preparer, Embedding_Strategy) <- function(x, ...) {
 #' )
 #' }
 #'
+#' @aliases Embedding_Strategy
 #' @export
 embedding_strategy <- function(columns = NULL,
                                embedding_model,

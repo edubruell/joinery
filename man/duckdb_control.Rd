@@ -2,6 +2,7 @@
 % Please edit documentation in R/duckdb_control.R
 \name{duckdb_control}
 \alias{duckdb_control}
+\alias{Duckdb_Control}
 \title{DuckDB Execution Control}
 \usage{
 duckdb_control(

@@ -52,13 +52,13 @@
                            "most_complete", "union"))
   if (collapse == "union") {
     cli::cli_abort(c(
-      "{.code collapse = \"union\"} (member token-set merge) is not implemented yet.",
+      "{.code collapse = \"union\"} (member token-set merge) is reserved for a future release.",
       "i" = "Use {.code collapse = \"rep\"} (one representative per group) or {.code \"none\"}."
     ))
   }
   if (rep_rule != "canonical") {
     cli::cli_abort(c(
-      "{.code rep_rule = \"{rep_rule}\"} is not implemented yet.",
+      "{.code rep_rule = \"{rep_rule}\"} is reserved for a future release.",
       "i" = "Only {.val canonical} is wired; pass {.arg rep_by} for an explicit representative-priority column."
     ))
   }

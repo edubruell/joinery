@@ -2,6 +2,7 @@
 % Please edit documentation in R/generics_calibration.R
 \name{match_features}
 \alias{match_features}
+\alias{Match_Features}
 \title{Build a per-pair feature table for calibration}
 \usage{
 match_features(matches, strategy, ...)

@@ -2,6 +2,7 @@
 % Please edit documentation in R/strategy_search.R
 \name{search_strategy}
 \alias{search_strategy}
+\alias{Search_Strategy}
 \title{Define a Search Strategy for Record Linkage}
 \usage{
 search_strategy(

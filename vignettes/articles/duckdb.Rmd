@@ -30,6 +30,13 @@ You write the strategy once and it runs on either backend, so you can prototype 
 a small in-memory slice and run the full corpus through DuckDB without rewriting a
 line of matching logic.
 
+This is unusual ground for R. Almost every record-linkage package works in memory,
+which quietly caps the problem at whatever fits in RAM. joinery instead pushes the
+heavy joins into the database and works through them on disk, a piece at a time, so
+the ceiling becomes your disk rather than your memory. Little else in the R
+ecosystem links and resolves entities out-of-core this way, which is what lets the
+same code reach from a toy panel to a corpus most tools cannot open at all.
+
 This article shows that swap on a small panel you can actually run, then explains
 the one new object you need at scale and closes with what the same code did on a
 real corpus of 51 million listings.
@@ -161,6 +168,26 @@ to disk here.
 dbDisconnect(con, shutdown = TRUE)
 ```
 
+## What the database is doing
+
+It is worth knowing why this works, because it explains what scales and what does
+not. The expensive step in any token match is the overlap join: pairing up every
+record that shares a token. On a large corpus that intermediate result is far
+bigger than either input table, and it is what runs an in-memory backend out of
+RAM. The DuckDB backend never builds that result in R. It hands the join to the
+database engine, which is columnar and runs out of core: it streams the join
+through memory a piece at a time and spills to disk when a piece is too big to
+hold, so peak memory tracks the size of one piece rather than the size of the
+whole join.
+
+So the division of labour is concrete. joinery writes the long-form token table
+into the database, computes rarity and runs the overlap join there, and keeps the
+scored pairs on disk until you ask for them. Only the final entity grouping, one
+small row per record, comes back into R with `collect()`. That is the whole reason
+the same strategy that needs the full table in memory on the data.table backend
+needs only a piece at a time here, and it is why you `collect()` the grouping
+rather than the joins behind it.
+
 ## Controlling how the run is carved up
 
 On `r nrow(workshop_panel)` rows the defaults are invisible. On 50 million they are the difference
@@ -212,18 +239,35 @@ debugging a strategy.
 time, the backend prints which piece it is on out of how many, so a multi-hour job
 is never a silent prompt. You can force it on or off with `progress`.
 
+## Cleaning up temporary tables
+
+The token tables and intermediate joins from the section above are written into
+the database under reserved names like `_joinery_tokens_…`. A clean run drops them
+when it finishes, and closing a `":memory:"` database throws them away with
+everything else. A long-lived file-backed database is different: if a run is killed
+partway, or the machine loses power mid-job, those temporary tables can be left
+behind and take up space on disk.
+
+`drop_joinery_temp_tables()` clears them. It removes only tables whose names carry
+joinery's reserved prefixes and never touches your own data, so it is safe to run
+on a shared database between jobs.
+
+```{r cleanup, eval = FALSE}
+# On a long-lived file-backed connection, sweep up orphaned temporaries
+drop_joinery_temp_tables(con)
+```
+
 ## At scale: a real directory
 
-The synthetic panel above is the mechanism. Here is what the same mechanism did on
-the corpus it was built for.
+The synthetic panel above is just to show the mechanism. 
 
-The motivating job was a national business directory, published yearly for two
+The motivating real job for the example was a national business directory, published yearly for two
 decades: roughly **51 million listings**, the same firms reappearing year after
 year under names and addresses that drift, get re-spelled, and relocate. The goal
 was one panel that follows each firm through time, the same goal as the small
 example, three orders of magnitude larger.
 
-The shape of the work was exactly the staged search you just ran, with the
+The shape of the work was exactly the staged search you just saw, with the
 database doing the carrying:
 
 - Block by region and industry, so a firm is only ever compared against plausible
@@ -239,7 +283,10 @@ That pipeline resolved the 51 million listings into about **7.5 million distinct
 firms**, with roughly **2% of panel rows** reconstructed as short within-firm gaps.
 The same `duckdb_control()` failure isolation above mattered in practice: on a
 corpus that size a handful of dense blocks misbehave, and skipping them kept the
-run moving instead of forcing a restart from the top.
+run moving instead of forcing a restart from the top. The whole pipeline ran
+overnight on a 24 GB M3 MacBook Air. A corpus that would classically call for a
+cluster, or at least a high-memory server, resolved on a laptop, because the
+database held the work and only a piece of it ever sat in memory at once.
 
 The lesson is the one this article opened with. The strategy you debug on a
 thousand rows in memory is the strategy you run on fifty million on disk. Only the
