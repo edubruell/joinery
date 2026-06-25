@@ -29,7 +29,7 @@ duplicates of one another.}
 \item{score}{The record's match score within its group.}
 \item{rank}{Rank within the group; rank 1 is the representative kept by
 \code{\link[=deduplicate_table]{deduplicate_table()}}.}
-\item{\if{html}{\out{<original columns>}}}{Every other column from \code{base_table}.}
+\item{\verb{<original columns>}}{Every other column from \code{base_table}.}
 }
 }
 \description{

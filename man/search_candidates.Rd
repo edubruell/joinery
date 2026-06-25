@@ -29,7 +29,7 @@ for the target record), sharing a \code{match_id}:
 \item{score}{The pair's match score.}
 \item{source}{\code{"base"} or \code{"target"}.}
 \item{id}{The record ID.}
-\item{\if{html}{\out{<original columns>}}}{Every other column from the source table.}
+\item{\verb{<original columns>}}{Every other column from the source table.}
 \item{rank}{Rank of this candidate among a record's matches.}
 }
 }

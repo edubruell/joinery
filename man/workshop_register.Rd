@@ -29,7 +29,7 @@ share it, homonym workshops get distinct keys.}
 Three rows are \code{hub_trap}: short-named shared venues ("Trinity
 Workshops", "The Forge", "Riverside Works") that are themselves guild
 registered. Their two-token names are a forward-containment subset of every
-"\if{html}{\out{<workshop>}}, \if{html}{\out{<venue>}}" listing, so they bait an exact containment strategy
+\verb{<workshop>, <venue>} listing, so they bait an exact containment strategy
 into merging unrelated workshops; the \code{min_containment_tokens} guard
 blocks them.}
 }

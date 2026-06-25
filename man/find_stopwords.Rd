@@ -18,8 +18,8 @@ find_stopwords(
 \code{row_id}.}
 
 \item{max_prop}{Numeric in \verb{(0, 1]}. Return tokens whose document-frequency
-share is at least this value. Default \code{0.3} (token appears in ≥30\% of a
-column's records).}
+share is at least this value. Default \code{0.3} (token appears in 30\% or more
+of a column's records).}
 
 \item{top_n}{Optional integer. If supplied, instead of (or in addition to)
 the \code{max_prop} cut, keep at most the \code{top_n} most frequent tokens per

@@ -444,16 +444,16 @@ runs the same staged logic and resolves connected components at the end.
 You now have the spine: declare a strategy, check it, dedup, search, score,
 stage. Four articles take it further, each framed around one problem:
 
-- [Beyond the basics: fuzzy and exact strategies](features.html) walks the
+- [Beyond the basics: fuzzy and exact strategies](https://edubruell.github.io/joinery/articles/features.html) walks the
   advanced joins (containment, region-free movers, phonetic encoders, the fan-out
   guard) on the `workshop_register` / `workshop_listings` tables, where each
   feature has a planted case that measurably wins when you switch it on.
-- [Matching across years and sources](staged.html) pools a multi-year panel and
+- [Matching across years and sources](https://edubruell.github.io/joinery/articles/staged.html) pools a multi-year panel and
   follows each workshop through time with a staged self-search.
-- [Calibrating a false-positive filter](calibration.html) trains a model on
+- [Calibrating a false-positive filter](https://edubruell.github.io/joinery/articles/calibration.html) trains a model on
   labelled pairs (`sample_matches()`, `export_for_labelling()`, `fit_filter()`,
   `calibrate_matches()`) for when one threshold is not enough.
-- [Embedding-based matching](embeddings.html) matches on meaning instead of
+- [Embedding-based matching](https://edubruell.github.io/joinery/articles/embeddings.html) matches on meaning instead of
   spelling, for records that share no tokens at all.
 
 And two more pointers for planning and scale: `plan_strategy()` helps choose a

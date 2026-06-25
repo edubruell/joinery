@@ -73,7 +73,7 @@
 #'     Three rows are \code{hub_trap}: short-named shared venues ("Trinity
 #'     Workshops", "The Forge", "Riverside Works") that are themselves guild
 #'     registered. Their two-token names are a forward-containment subset of every
-#'     "<workshop>, <venue>" listing, so they bait an exact containment strategy
+#'     \verb{<workshop>, <venue>} listing, so they bait an exact containment strategy
 #'     into merging unrelated workshops; the \code{min_containment_tokens} guard
 #'     blocks them.}
 #' }
@@ -203,33 +203,33 @@
 #' normalization rules. Each variant is marked as either:
 #'
 #' - **"exact"** - the variant should only match a token when it appears
-#'   *exactly*, e.g. `"st."` → `"STREET"` (English), `"pl"` → `"PLAZA"` (Spanish)
+#'   *exactly*, e.g. `"st."` -> `"STREET"` (English), `"pl"` -> `"PLAZA"` (Spanish)
 #' - **"suffix"** - the variant may safely match a token *ending with* that
-#'   sequence, e.g. `"gatan"` → `"GATA"` (Swedish), `"strasse"` → `"STRASSE"`
+#'   sequence, e.g. `"gatan"` -> `"GATA"` (Swedish), `"strasse"` -> `"STRASSE"`
 #'   (German)
 #'
 #' By separating exact vs. suffix behaviour and tagging each entry with an ISO
 #' language code, \pkg{joinery} can normalize addresses *without* incorrect
-#' transformations (e.g. preventing `"LINCOLN"` → `"LANE"`, or `"VICTOR"` →
+#' transformations (e.g. preventing `"LINCOLN"` -> `"LANE"`, or `"VICTOR"` ->
 #' `"RUE"`). This structure enables high-precision multilingual address cleaning.
 #'
 #' ## Languages Covered
 #'
 #' The dictionary currently includes major street-type systems from:
 #'
-#' - **German** - Straße, Gasse, Weg, Platz, Allee, …
-#' - **English** - Street, Road, Avenue, Boulevard, Lane, …
-#' - **French** - Rue, Avenue, Boulevard, Impasse, Quai, Chemin, …
-#' - **Spanish** - Calle, Avenida, Paseo, Plaza, Camino, …
-#' - **Italian** - Via, Piazza, Corso, Viale, …
-#' - **Portuguese** - Rua, Avenida, Praça, Alameda, Travessa, …
-#' - **Polish** - Ulica, Aleja, Plac, Osiedle, …
-#' - **Dutch** - Straat, Laan, Weg, Plein, …
-#' - **Turkish** - Sokak, Cadde, Bulvar, Meydan, …
-#' - **Swedish** - Gata, Gatan, Vägen, Torg, …
-#' - **Danish/Norwegian** - Gade, Vej, Plads, …
+#' - **German** - Straße, Gasse, Weg, Platz, Allee, etc.
+#' - **English** - Street, Road, Avenue, Boulevard, Lane, etc.
+#' - **French** - Rue, Avenue, Boulevard, Impasse, Quai, Chemin, etc.
+#' - **Spanish** - Calle, Avenida, Paseo, Plaza, Camino, etc.
+#' - **Italian** - Via, Piazza, Corso, Viale, etc.
+#' - **Portuguese** - Rua, Avenida, Praça, Alameda, Travessa, etc.
+#' - **Polish** - Ulica, Aleja, Plac, Osiedle, etc.
+#' - **Dutch** - Straat, Laan, Weg, Plein, etc.
+#' - **Turkish** - Sokak, Cadde, Bulvar, Meydan, etc.
+#' - **Swedish** - Gata, Gatan, Vägen, Torg, etc.
+#' - **Danish/Norwegian** - Gade, Vej, Plads, etc.
 #' - **Greek (transliterated)** - Odos, Leoforos, Plateia
-#' - **Russian (transliterated)** - Ulitsa, Prospekt, Pereulok, …
+#' - **Russian (transliterated)** - Ulitsa, Prospekt, Pereulok, etc.
 #'
 #' Additional languages and street-type systems can be incorporated as needed.
 #'

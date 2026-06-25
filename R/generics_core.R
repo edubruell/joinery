@@ -63,7 +63,7 @@ prepare_search_data <- new_generic(
 #'   \item{score}{The record's match score within its group.}
 #'   \item{rank}{Rank within the group; rank 1 is the representative kept by
 #'     [deduplicate_table()].}
-#'   \item{<original columns>}{Every other column from `base_table`.}
+#'   \item{\verb{<original columns>}}{Every other column from `base_table`.}
 #' }
 #'
 #' @seealso [deduplicate_table()] to collapse the groups, [search_candidates()]
@@ -209,7 +209,7 @@ deduplicate_table <- new_generic("deduplicate_table",
 #'   \item{score}{The pair's match score.}
 #'   \item{source}{`"base"` or `"target"`.}
 #'   \item{id}{The record ID.}
-#'   \item{<original columns>}{Every other column from the source table.}
+#'   \item{\verb{<original columns>}}{Every other column from the source table.}
 #'   \item{rank}{Rank of this candidate among a record's matches.}
 #' }
 #'

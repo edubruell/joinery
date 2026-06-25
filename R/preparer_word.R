@@ -398,12 +398,13 @@ as_metaphone <- function(text) {
   if (is.list(text)) return(.encode_token_list(text, as_metaphone))
   check_character(text)
 
-  # Normalize accents: Cafe (accented) -> Cafe
-  x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
+  # Handle the German sharp-s (eszett, U+00DF) first: ASCII//TRANSLIT drops it on
+  # some platforms (Windows) and expands it to "ss" on others, so map it before
+  # transliterating. Escaped to keep R source ASCII.
+  x_norm <- gsub(intToUtf8(0x00DF), "ss", text, ignore.case = TRUE)
 
-  # Handle the German sharp-s (eszett, U+00DF) separately: ASCII//TRANSLIT turns
-  # it into "ss" on some locales, but not reliably. Escaped to keep R source ASCII.
-  x_norm <- gsub(intToUtf8(0x00DF), "ss", x_norm, ignore.case = TRUE)
+  # Normalize remaining accents: Cafe (accented) -> Cafe
+  x_norm <- iconv(x_norm, from = "", to = "ASCII//TRANSLIT")
 
   phonics::metaphone(x_norm,clean = FALSE)
 }
@@ -441,12 +442,13 @@ as_soundex <- function(text){
   if (is.list(text)) return(.encode_token_list(text, as_soundex))
   check_character(text)
 
-  # Normalize accents: Cafe (accented) -> Cafe
-  x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
+  # Handle the German sharp-s (eszett, U+00DF) first: ASCII//TRANSLIT drops it on
+  # some platforms (Windows) and expands it to "ss" on others, so map it before
+  # transliterating. Escaped to keep R source ASCII.
+  x_norm <- gsub(intToUtf8(0x00DF), "ss", text, ignore.case = TRUE)
 
-  # Handle the German sharp-s (eszett, U+00DF) separately: ASCII//TRANSLIT turns
-  # it into "ss" on some locales, but not reliably. Escaped to keep R source ASCII.
-  x_norm <- gsub(intToUtf8(0x00DF), "ss", x_norm, ignore.case = TRUE)
+  # Normalize remaining accents: Cafe (accented) -> Cafe
+  x_norm <- iconv(x_norm, from = "", to = "ASCII//TRANSLIT")
 
   phonics::soundex(x_norm,clean = FALSE)
 }
@@ -482,8 +484,9 @@ as_cologne <- function(text){
   if (is.list(text)) return(.encode_token_list(text, as_cologne))
   check_character(text)
 
-  x_norm <- iconv(text, from = "", to = "ASCII//TRANSLIT")
-  x_norm <- gsub(intToUtf8(0x00DF), "ss", x_norm, ignore.case = TRUE)
+  # Map the German sharp-s (eszett, U+00DF) before transliterating; see as_metaphone().
+  x_norm <- gsub(intToUtf8(0x00DF), "ss", text, ignore.case = TRUE)
+  x_norm <- iconv(x_norm, from = "", to = "ASCII//TRANSLIT")
 
   phonics::cologne(x_norm, clean = FALSE)
 }

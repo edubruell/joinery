@@ -47,8 +47,8 @@
 #'   (data.table or DuckDB backend). Must contain `src_column`, `token`, and
 #'   `row_id`.
 #' @param max_prop Numeric in `(0, 1]`. Return tokens whose document-frequency
-#'   share is at least this value. Default `0.3` (token appears in ≥30% of a
-#'   column's records).
+#'   share is at least this value. Default `0.3` (token appears in 30% or more
+#'   of a column's records).
 #' @param top_n Optional integer. If supplied, instead of (or in addition to)
 #'   the `max_prop` cut, keep at most the `top_n` most frequent tokens per
 #'   column. When both are given, the union is returned.

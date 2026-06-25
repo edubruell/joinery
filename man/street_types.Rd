@@ -26,33 +26,33 @@ Unlike simple suffix lists, this dictionary encodes language-specific
 normalization rules. Each variant is marked as either:
 \itemize{
 \item \strong{"exact"} - the variant should only match a token when it appears
-\emph{exactly}, e.g. \code{"st."} → \code{"STREET"} (English), \code{"pl"} → \code{"PLAZA"} (Spanish)
+\emph{exactly}, e.g. \code{"st."} -> \code{"STREET"} (English), \code{"pl"} -> \code{"PLAZA"} (Spanish)
 \item \strong{"suffix"} - the variant may safely match a token \emph{ending with} that
-sequence, e.g. \code{"gatan"} → \code{"GATA"} (Swedish), \code{"strasse"} → \code{"STRASSE"}
+sequence, e.g. \code{"gatan"} -> \code{"GATA"} (Swedish), \code{"strasse"} -> \code{"STRASSE"}
 (German)
 }
 
 By separating exact vs. suffix behaviour and tagging each entry with an ISO
 language code, \pkg{joinery} can normalize addresses \emph{without} incorrect
-transformations (e.g. preventing \code{"LINCOLN"} → \code{"LANE"}, or \code{"VICTOR"} →
+transformations (e.g. preventing \code{"LINCOLN"} -> \code{"LANE"}, or \code{"VICTOR"} ->
 \code{"RUE"}). This structure enables high-precision multilingual address cleaning.
 \subsection{Languages Covered}{
 
 The dictionary currently includes major street-type systems from:
 \itemize{
-\item \strong{German} - Straße, Gasse, Weg, Platz, Allee, …
-\item \strong{English} - Street, Road, Avenue, Boulevard, Lane, …
-\item \strong{French} - Rue, Avenue, Boulevard, Impasse, Quai, Chemin, …
-\item \strong{Spanish} - Calle, Avenida, Paseo, Plaza, Camino, …
-\item \strong{Italian} - Via, Piazza, Corso, Viale, …
-\item \strong{Portuguese} - Rua, Avenida, Praça, Alameda, Travessa, …
-\item \strong{Polish} - Ulica, Aleja, Plac, Osiedle, …
-\item \strong{Dutch} - Straat, Laan, Weg, Plein, …
-\item \strong{Turkish} - Sokak, Cadde, Bulvar, Meydan, …
-\item \strong{Swedish} - Gata, Gatan, Vägen, Torg, …
-\item \strong{Danish/Norwegian} - Gade, Vej, Plads, …
+\item \strong{German} - Straße, Gasse, Weg, Platz, Allee, etc.
+\item \strong{English} - Street, Road, Avenue, Boulevard, Lane, etc.
+\item \strong{French} - Rue, Avenue, Boulevard, Impasse, Quai, Chemin, etc.
+\item \strong{Spanish} - Calle, Avenida, Paseo, Plaza, Camino, etc.
+\item \strong{Italian} - Via, Piazza, Corso, Viale, etc.
+\item \strong{Portuguese} - Rua, Avenida, Praça, Alameda, Travessa, etc.
+\item \strong{Polish} - Ulica, Aleja, Plac, Osiedle, etc.
+\item \strong{Dutch} - Straat, Laan, Weg, Plein, etc.
+\item \strong{Turkish} - Sokak, Cadde, Bulvar, Meydan, etc.
+\item \strong{Swedish} - Gata, Gatan, Vägen, Torg, etc.
+\item \strong{Danish/Norwegian} - Gade, Vej, Plads, etc.
 \item \strong{Greek (transliterated)} - Odos, Leoforos, Plateia
-\item \strong{Russian (transliterated)} - Ulitsa, Prospekt, Pereulok, …
+\item \strong{Russian (transliterated)} - Ulitsa, Prospekt, Pereulok, etc.
 }
 
 Additional languages and street-type systems can be incorporated as needed.
