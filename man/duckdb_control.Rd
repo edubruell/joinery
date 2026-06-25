@@ -62,6 +62,7 @@ Chunking is a DuckDB (out-of-core) concern; the in-memory data.table backend
 ignores it.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 # The control object just bundles execution knobs; it carries no data.
 ctrl <- duckdb_control(target_batch_size = 5e5, on_error = "skip")
 ctrl

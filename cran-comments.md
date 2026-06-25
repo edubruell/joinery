@@ -1,6 +1,11 @@
-## Submission
+## Resubmission
 
-This is the first submission of joinery to CRAN (version 1.0.0).
+This is a resubmission of the first submission of joinery (version 1.0.0).
+The previous automatic incoming check reported one issue on the Debian
+flavor: the `detect_duplicates` example used more CPU than elapsed time
+(data.table multi-threading). All examples now cap data.table to two
+threads (`data.table::setDTthreads(2)` in a `\dontshow{}` preamble), so
+example CPU time stays within the elapsed-time limit.
 
 joinery is a heuristic, index-based record linkage system for R. It links
 records that refer to the same entity (people, firms, addresses) across messy

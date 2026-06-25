@@ -53,6 +53,7 @@ An \code{\link{Embedding_Strategy}} returns the reduced "embedding" schema
 (core columns + string similarity + \code{cosine_sim} + embedding norms).
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 strat <- search_strategy(
   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),

@@ -71,6 +71,7 @@ The strategy you pass supplies only the column preparation steps; its own
 here.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 strat <- search_strategy(
   workshop ~ normalize_text() + word_tokens(min_nchar = 3)
 )

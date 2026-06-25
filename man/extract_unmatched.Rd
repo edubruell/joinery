@@ -25,6 +25,7 @@ Identify and extract records from a table that were
 not matched in a record linkage operation.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 strat <- search_strategy(
   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
   block_by  = c("postcode_area", "trade"),

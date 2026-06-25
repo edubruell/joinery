@@ -32,6 +32,7 @@ one of those prefixes are removed, so your own tables are never touched. Pass
 extra \code{prefixes} to cover temporary table types added in future.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 \dontrun{
   # List all tables
   dbListTables(con)

@@ -26,6 +26,7 @@ reconstruction from raw inputs; a tokens-shaped table is used
 directly.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 strat <- search_strategy(
   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
   block_by  = c("postcode_area", "trade"),

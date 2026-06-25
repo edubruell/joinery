@@ -30,6 +30,7 @@ High-level Q5 verb. Builds features via \code{\link[=match_features]{match_featu
 with \code{tp_prob} / \code{predicted_tp}. Dispatches on the strategy class.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 strat <- search_strategy(
   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),

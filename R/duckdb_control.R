@@ -152,6 +152,7 @@ method(print.Duckdb_Control, Duckdb_Control) <- function(x, ...) {
 #' @seealso [prepare_search_data()], [detect_duplicates()], [search_candidates()].
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' # The control object just bundles execution knobs; it carries no data.
 #' ctrl <- duckdb_control(target_batch_size = 5e5, on_error = "skip")
 #' ctrl

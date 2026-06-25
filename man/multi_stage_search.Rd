@@ -80,6 +80,7 @@ matters which side is searched against which. For finding duplicates within
 a single table, use \code{\link[=multi_stage_dedup]{multi_stage_dedup()}} instead.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 # Follow each workshop across years: pool the panel, search it against itself,
 # exact first then fuzzy, collapsing each group found so later passes see less.
 exact <- exact_strategy(

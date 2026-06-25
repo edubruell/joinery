@@ -24,6 +24,7 @@ verb when they want per-stage analysis (see
 \code{notes/diagnostics_design.md}).
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 exact <- exact_strategy(
   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
   block_by = c("postcode_area", "trade")

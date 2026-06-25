@@ -28,6 +28,7 @@ top-1-vs-top-2 score-gap distribution for candidates. Recommendations
 link symptoms to strategy levers.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 \dontrun{
 s <- search_strategy(
   name ~ normalize_text() + word_tokens(),

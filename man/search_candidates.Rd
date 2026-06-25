@@ -43,6 +43,7 @@ Pass a \code{\link[=search_strategy]{search_strategy()}} for fuzzy, scored match
 \code{\link[=exact_strategy]{exact_strategy()}} to keep only pairs whose token sets are identical.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 data(base_example)
 data(target_example)
 

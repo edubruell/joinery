@@ -219,6 +219,7 @@ method(print.Search_Strategy, Exact_Strategy) <- function(x, ...) {
 #'   [extract_unmatched()].
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' # Link only workshops whose name tokens are identical within the same area
 #' # and trade. No threshold to tune, and blank columns do not sink a match.
 #' ex <- exact_strategy(

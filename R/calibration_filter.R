@@ -601,6 +601,7 @@
 #' @return A `Filter_Model` object.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' strat <- search_strategy(
 #'   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),
@@ -670,6 +671,7 @@ fit_filter <- function(features, labels,
 #' @return A `Calibrated_Matches` object.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' strat <- search_strategy(
 #'   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),

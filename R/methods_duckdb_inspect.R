@@ -91,6 +91,7 @@ method(
 #' @return A character vector of removed table names, invisibly.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' \dontrun{
 #'   # List all tables
 #'   dbListTables(con)

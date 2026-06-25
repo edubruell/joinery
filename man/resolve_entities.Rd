@@ -71,6 +71,7 @@ rank-1 member) is chosen by highest best \code{score} when a score column is
 given, then by smallest \code{rep_by} when given, then by smallest \code{id}.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 # r1-r2 and r2-r3 chain into one entity; r4-r5 form another
 edges <- data.table::data.table(
   a = c("r1", "r2", "r4"),

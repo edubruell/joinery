@@ -31,6 +31,7 @@ It never builds the pair set: it only tokenizes and measures rarity, so it
 is cheap enough to run on a full corpus before committing to a strategy.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 strat <- search_strategy(
   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
   block_by = c("postcode_area", "trade")

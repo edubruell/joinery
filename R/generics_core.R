@@ -70,6 +70,7 @@ prepare_search_data <- new_generic(
 #'   for the cross-table version, [multi_stage_dedup()] for staged passes.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' data(base_example)
 #'
 #' strat <- search_strategy(
@@ -139,6 +140,7 @@ detect_duplicates <- new_generic(
 #' }
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' # r1-r2 and r2-r3 chain into one entity; r4-r5 form another
 #' edges <- data.table::data.table(
 #'   a = c("r1", "r2", "r4"),
@@ -170,6 +172,7 @@ resolve_entities <- new_generic(
 #' @return A deduplicated version of `base_table`.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' ex <- exact_strategy(
 #'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   block_by = c("postcode_area", "trade")
@@ -218,6 +221,7 @@ deduplicate_table <- new_generic("deduplicate_table",
 #'   passes.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' data(base_example)
 #' data(target_example)
 #'
@@ -299,6 +303,7 @@ compute_rarity <- new_generic(
 #'   in `matches`.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' strat <- search_strategy(
 #'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   block_by  = c("postcode_area", "trade"),
@@ -433,6 +438,7 @@ materialize_records <- new_generic(
 #'   usual front stage.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' # Follow each workshop across years: pool the panel, search it against itself,
 #' # exact first then fuzzy, collapsing each group found so later passes see less.
 #' exact <- exact_strategy(
@@ -499,6 +505,7 @@ multi_stage_search <- new_generic(
 #'   grouping step.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' # Two passes over one table: exact token-set first, then a looser fuzzy pass
 #' # on whatever the exact pass left unmatched.
 #' exact <- exact_strategy(

@@ -23,6 +23,7 @@ Generic function that removes or merges duplicate records from a table
 based on duplicate pairs identified by \code{detect_duplicates()}.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 ex <- exact_strategy(
   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
   block_by = c("postcode_area", "trade")

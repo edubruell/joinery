@@ -67,6 +67,7 @@ and \code{\link[=multi_stage_dedup]{multi_stage_dedup()}} / \code{\link[=multi_s
 you when you pass \code{list(exact_strategy(...), search_strategy(...))}.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 # Link only workshops whose name tokens are identical within the same area
 # and trade. No threshold to tune, and blank columns do not sink a match.
 ex <- exact_strategy(

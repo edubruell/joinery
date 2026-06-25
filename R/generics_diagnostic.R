@@ -35,6 +35,7 @@
 #' @return A `Strategy_Audit` object.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' strat <- search_strategy(
 #'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   block_by  = c("postcode_area", "trade"),
@@ -70,6 +71,7 @@ audit_strategy <- new_generic(
 #' @return A `Match_Overview` object.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' \dontrun{
 #' s <- search_strategy(
 #'   name ~ normalize_text() + word_tokens(),
@@ -104,6 +106,7 @@ summarise_matches <- new_generic(
 #' @return A `Match_Explanation` object.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' strat <- search_strategy(
 #'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   block_by  = c("postcode_area", "trade"),
@@ -141,6 +144,7 @@ explain_match <- new_generic(
 #' @return A `Match_Sample` object.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' strat <- search_strategy(
 #'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   block_by  = c("postcode_area", "trade"),
@@ -177,6 +181,7 @@ sample_matches <- new_generic(
 #' @return A `Stage_Comparison` object.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' exact <- exact_strategy(
 #'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   block_by = c("postcode_area", "trade")
@@ -227,6 +232,7 @@ compare_stages <- new_generic(
 #'   this verb informs; [audit_strategy()] for the broader pre-match audit.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' strat <- search_strategy(
 #'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
 #'   block_by = c("postcode_area", "trade")
@@ -290,6 +296,7 @@ rarity_distribution <- new_generic(
 #'   [exact_strategy()] for the front stage it sizes.
 #'
 #' @examples
+#' \dontshow{data.table::setDTthreads(2)}
 #' strat <- search_strategy(
 #'   workshop ~ normalize_text() + word_tokens(min_nchar = 3)
 #' )

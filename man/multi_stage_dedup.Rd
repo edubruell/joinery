@@ -47,6 +47,7 @@ same group.
 For linking across two tables or several sources, use \code{\link[=multi_stage_search]{multi_stage_search()}}.
 }
 \examples{
+\dontshow{data.table::setDTthreads(2)}
 # Two passes over one table: exact token-set first, then a looser fuzzy pass
 # on whatever the exact pass left unmatched.
 exact <- exact_strategy(
