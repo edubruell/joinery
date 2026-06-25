@@ -29,15 +29,14 @@ https://edubruell.github.io/joinery/
 ## Test environments
 
 * local macOS, R 4.5.3
-* (add: R-hub and win-builder devel/release before submission)
+* win-builder, R-devel (R 4.6.x) and R-release (R 4.6.1)
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 0 notes locally.
 
-The one NOTE is "unable to verify current time", an environment artifact of the
-local check machine having no network access to a time server. It is unrelated
-to the package and does not appear on CRAN's build machines.
+On win-builder (devel and release) the only NOTE is the expected "New
+submission" note, as this is the first submission to CRAN.
 
 ## Notes for CRAN
 
