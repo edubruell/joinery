@@ -30,48 +30,48 @@ Unlike simple suffix lists, this dictionary encodes language-specific
 normalization rules. Each variant is marked as either:
 
 - **"exact"** - the variant should only match a token when it appears
-  *exactly*, e.g. `"st."` → `"STREET"` (English), `"pl"` → `"PLAZA"`
+  *exactly*, e.g. `"st."` -\> `"STREET"` (English), `"pl"` -\> `"PLAZA"`
   (Spanish)
 
 - **"suffix"** - the variant may safely match a token *ending with* that
-  sequence, e.g. `"gatan"` → `"GATA"` (Swedish), `"strasse"` →
+  sequence, e.g. `"gatan"` -\> `"GATA"` (Swedish), `"strasse"` -\>
   `"STRASSE"` (German)
 
 By separating exact vs. suffix behaviour and tagging each entry with an
 ISO language code, joinery can normalize addresses *without* incorrect
-transformations (e.g. preventing `"LINCOLN"` → `"LANE"`, or `"VICTOR"` →
-`"RUE"`). This structure enables high-precision multilingual address
+transformations (e.g. preventing `"LINCOLN"` -\> `"LANE"`, or `"VICTOR"`
+-\> `"RUE"`). This structure enables high-precision multilingual address
 cleaning.
 
 ### Languages Covered
 
 The dictionary currently includes major street-type systems from:
 
-- **German** - Straße, Gasse, Weg, Platz, Allee, …
+- **German** - Straße, Gasse, Weg, Platz, Allee, etc.
 
-- **English** - Street, Road, Avenue, Boulevard, Lane, …
+- **English** - Street, Road, Avenue, Boulevard, Lane, etc.
 
-- **French** - Rue, Avenue, Boulevard, Impasse, Quai, Chemin, …
+- **French** - Rue, Avenue, Boulevard, Impasse, Quai, Chemin, etc.
 
-- **Spanish** - Calle, Avenida, Paseo, Plaza, Camino, …
+- **Spanish** - Calle, Avenida, Paseo, Plaza, Camino, etc.
 
-- **Italian** - Via, Piazza, Corso, Viale, …
+- **Italian** - Via, Piazza, Corso, Viale, etc.
 
-- **Portuguese** - Rua, Avenida, Praça, Alameda, Travessa, …
+- **Portuguese** - Rua, Avenida, Praça, Alameda, Travessa, etc.
 
-- **Polish** - Ulica, Aleja, Plac, Osiedle, …
+- **Polish** - Ulica, Aleja, Plac, Osiedle, etc.
 
-- **Dutch** - Straat, Laan, Weg, Plein, …
+- **Dutch** - Straat, Laan, Weg, Plein, etc.
 
-- **Turkish** - Sokak, Cadde, Bulvar, Meydan, …
+- **Turkish** - Sokak, Cadde, Bulvar, Meydan, etc.
 
-- **Swedish** - Gata, Gatan, Vägen, Torg, …
+- **Swedish** - Gata, Gatan, Vägen, Torg, etc.
 
-- **Danish/Norwegian** - Gade, Vej, Plads, …
+- **Danish/Norwegian** - Gade, Vej, Plads, etc.
 
 - **Greek (transliterated)** - Odos, Leoforos, Plateia
 
-- **Russian (transliterated)** - Ulitsa, Prospekt, Pereulok, …
+- **Russian (transliterated)** - Ulitsa, Prospekt, Pereulok, etc.
 
 Additional languages and street-type systems can be incorporated as
 needed.

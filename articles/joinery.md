@@ -632,17 +632,17 @@ score, stage. Four articles take it further, each framed around one
 problem:
 
 - [Beyond the basics: fuzzy and exact
-  strategies](https://edubruell.github.io/joinery/articles/features.md)
+  strategies](https://edubruell.github.io/joinery/articles/features.html)
   walks the advanced joins (containment, region-free movers, phonetic
   encoders, the fan-out guard) on the `workshop_register` /
   `workshop_listings` tables, where each feature has a planted case that
   measurably wins when you switch it on.
 - [Matching across years and
-  sources](https://edubruell.github.io/joinery/articles/staged.md) pools
-  a multi-year panel and follows each workshop through time with a
+  sources](https://edubruell.github.io/joinery/articles/staged.html)
+  pools a multi-year panel and follows each workshop through time with a
   staged self-search.
 - [Calibrating a false-positive
-  filter](https://edubruell.github.io/joinery/articles/calibration.md)
+  filter](https://edubruell.github.io/joinery/articles/calibration.html)
   trains a model on labelled pairs
   ([`sample_matches()`](https://edubruell.github.io/joinery/reference/sample_matches.md),
   [`export_for_labelling()`](https://edubruell.github.io/joinery/reference/export_for_labelling.md),
@@ -650,7 +650,7 @@ problem:
   [`calibrate_matches()`](https://edubruell.github.io/joinery/reference/calibrate_matches.md))
   for when one threshold is not enough.
 - [Embedding-based
-  matching](https://edubruell.github.io/joinery/articles/embeddings.md)
+  matching](https://edubruell.github.io/joinery/articles/embeddings.html)
   matches on meaning instead of spelling, for records that share no
   tokens at all.
 

@@ -61,7 +61,7 @@ A table with one row per record that belongs to a duplicate group:
   Rank within the group; rank 1 is the representative kept by
   [`deduplicate_table()`](https://edubruell.github.io/joinery/reference/deduplicate_table.md).
 
-- :
+- `<original columns>`:
 
   Every other column from `base_table`.
 

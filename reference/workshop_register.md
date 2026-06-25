@@ -83,9 +83,10 @@ A tibble with 1,052 rows and 15 variables:
   Evaluation only. Which generation tier the row belongs to. Three rows
   are `hub_trap`: short-named shared venues ("Trinity Workshops", "The
   Forge", "Riverside Works") that are themselves guild registered. Their
-  two-token names are a forward-containment subset of every ", "
-  listing, so they bait an exact containment strategy into merging
-  unrelated workshops; the `min_containment_tokens` guard blocks them.
+  two-token names are a forward-containment subset of every
+  `<workshop>, <venue>` listing, so they bait an exact containment
+  strategy into merging unrelated workshops; the
+  `min_containment_tokens` guard blocks them.
 
 ## Source
 

@@ -32,7 +32,7 @@ find_stopwords(
 - max_prop:
 
   Numeric in `(0, 1]`. Return tokens whose document-frequency share is
-  at least this value. Default `0.3` (token appears in ≥30% of a
+  at least this value. Default `0.3` (token appears in 30% or more of a
   column's records).
 
 - top_n:

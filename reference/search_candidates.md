@@ -67,7 +67,7 @@ the target record), sharing a `match_id`:
 
   The record ID.
 
-- :
+- `<original columns>`:
 
   Every other column from the source table.
 
