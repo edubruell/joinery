@@ -97,14 +97,30 @@ number of histogram bins for the score distribution; default <code>50</code>).</
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="search_strategy.html">search_strategy</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  <span class="va">name</span> <span class="op">~</span> <span class="fu"><a href="normalize_text.html">normalize_text</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="word_tokens.html">word_tokens</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  threshold <span class="op">=</span> <span class="fl">0.9</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="search_strategy.html">search_strategy</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">Nachname</span> <span class="op">~</span> <span class="fu"><a href="normalize_text.html">normalize_text</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="word_tokens.html">word_tokens</a></span><span class="op">(</span>min_nchar <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  block_by <span class="op">=</span> <span class="st">"Kreis"</span>,</span></span>
+<span class="r-in"><span>  threshold <span class="op">=</span> <span class="fl">0.8</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">dups</span> <span class="op">&lt;-</span> <span class="fu"><a href="detect_duplicates.html">detect_duplicates</a></span><span class="op">(</span><span class="va">base_example</span>, <span class="st">"id"</span>, <span class="va">s</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">dups</span> <span class="op">&lt;-</span> <span class="fu"><a href="detect_duplicates.html">detect_duplicates</a></span><span class="op">(</span><span class="va">base_example</span>, <span class="st">"id_base"</span>, <span class="va">s</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">summarise_matches</span><span class="op">(</span><span class="va">dups</span>, base <span class="op">=</span> <span class="va">base_example</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Match_Overview (</span><span style="color: #00BB00; font-weight: bold;">duplicates</span><span style="font-weight: bold;">)</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> n_pairs_or_groups: <span style="color: #0000BB;">"642"</span> n_records_involved: <span style="color: #0000BB;">"2935"</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> coverage: base=88.9% target=NA</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="font-weight: bold;">score summary</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> min: 1.000</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> q1: 1.000</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> median: 1.000</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> mean: 1.000</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> q3: 1.000</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> max: 1.000</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="font-weight: bold;">cluster size distribution</span> (top 5)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> size 2: 208 cluster(s)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> size 3: 147 cluster(s)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> size 4: 87 cluster(s)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> size 5: 50 cluster(s)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> size 6: 32 cluster(s)</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

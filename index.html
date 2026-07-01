@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Heuristic Index-Based Record Linkage in R • joinery</title>
+<title>Heuristic Index-Based Record Linkage • joinery</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -15,9 +15,9 @@
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Heuristic Index-Based Record Linkage in R">
-<meta name="description" content="Index-based heuristic record linkage for R.">
-<meta property="og:description" content="Index-based heuristic record linkage for R.">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Heuristic Index-Based Record Linkage">
+<meta name="description" content="Links records that refer to the same entity across sources that share no common key, such as people, firms, or addresses with spelling variation, abbreviations, or reordered words. Linkage is described declaratively as a strategy that normalises, tokenises, phonetically encodes, weights, and blocks each field; candidate pairs are then scored by the rarity-weighted overlap of their tokens and every score is attributed back to individual tokens for explainability. Strategies compose into staged pipelines of exact, fuzzy, and optional embedding-based matching that carry unmatched records forward and resolve entities as connected components. The same strategy runs on an in-memory data.table backend or an out-of-core DuckDB backend, and diagnostic and calibration tools help tune a strategy and filter false positives. The token-retrieval heuristic follows Doherr (2023) &lt;doi:10.2139/ssrn.4326848&gt;.">
+<meta property="og:description" content="Links records that refer to the same entity across sources that share no common key, such as people, firms, or addresses with spelling variation, abbreviations, or reordered words. Linkage is described declaratively as a strategy that normalises, tokenises, phonetically encodes, weights, and blocks each field; candidate pairs are then scored by the rarity-weighted overlap of their tokens and every score is attributed back to individual tokens for explainability. Strategies compose into staged pipelines of exact, fuzzy, and optional embedding-based matching that carry unmatched records forward and resolve entities as connected components. The same strategy runs on an in-memory data.table backend or an out-of-core DuckDB backend, and diagnostic and calibration tools help tune a strategy and filter false positives. The token-retrieval heuristic follows Doherr (2023) &lt;doi:10.2139/ssrn.4326848&gt;.">
 <meta property="og:image" content="https://edubruell.github.io/joinery/logo.png">
 </head>
 <body>

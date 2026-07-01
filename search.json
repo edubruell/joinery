@@ -157,7 +157,7 @@
     "what": "The same verbs, unchanged",
     "title": "Working at scale with DuckDB",
     "text": "three staged strategies, identical staged-search article. Now run staged search. multi_stage_search() call -memory article, one addition: control = duckdb_control() says run carved database. look object moment; default fine panel size. result lazy DuckDB table, data frame. Nothing pulled R yet. entity grouping lives database ask collect(), moment plan runs uses memory. corpus millions collect() grouping (one row per record, small) rather intermediate joins, comes back R stays modest matter big input . columns exactly ones -memory backend returns: entity recovered identity, source covered_sources carry year trajectory length, stage records pass attached record. ordinary collected table, score exactly -memory article , checking many true workshops land single entity. result matters whole article: identical -memory run, per-stage counts. backend changed work happened, found. diagnostic verbs follow table , compare_stages() reads DuckDB result special handling. finished, close connection. file-backed database also flushes disk .",
-    "code": "exact <- exact_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by = c(\"postcode_area\", \"trade\") )  fuzzy <- search_strategy(   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),   block_by  = c(\"postcode_area\", \"trade\"),   threshold = 0.55 )  mover <- search_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by     = list(block_on_tokens(\"workshop\", max_df = 50, min_nchar = 4),                       \"trade\"),   rarity_scope = \"global\",   threshold    = 0.6 ) g <- multi_stage_search(   panel_db, panel_db,   base_id = \"record_id\", target_id = \"record_id\",   list(exact = exact, fuzzy = fuzzy, mover = mover),   self = TRUE, source_by = \"year\", collapse = \"rep\",   control = duckdb_control(progress = FALSE) ) grouping <- collect(g) head(grouping, 4) #> # A tibble: 4 × 9 #>   entity id       rep       rank score source covered_sources n_in_entity stage #>    <int> <chr>    <chr>    <int> <dbl> <chr>            <int>       <int> <chr> #> 1      1 YR-00001 YR-00001     1    NA 2023                 1           1 NA    #> 2      2 YR-00002 YR-00002     1    NA 2019                 1           1 NA    #> 3      3 YR-00003 YR-00003     1     1 2020                 4           4 exact #> 4      3 YR-00006 YR-00003     2     1 2023                 4           4 fuzzy intact <- as.data.table(grouping)[, .(record_id = id, entity)] |>   merge(as.data.table(workshop_panel)[, .(record_id, true_entity)],         by = \"record_id\") intact[, .(n_entities = uniqueN(entity)), by = true_entity][   , .(intact = sum(n_entities == 1), total = .N)] #>    intact total #>     <int> <int> #> 1:    314   320 compare_stages(g, base = panel_db, target = panel_db) dbDisconnect(con, shutdown = TRUE)"
+    "code": "exact <- exact_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by = c(\"postcode_area\", \"trade\") )  fuzzy <- search_strategy(   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),   block_by  = c(\"postcode_area\", \"trade\"),   threshold = 0.55 )  mover <- search_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by     = list(block_on_tokens(\"workshop\", max_df = 50, min_nchar = 4),                       \"trade\"),   rarity_scope = \"global\",   threshold    = 0.6 ) g <- multi_stage_search(   panel_db, panel_db,   base_id = \"record_id\", target_id = \"record_id\",   list(exact = exact, fuzzy = fuzzy, mover = mover),   self = TRUE, source_by = \"year\", collapse = \"rep\",   control = duckdb_control(progress = FALSE) ) grouping <- collect(g) head(grouping, 4) #> # A tibble: 4 × 9 #>   entity id       rep       rank score source covered_sources n_in_entity stage #>    <int> <chr>    <chr>    <int> <dbl> <chr>            <int>       <int> <chr> #> 1      1 YR-00001 YR-00001     1    NA 2023                 1           1 NA    #> 2      2 YR-00002 YR-00002     1    NA 2019                 1           1 NA    #> 3      3 YR-00003 YR-00003     1     1 2020                 4           4 exact #> 4      3 YR-00004 YR-00003     2     1 2021                 4           4 exact intact <- as.data.table(grouping)[, .(record_id = id, entity)] |>   merge(as.data.table(workshop_panel)[, .(record_id, true_entity)],         by = \"record_id\") intact[, .(n_entities = uniqueN(entity)), by = true_entity][   , .(intact = sum(n_entities == 1), total = .N)] #>    intact total #>     <int> <int> #> 1:    314   320 compare_stages(g, base = panel_db, target = panel_db) dbDisconnect(con, shutdown = TRUE)"
   },
   {
     "path": "https://edubruell.github.io/joinery/articles/duckdb.html",
@@ -646,8 +646,8 @@
     "previous_headings": "",
     "what": "Citation",
     "title": "Authors and Citation",
-    "text": "Brüll E (2026). joinery: Heuristic Index-Based Record Linkage R. R package version 1.0.0, https://edubruell.github.io/joinery/.",
-    "code": "@Manual{,   title = {joinery: Heuristic Index-Based Record Linkage in R},   author = {Eduard Brüll},   year = {2026},   note = {R package version 1.0.0},   url = {https://edubruell.github.io/joinery/}, }"
+    "text": "Brüll E (2026). joinery: Heuristic Index-Based Record Linkage. R package version 1.0.0, https://edubruell.github.io/joinery/.",
+    "code": "@Manual{,   title = {joinery: Heuristic Index-Based Record Linkage},   author = {Eduard Brüll},   year = {2026},   note = {R package version 1.0.0},   url = {https://edubruell.github.io/joinery/}, }"
   },
   {
     "path": []
@@ -813,8 +813,8 @@
     "id": "joinery-",
     "dir": "",
     "previous_headings": "",
-    "what": "Heuristic Index-Based Record Linkage in R",
-    "title": "Heuristic Index-Based Record Linkage in R",
+    "what": "Heuristic Index-Based Record Linkage",
+    "title": "Heuristic Index-Based Record Linkage",
     "text": "Crafting joins fit. Heuristic record linkage fuzzy joins R.",
     "code": ""
   },
@@ -824,7 +824,7 @@
     "dir": "",
     "previous_headings": "",
     "what": "Overview",
-    "title": "Heuristic Index-Based Record Linkage in R",
+    "title": "Heuristic Index-Based Record Linkage",
     "text": "joinery provides tidy, declarative interface heuristic index-based record linkage, fuzzy joins, duplicate detection. uses token-based indexing, flexible text normalization, phonetic encoders, optional blocking match imperfect inconsistent records. package inspired ideas behind Thorsten Doherr’s searchengine project (see: https://github.com/ThorstenDoherr/searchengine/). Like good woodworking, goal make joins clean, without reaching mallet.",
     "code": ""
   },
@@ -834,7 +834,7 @@
     "dir": "",
     "previous_headings": "",
     "what": "How joinery differs from classical record linkage",
-    "title": "Heuristic Index-Based Record Linkage in R",
+    "title": "Heuristic Index-Based Record Linkage",
     "text": "record linkage tools rely edit distances probabilistic pairwise comparison blocking. works well clean data short strings, often breaks messy administrative data rare tokens matter character-level similarity. joinery follows different paradigm inspired Doherr’s SearchEngine: Matching framed search candidate retrieval, exhaustive pairwise comparison. Records decomposed tokens weighted informativeness (rarity). Similarity comes overlap informative tokens, string distance. Candidate generation scoring operation. Matching directional; one table defines token frequencies, provides search queries. approach works especially well : Names long, noisy, inconsistently formatted. Rare identifiers dominate common boilerplate terms. labeled training data available. Matching proceeds multiple, increasingly tolerant stages. also runs data fit memory. strategy prototype -memory table runs unchanged DuckDB database, large joins --core, disk, piece time. Little else R links resolves entities way: practice turned 51-million-row business directory, job classically call cluster, overnight run laptop. joinery drop-replacement probabilistic linkage engines. complementary tool transparent, strategy-driven matching robustness explainability matter calibrated match probabilities. place among alternatives: reach fuzzyjoin zoomerjoin need string- edit-distance joins short, mostly clean fields; reach fastLink reclin2 need Fellegi-Sunter model calibrated m/u match probabilities. Reach joinery records long messy, rare tokens carry signal, want see exactly pair matched. probabilistic scoring strategy roadmap, boundary expected narrow time.",
     "code": ""
   },
@@ -844,7 +844,7 @@
     "dir": "",
     "previous_headings": "",
     "what": "Installation",
-    "title": "Heuristic Index-Based Record Linkage in R",
+    "title": "Heuristic Index-Based Record Linkage",
     "text": "",
     "code": "install.packages(\"devtools\")   # if needed devtools::install_github(\"edubruell/joinery\")"
   },
@@ -854,7 +854,7 @@
     "dir": "",
     "previous_headings": "",
     "what": "Minimal example",
-    "title": "Heuristic Index-Based Record Linkage in R",
+    "title": "Heuristic Index-Based Record Linkage",
     "text": "example uses package’s built-sample data. Getting started vignette walks path step step scores result known answer key (target_example$actual_link holds true link copied record).",
     "code": "library(joinery)  # Load example data (shipped as tibbles; joinery also takes data.frames / data.table / DuckDB) data(\"base_example\") data(\"target_example\")  # Define a simple first-pass strategy strat <- search_strategy(   Nachname   ~ normalize_text() + word_tokens(min_nchar = 3),   Vorname    ~ normalize_text() + word_tokens(min_nchar = 3),   Strasse    ~ normalize_street(lang = \"de\") + word_tokens(min_nchar = 3),   Hausnummer ~ numeric_tokens,   Ort        ~ normalize_text(),   block_by   = \"Kreis\",   threshold  = 0.8 )  # Inspect the tokenization inspect_tokens(base_example, \"id_base\", strat, Vorname)  # Detect and collapse duplicates within the base data duplicates    <- detect_duplicates(base_example, id = \"id_base\", strategy = strat) base_dedupped <- deduplicate_table(base_example, duplicates, id = \"id_base\")  # Cross-table candidate matches matches <- search_candidates(   base_dedupped,   target_example,   base_id   = \"id_base\",   target_id = \"id_target\",   strategy  = strat )  # Check the result, then read the residuals summarise_matches(matches, threshold = 0.8) extract_unmatched(base_dedupped, \"id_base\", matches) extract_unmatched(target_example, \"id_target\", matches)"
   },
@@ -864,7 +864,7 @@
     "dir": "",
     "previous_headings": "Minimal example",
     "what": "Stage exact, then fuzzy",
-    "title": "Heuristic Index-Based Record Linkage in R",
+    "title": "Heuristic Index-Based Record Linkage",
     "text": "cheap, strict exact pass first, tolerant fuzzy pass left:",
     "code": "staged <- multi_stage_search(   base_dedupped,   target_example,   base_id   = \"id_base\",   target_id = \"id_target\",   strategies = list(     exact = exact_strategy(       Nachname ~ normalize_text() + word_tokens(min_nchar = 3),       Vorname  ~ normalize_text() + word_tokens(min_nchar = 3),       Ort      ~ normalize_text(),       block_by = \"Kreis\"     ),     fuzzy = strat   ) )"
   },
@@ -874,7 +874,7 @@
     "dir": "",
     "previous_headings": "",
     "what": "Documentation",
-    "title": "Heuristic Index-Based Record Linkage in R",
+    "title": "Heuristic Index-Based Record Linkage",
     "text": "package website carries full guide. Start Getting started, walks whole path pair built-tables scores result known answer key. , five articles take one problem: Beyond basics: fuzzy exact strategies. Containment, region-free movers, phonetic matching, staging together. Matching across years sources. Pool multi-year panel follow record time. Calibrating false-positive filter. Train model labelled pairs one threshold enough. Embedding-based matching. Match meaning two records share tokens . Working scale DuckDB. Run strategies database backend table fit memory. tutorial also ships vignette:",
     "code": "vignette(\"joinery\", package = \"joinery\")"
   },
@@ -884,7 +884,7 @@
     "dir": "",
     "previous_headings": "",
     "what": "License",
-    "title": "Heuristic Index-Based Record Linkage in R",
+    "title": "Heuristic Index-Based Record Linkage",
     "text": "MIT",
     "code": ""
   },
@@ -2083,7 +2083,7 @@
     "what": "Examples",
     "title": "Drop all temporary DuckDB tables created by joinery — drop_joinery_temp_tables",
     "text": "",
-    "code": "if (FALSE) { # \\dontrun{   # List all tables   dbListTables(con)    # Remove all temporary joinery tables   drop_joinery_temp_tables(con) } # }"
+    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   # A stray joinery temp table left behind by an interrupted run:   DBI::dbWriteTable(con, \"_joinery_tmp_demo\", data.frame(x = 1))    drop_joinery_temp_tables(con)  # removes it, returns its name invisibly   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb: caching downloaded extensions in the package library: #> ℹ /home/runner/work/_temp/Library/duckdb/extensions #> ℹ This is removed when the package is re-installed; see `?duckdb_storage` to choose a different location. # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/drop_numeric_tokens.html",
@@ -2249,7 +2249,7 @@
     "what": "Examples",
     "title": "Create a Batch Plan for DuckDB Table Processing — duckdb_batch_plan",
     "text": "",
-    "code": "if (FALSE) { # \\dontrun{ con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\") DBI::dbWriteTable(con, \"data\", data.frame(id = 1:1e6, region = sample(LETTERS, 1e6, TRUE))) tbl_ref <- dplyr::tbl(con, \"data\")  # Unblocked, even row-number chunking plan1 <- duckdb_batch_plan(   tbl_ref, id = \"id\",   target_batch_size = 1e5, chunk_strategy = \"even\" )  # Blocked, consolidated strategy (default, respects regions) plan2 <- duckdb_batch_plan(   tbl_ref, id = \"id\",   target_batch_size = 1e5, block_by = \"region\" ) } # }"
+    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(     con, \"data\",     data.frame(id = 1:1000, region = rep(LETTERS[1:5], length.out = 1000))   )   tbl_ref <- dplyr::tbl(con, \"data\")    # Unblocked, even row-number chunking   plan1 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, chunk_strategy = \"even\"   )    # Blocked, consolidated strategy (default, respects regions)   plan2 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, block_by = \"region\"   )   DBI::dbDisconnect(con, shutdown = TRUE) } #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/duckdb_control.html",
@@ -2302,7 +2302,7 @@
     "what": "Examples",
     "title": "DuckDB Execution Control — duckdb_control",
     "text": "",
-    "code": "# The control object just bundles execution knobs; it carries no data. ctrl <- duckdb_control(target_batch_size = 5e5, on_error = \"skip\") ctrl #> <joinery::Duckdb_Control> #>  #> target_batch_size: 5e+05 #> min_batch_size: auto #> chunk_strategy: block_consolidated #> chunk_by: auto #> on_error: skip #> progress: auto  if (FALSE) { # \\dontrun{ # Pass it to a verb running on a DuckDB table. library(duckdb) library(DBI) library(dplyr) con <- dbConnect(duckdb::duckdb(), \":memory:\") dbWriteTable(con, \"reg\", as.data.frame(workshop_register)) strat <- search_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by  = c(\"postcode_area\", \"trade\"),   threshold = 0.7 ) detect_duplicates(tbl(con, \"reg\"), \"reg_no\", strat, control = ctrl) dbDisconnect(con, shutdown = TRUE) } # }"
+    "code": "# The control object just bundles execution knobs; it carries no data. ctrl <- duckdb_control(target_batch_size = 5e5, on_error = \"skip\") ctrl #> <joinery::Duckdb_Control> #>  #> target_batch_size: 5e+05 #> min_batch_size: auto #> chunk_strategy: block_consolidated #> chunk_by: auto #> on_error: skip #> progress: auto  # \\donttest{ # Pass it to a verb running on a DuckDB table. if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(con, \"reg\", as.data.frame(workshop_register))   strat <- search_strategy(     workshop ~ normalize_text() + word_tokens(min_nchar = 3),     block_by  = c(\"postcode_area\", \"trade\"),     threshold = 0.7   )   detect_duplicates(dplyr::tbl(con, \"reg\"), \"reg_no\", strat, control = ctrl)   DBI::dbDisconnect(con, shutdown = TRUE) } #> Preparing search token table in batches #> ℹ Auto-tuned batch sizes: target 500,000, min 500,000 #>  #> Processing batch 1 of 1 (1052 rows) #>  # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/embedding_strategy.html",
@@ -3033,9 +3033,9 @@
     "id": null,
     "dir": "Reference",
     "previous_headings": "",
-    "what": "joinery: Heuristic Index-Based Record Linkage in R — joinery-package",
-    "title": "joinery: Heuristic Index-Based Record Linkage in R — joinery-package",
-    "text": "Index-based heuristic record linkage R.",
+    "what": "joinery: Heuristic Index-Based Record Linkage — joinery-package",
+    "title": "joinery: Heuristic Index-Based Record Linkage — joinery-package",
+    "text": "Links records refer entity across sources share common key, people, firms, addresses spelling variation, abbreviations, reordered words. Linkage described declaratively strategy normalises, tokenises, phonetically encodes, weights, blocks field; candidate pairs scored rarity-weighted overlap tokens every score attributed back individual tokens explainability. Strategies compose staged pipelines exact, fuzzy, optional embedding-based matching carry unmatched records forward resolve entities connected components. strategy runs -memory 'data.table' backend --core 'DuckDB' backend, diagnostic calibration tools help tune strategy filter false positives. token-retrieval heuristic follows Doherr (2023) doi:10.2139/ssrn.4326848 .",
     "code": ""
   },
   {
@@ -3044,7 +3044,7 @@
     "dir": "Reference",
     "previous_headings": "",
     "what": "Package options",
-    "title": "joinery: Heuristic Index-Based Record Linkage in R — joinery-package",
+    "title": "joinery: Heuristic Index-Based Record Linkage — joinery-package",
     "text": "joinery reads small number global options. Set options(); working defaults, touch change behaviour. Embedding strategies embed record reuse vector later calls, multi-stage run pay (expensive) embedding cost . Two options control reuse: joinery.embedding_reuse Logical, default TRUE. TRUE, data.table tibble backends keep per-session cache embedding vectors keyed model record content, reuse vector whenever text embedded . Set FALSE embed fresh every time, example benchmarking using non-deterministic model. (DuckDB backend reuses persisted embeddings column ignores option.) session cache grows embed distinct records released end session clear_embedding_cache(); call reclaim memory long-running session. joinery.embedding_cache_dir Character path, default unset (NULL). set, embedding cache also writes vector directory, reuse survives across R sessions. unset, cache lives current session. cache keyed record content, changed record re-embeds ; clear stale files clear_embedding_cache() (disk = TRUE).",
     "code": ""
   },
@@ -3057,7 +3057,7 @@
     "dir": "Reference",
     "previous_headings": "",
     "what": "Author",
-    "title": "joinery: Heuristic Index-Based Record Linkage in R — joinery-package",
+    "title": "joinery: Heuristic Index-Based Record Linkage — joinery-package",
     "text": "Maintainer: Eduard Brüll eduard.bruell@zew.de",
     "code": ""
   },
@@ -4634,7 +4634,7 @@
     "what": "Examples",
     "title": "Summarise a Match Result — summarise_matches",
     "text": "",
-    "code": "if (FALSE) { # \\dontrun{ s <- search_strategy(   name ~ normalize_text() + word_tokens(),   threshold = 0.9 ) dups <- detect_duplicates(base_example, \"id\", s) summarise_matches(dups, base = base_example) } # }"
+    "code": "s <- search_strategy(   Nachname ~ normalize_text() + word_tokens(min_nchar = 3),   block_by = \"Kreis\",   threshold = 0.8 ) dups <- detect_duplicates(base_example, \"id_base\", s) summarise_matches(dups, base = base_example) #>  #> ── Match_Overview (duplicates) ───────────────────────────────────────────────── #> n_pairs_or_groups: \"642\" n_records_involved: \"2935\" #> coverage: base=88.9% target=NA #> score summary #> min: 1.000 #> q1: 1.000 #> median: 1.000 #> mean: 1.000 #> q3: 1.000 #> max: 1.000 #> cluster size distribution (top 5) #> size 2: 208 cluster(s) #> size 3: 147 cluster(s) #> size 4: 87 cluster(s) #> size 5: 50 cluster(s) #> size 6: 32 cluster(s)"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/target_example.html",

@@ -9,11 +9,11 @@
 Source:
 [`DESCRIPTION`](https://github.com/edubruell/joinery/blob/main/DESCRIPTION)
 
-Brüll E (2026). *joinery: Heuristic Index-Based Record Linkage in R*. R
+Brüll E (2026). *joinery: Heuristic Index-Based Record Linkage*. R
 package version 1.0.0, <https://edubruell.github.io/joinery/>.
 
     @Manual{,
-      title = {joinery: Heuristic Index-Based Record Linkage in R},
+      title = {joinery: Heuristic Index-Based Record Linkage},
       author = {Eduard Brüll},
       year = {2026},
       note = {R package version 1.0.0},

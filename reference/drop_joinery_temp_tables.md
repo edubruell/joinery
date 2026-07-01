@@ -42,11 +42,18 @@ future.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-  # List all tables
-  dbListTables(con)
+# \donttest{
+if (requireNamespace("duckdb", quietly = TRUE) &&
+    requireNamespace("DBI", quietly = TRUE)) {
+  con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  # A stray joinery temp table left behind by an interrupted run:
+  DBI::dbWriteTable(con, "_joinery_tmp_demo", data.frame(x = 1))
 
-  # Remove all temporary joinery tables
-  drop_joinery_temp_tables(con)
-} # }
+  drop_joinery_temp_tables(con)  # removes it, returns its name invisibly
+  DBI::dbDisconnect(con, shutdown = TRUE)
+}
+#> duckdb: caching downloaded extensions in the package library:
+#> ℹ /home/runner/work/_temp/Library/duckdb/extensions
+#> ℹ This is removed when the package is re-installed; see `?duckdb_storage` to choose a different location.
+# }
 ```

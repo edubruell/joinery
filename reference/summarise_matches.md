@@ -37,12 +37,28 @@ A `Match_Overview` object.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 s <- search_strategy(
-  name ~ normalize_text() + word_tokens(),
-  threshold = 0.9
+  Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+  block_by = "Kreis",
+  threshold = 0.8
 )
-dups <- detect_duplicates(base_example, "id", s)
+dups <- detect_duplicates(base_example, "id_base", s)
 summarise_matches(dups, base = base_example)
-} # }
+#> 
+#> ── Match_Overview (duplicates) ─────────────────────────────────────────────────
+#> n_pairs_or_groups: "642" n_records_involved: "2935"
+#> coverage: base=88.9% target=NA
+#> score summary
+#> min: 1.000
+#> q1: 1.000
+#> median: 1.000
+#> mean: 1.000
+#> q3: 1.000
+#> max: 1.000
+#> cluster size distribution (top 5)
+#> size 2: 208 cluster(s)
+#> size 3: 147 cluster(s)
+#> size 4: 87 cluster(s)
+#> size 5: 50 cluster(s)
+#> size 6: 32 cluster(s)
 ```
