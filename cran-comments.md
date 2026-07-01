@@ -1,16 +1,25 @@
 ## Resubmission
 
-This is a resubmission of the first submission of joinery (version 1.0.0).
-The previous automatic incoming check reported one issue on the Debian
-flavor: the `detect_duplicates` example used more CPU than elapsed time
-(data.table multi-threading). All examples now cap data.table to two
-threads (`data.table::setDTthreads(2)` in a `\dontshow{}` preamble), so
-example CPU time stays within the elapsed-time limit.
+This is a resubmission of the first submission of joinery (version 1.0.0),
+addressing the reviewer feedback (Benjamin Altmann):
 
-joinery is a heuristic, index-based record linkage system for R. It links
-records that refer to the same entity (people, firms, addresses) across messy
-sources with no shared key: spelling drift, abbreviations, reordered tokens,
-phonetic variants, and partial information.
+* Removed the redundant "in R" from the Title and Description.
+* Expanded the Description into a full paragraph describing the package's
+  functionality and methods, and added the method reference in the requested
+  form: Doherr (2023) <doi:10.2139/ssrn.4326848>.
+* Replaced `\dontrun{}` with `\donttest{}` (guarded by `requireNamespace()`)
+  for the DuckDB examples, and unwrapped one example that runs quickly. One
+  `\dontrun{}` remains, on `embedding_strategy()`, because it needs a running
+  local embedding server (Ollama) that is not available on the check machine.
+
+The earlier Debian pretest note (CPU > 2.5x elapsed on the `detect_duplicates`
+example) was already addressed by capping data.table to two threads in the
+examples (`data.table::setDTthreads(2)`).
+
+joinery is a heuristic, index-based record linkage system. It links records
+that refer to the same entity (people, firms, addresses) across messy sources
+with no shared key: spelling drift, abbreviations, reordered tokens, phonetic
+variants, and partial information.
 
 Highlights:
 
@@ -49,6 +58,6 @@ submission" note, as this is the first submission to CRAN.
   Suggests are used conditionally (guarded by `requireNamespace()` or
   skipped in tests when absent), so the package checks cleanly when they
   are not installed.
-* Examples that would require network access or a long-running DuckDB job
-  are wrapped in `\donttest{}` / `\dontrun{}` as appropriate.
+* The single remaining `\dontrun{}` example (`embedding_strategy()`) requires
+  a running local embedding server, which cannot be provided on CRAN.
 </content>

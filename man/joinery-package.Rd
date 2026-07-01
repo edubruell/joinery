@@ -4,11 +4,11 @@
 \name{joinery-package}
 \alias{joinery}
 \alias{joinery-package}
-\title{joinery: Heuristic Index-Based Record Linkage in R}
+\title{joinery: Heuristic Index-Based Record Linkage}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Index-based heuristic record linkage for R.
+Links records that refer to the same entity across sources that share no common key, such as people, firms, or addresses with spelling variation, abbreviations, or reordered words. Linkage is described declaratively as a strategy that normalises, tokenises, phonetically encodes, weights, and blocks each field; candidate pairs are then scored by the rarity-weighted overlap of their tokens and every score is attributed back to individual tokens for explainability. Strategies compose into staged pipelines of exact, fuzzy, and optional embedding-based matching that carry unmatched records forward and resolve entities as connected components. The same strategy runs on an in-memory 'data.table' backend or an out-of-core 'DuckDB' backend, and diagnostic and calibration tools help tune a strategy and filter false positives. The token-retrieval heuristic follows Doherr (2023) \doi{10.2139/ssrn.4326848}.
 }
 \section{Package options}{
 

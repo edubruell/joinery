@@ -91,13 +91,16 @@ method(
 #' @return A character vector of removed table names, invisibly.
 #'
 #' @examples
-#' \dontshow{data.table::setDTthreads(2)}
-#' \dontrun{
-#'   # List all tables
-#'   dbListTables(con)
+#' \donttest{
+#' if (requireNamespace("duckdb", quietly = TRUE) &&
+#'     requireNamespace("DBI", quietly = TRUE)) {
+#'   con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+#'   # A stray joinery temp table left behind by an interrupted run:
+#'   DBI::dbWriteTable(con, "_joinery_tmp_demo", data.frame(x = 1))
 #'
-#'   # Remove all temporary joinery tables
-#'   drop_joinery_temp_tables(con)
+#'   drop_joinery_temp_tables(con)  # removes it, returns its name invisibly
+#'   DBI::dbDisconnect(con, shutdown = TRUE)
+#' }
 #' }
 #'
 #' @export

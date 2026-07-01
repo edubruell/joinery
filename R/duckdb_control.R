@@ -157,20 +157,21 @@ method(print.Duckdb_Control, Duckdb_Control) <- function(x, ...) {
 #' ctrl <- duckdb_control(target_batch_size = 5e5, on_error = "skip")
 #' ctrl
 #'
-#' \dontrun{
+#' \donttest{
 #' # Pass it to a verb running on a DuckDB table.
-#' library(duckdb)
-#' library(DBI)
-#' library(dplyr)
-#' con <- dbConnect(duckdb::duckdb(), ":memory:")
-#' dbWriteTable(con, "reg", as.data.frame(workshop_register))
-#' strat <- search_strategy(
-#'   workshop ~ normalize_text() + word_tokens(min_nchar = 3),
-#'   block_by  = c("postcode_area", "trade"),
-#'   threshold = 0.7
-#' )
-#' detect_duplicates(tbl(con, "reg"), "reg_no", strat, control = ctrl)
-#' dbDisconnect(con, shutdown = TRUE)
+#' if (requireNamespace("duckdb", quietly = TRUE) &&
+#'     requireNamespace("DBI", quietly = TRUE) &&
+#'     requireNamespace("dplyr", quietly = TRUE)) {
+#'   con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+#'   DBI::dbWriteTable(con, "reg", as.data.frame(workshop_register))
+#'   strat <- search_strategy(
+#'     workshop ~ normalize_text() + word_tokens(min_nchar = 3),
+#'     block_by  = c("postcode_area", "trade"),
+#'     threshold = 0.7
+#'   )
+#'   detect_duplicates(dplyr::tbl(con, "reg"), "reg_no", strat, control = ctrl)
+#'   DBI::dbDisconnect(con, shutdown = TRUE)
+#' }
 #' }
 #'
 #' @aliases Duckdb_Control

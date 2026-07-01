@@ -32,13 +32,16 @@ one of those prefixes are removed, so your own tables are never touched. Pass
 extra \code{prefixes} to cover temporary table types added in future.
 }
 \examples{
-\dontshow{data.table::setDTthreads(2)}
-\dontrun{
-  # List all tables
-  dbListTables(con)
+\donttest{
+if (requireNamespace("duckdb", quietly = TRUE) &&
+    requireNamespace("DBI", quietly = TRUE)) {
+  con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  # A stray joinery temp table left behind by an interrupted run:
+  DBI::dbWriteTable(con, "_joinery_tmp_demo", data.frame(x = 1))
 
-  # Remove all temporary joinery tables
-  drop_joinery_temp_tables(con)
+  drop_joinery_temp_tables(con)  # removes it, returns its name invisibly
+  DBI::dbDisconnect(con, shutdown = TRUE)
+}
 }
 
 }

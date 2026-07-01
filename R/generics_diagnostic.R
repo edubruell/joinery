@@ -72,14 +72,13 @@ audit_strategy <- new_generic(
 #'
 #' @examples
 #' \dontshow{data.table::setDTthreads(2)}
-#' \dontrun{
 #' s <- search_strategy(
-#'   name ~ normalize_text() + word_tokens(),
-#'   threshold = 0.9
+#'   Nachname ~ normalize_text() + word_tokens(min_nchar = 3),
+#'   block_by = "Kreis",
+#'   threshold = 0.8
 #' )
-#' dups <- detect_duplicates(base_example, "id", s)
+#' dups <- detect_duplicates(base_example, "id_base", s)
 #' summarise_matches(dups, base = base_example)
-#' }
 #'
 #' @export
 summarise_matches <- new_generic(

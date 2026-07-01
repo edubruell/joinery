@@ -81,22 +81,30 @@ can be reliably sliced from the DB, the function sorts by the \code{id} column b
 computing row numbers. This ensures reproducible, deterministic batch boundaries.
 }
 \examples{
-\dontrun{
-con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
-DBI::dbWriteTable(con, "data", data.frame(id = 1:1e6, region = sample(LETTERS, 1e6, TRUE)))
-tbl_ref <- dplyr::tbl(con, "data")
+\donttest{
+if (requireNamespace("duckdb", quietly = TRUE) &&
+    requireNamespace("DBI", quietly = TRUE) &&
+    requireNamespace("dplyr", quietly = TRUE)) {
+  con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  DBI::dbWriteTable(
+    con, "data",
+    data.frame(id = 1:1000, region = rep(LETTERS[1:5], length.out = 1000))
+  )
+  tbl_ref <- dplyr::tbl(con, "data")
 
-# Unblocked, even row-number chunking
-plan1 <- duckdb_batch_plan(
-  tbl_ref, id = "id",
-  target_batch_size = 1e5, chunk_strategy = "even"
-)
+  # Unblocked, even row-number chunking
+  plan1 <- duckdb_batch_plan(
+    tbl_ref, id = "id",
+    target_batch_size = 200, chunk_strategy = "even"
+  )
 
-# Blocked, consolidated strategy (default, respects regions)
-plan2 <- duckdb_batch_plan(
-  tbl_ref, id = "id",
-  target_batch_size = 1e5, block_by = "region"
-)
+  # Blocked, consolidated strategy (default, respects regions)
+  plan2 <- duckdb_batch_plan(
+    tbl_ref, id = "id",
+    target_batch_size = 200, block_by = "region"
+  )
+  DBI::dbDisconnect(con, shutdown = TRUE)
+}
 }
 
 }
