@@ -44,6 +44,7 @@ custom_tokens(c("plexiglas", "brandenburg"), split_vowels)
 Other token generators: 
 \code{\link{generate_ngrams}()},
 \code{\link{numeric_tokens}()},
+\code{\link{subword_tokens}()},
 \code{\link{word_tokens}()}
 }
 \concept{token generators}

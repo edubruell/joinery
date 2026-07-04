@@ -38,6 +38,7 @@ word_tokens("this is an example", min_nchar = 3)  # drops "is", "an"
 Other token generators: 
 \code{\link{custom_tokens}()},
 \code{\link{generate_ngrams}()},
-\code{\link{numeric_tokens}()}
+\code{\link{numeric_tokens}()},
+\code{\link{subword_tokens}()}
 }
 \concept{token generators}

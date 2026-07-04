@@ -39,6 +39,7 @@ generate_ngrams("an example", 3)
 Other token generators: 
 \code{\link{custom_tokens}()},
 \code{\link{numeric_tokens}()},
+\code{\link{subword_tokens}()},
 \code{\link{word_tokens}()}
 }
 \concept{token generators}
