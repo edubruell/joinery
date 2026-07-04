@@ -36,6 +36,7 @@ word_tokens("this is an example", min_nchar = 3)  # drops "is", "an"
 \code{\link[=filter_stopwords]{filter_stopwords()}} to drop common words by name.
 
 Other token generators: 
+\code{\link{custom_tokens}()},
 \code{\link{generate_ngrams}()},
 \code{\link{numeric_tokens}()}
 }

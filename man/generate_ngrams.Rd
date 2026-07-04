@@ -37,6 +37,7 @@ generate_ngrams("an example", 3)
 \code{\link[=word_tokens]{word_tokens()}} for whole-word tokens.
 
 Other token generators: 
+\code{\link{custom_tokens}()},
 \code{\link{numeric_tokens}()},
 \code{\link{word_tokens}()}
 }

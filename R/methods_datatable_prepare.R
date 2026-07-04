@@ -64,8 +64,9 @@ method(
   # --------------------------------------------------------------------
   apply_step_r <- function(acc, step) {
 
-    fn   <- get(step@name, mode = "function")
-    args <- step@args
+    resolved <- .step_fn_args(step)
+    fn   <- resolved$fn
+    args <- resolved$args
     n    <- length(acc)
 
     if (n < chunk_size) {

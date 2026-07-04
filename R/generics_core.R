@@ -555,3 +555,36 @@ inspect_tokens <- function(data, id, strategy, column) {
   column_chr <- rlang::as_name(rlang::ensym(column))
   .inspect_tokens(data, id, strategy, column_chr)
 }
+
+
+#' Tokenize Text with a Fitted Tokenizer
+#'
+#' @description
+#' Most tokenizers in joinery are plain functions, like [word_tokens()]. Some
+#' tokenizers instead carry fitted state, for example a subword vocabulary
+#' learned from your corpus. Such a tokenizer is an object, and `tokenize()`
+#' is how that object turns text into tokens. You rarely call it yourself:
+#' place the object in a strategy formula with [custom_tokens()] and joinery
+#' calls `tokenize()` for you.
+#'
+#' To bring your own tokenizer, write a `tokenize()` method for its class
+#' with `S7::method()`. The method must return a list with one element per
+#' element of `text`, each element a character vector of that record's
+#' tokens (`character(0)` for a record with none).
+#'
+#' @param tokenizer A fitted tokenizer object.
+#' @param text A character vector, one element per record.
+#' @param ... Additional arguments passed to methods.
+#'
+#' @return A list of character vectors, one per element of `text`.
+#'
+#' @seealso [custom_tokens()], which puts a tokenizer into a strategy
+#'   formula.
+#'
+#' @export
+tokenize <- new_generic(
+  "tokenize", "tokenizer",
+  function(tokenizer, text, ...) {
+    S7_dispatch()
+  }
+)

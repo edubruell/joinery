@@ -232,22 +232,25 @@ method(print.Search_Strategy, Search_Strategy) <- function(x, ...) {
 #' the function name and arguments.
 #'
 #' @param expr A symbol or call representing a preprocessing step.
+#' @param env The environment of the strategy formula the step came from,
+#'   captured onto the Step so its arguments (e.g. a fitted tokenizer or a
+#'   stopword table bound next to the formula) resolve at prepare time.
 #'
 #' @return A Step object.
 #'
 #' @noRd
-expr_to_step <- function(expr) {
+expr_to_step <- function(expr, env = NULL) {
   stopifnot(rlang::is_call(expr) || rlang::is_symbol(expr))
 
   if (rlang::is_symbol(expr)) {
     name <- as.character(expr)
-    return(Step(name = name, args = list()))
+    return(Step(name = name, args = list(), env = env))
   }
 
   name <- as.character(expr[[1]])
   args <- as.list(expr[-1])
 
-  Step(name = name, args = args)
+  Step(name = name, args = args, env = env)
 }
 
 
@@ -275,7 +278,7 @@ expr_to_step <- function(expr) {
     rhs <- rlang::f_rhs(fml)
 
     steps <- if (rlang::is_call(rhs, "+")) flatten_plus_calls(rhs) else list(rhs)
-    steps <- map(steps, expr_to_step)
+    steps <- map(steps, expr_to_step, env = rlang::f_env(fml))
 
     Search_Preparer(col, steps)
   })
