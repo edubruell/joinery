@@ -1,3 +1,18 @@
+# joinery 1.0.1
+
+### Bug fixes
+
+* DuckDB batch auto-tuning no longer probes the operating system for total
+  RAM (`sysctl` on macOS, `/proc/meminfo` on Linux). It now reads the memory
+  budget straight from the connection's own `memory_limit` setting, which
+  defaults to 80% of system RAM and reflects any user override. This removes
+  the shell call that broke on systems without `sysctl` on the `PATH` (the
+  CRAN M1mac check failures, where batch planning errored with "argument is
+  of length zero"), and makes the budget detection work identically on all
+  platforms, including Windows.
+
+---
+
 # joinery 1.0.0
 
 First stable release. The token core, the DuckDB backend, embedding matching,
