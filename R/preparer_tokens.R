@@ -832,3 +832,78 @@ fuzzy_tokens <- function(x,
 
   out
 }
+
+
+#' Tokenize with your own tokenizer
+#'
+#' The built-in tokenizers split text into words, n-grams, or dates. When none
+#' of them fits your data, write your own and place it in the strategy formula
+#' with `custom_tokens()`:
+#' `name ~ normalize_text() + custom_tokens(my_tokenizer)`.
+#'
+#' The tokenizer can be a plain function that takes a character vector and
+#' returns a list of token vectors. It can also be a fitted tokenizer object
+#' with a [tokenize()] method, which is how a tokenizer with learned state,
+#' such as a trained subword vocabulary, enters a strategy.
+#'
+#' Whichever form you pass, it must return a list with one element per input
+#' string, each element a character vector of that record's tokens
+#' (`character(0)` for a record with none). `custom_tokens()` checks this and
+#' stops with a clear error if the result does not fit.
+#'
+#' @param text A character vector to tokenize.
+#' @param tokenizer A plain function, or an object with a [tokenize()] method.
+#'
+#' @return A list of character vectors, one per input element.
+#'
+#' @examples
+#' # A bare-function tokenizer: split on vowels
+#' split_vowels <- function(text) strsplit(text, "[aeiou]+")
+#' custom_tokens(c("plexiglas", "brandenburg"), split_vowels)
+#'
+#' @family token generators
+#' @seealso [tokenize()], the method a fitted tokenizer provides;
+#'   [word_tokens()] for the standard whitespace tokenizer.
+#' @export
+custom_tokens <- function(text, tokenizer) {
+  check_character(text)
+
+  out <- if (is.function(tokenizer)) {
+    tokenizer(text)
+  } else {
+    tokenize(tokenizer, text)
+  }
+
+  .check_token_list(out, length(text))
+  out
+}
+
+#' Validate the list-of-character contract for custom tokenizers
+#'
+#' @param out The tokenizer result.
+#' @param n_text Number of input strings the result must match.
+#' @noRd
+.check_token_list <- function(out, n_text, call = rlang::caller_env()) {
+  if (!is.list(out)) {
+    cli::cli_abort(c(
+      "{.arg tokenizer} must return a list of character vectors.",
+      "x" = "It returned {.cls {class(out)[1]}}.",
+      "i" = "Return one list element per input string, each a character
+             vector of tokens ({.code character(0)} for none)."
+    ), call = call)
+  }
+  if (length(out) != n_text) {
+    cli::cli_abort(c(
+      "{.arg tokenizer} must return one list element per input string.",
+      "x" = "Got {length(out)} element{?s} for {n_text} input string{?s}."
+    ), call = call)
+  }
+  bad <- which(!vapply(out, is.character, logical(1)))
+  if (length(bad)) {
+    cli::cli_abort(c(
+      "{.arg tokenizer} must return character vectors only.",
+      "x" = "Element{?s} {.val {utils::head(bad, 3)}} {?is/are} not character."
+    ), call = call)
+  }
+  invisible(out)
+}

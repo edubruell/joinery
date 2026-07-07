@@ -41,7 +41,9 @@ numeric_tokens("House 5", destructive = TRUE)
 token column instead.
 
 Other token generators: 
+\code{\link{custom_tokens}()},
 \code{\link{generate_ngrams}()},
+\code{\link{subword_tokens}()},
 \code{\link{word_tokens}()}
 }
 \concept{token generators}

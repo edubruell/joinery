@@ -3,11 +3,11 @@
 This is a resubmission of the first submission of joinery (version 1.0.0),
 addressing the reviewer feedback (Benjamin Altmann):
 
-* Removed the redundant "in R" from the Title and Description.
-* Expanded the Description into a full paragraph describing the package's
+- Removed the redundant "in R" from the Title and Description.
+- Expanded the Description into a full paragraph describing the package's
   functionality and methods, and added the method reference in the requested
   form: Doherr (2023) <doi:10.2139/ssrn.4326848>.
-* Replaced `\dontrun{}` with `\donttest{}` (guarded by `requireNamespace()`)
+- Replaced `\dontrun{}` with `\donttest{}` (guarded by `requireNamespace()`)
   for the DuckDB examples, and unwrapped one example that runs quickly. One
   `\dontrun{}` remains, on `embedding_strategy()`, because it needs a running
   local embedding server (Ollama) that is not available on the check machine.
@@ -23,17 +23,17 @@ variants, and partial information.
 
 Highlights:
 
-* **A declarative strategy IR.** A strategy is an S7 object describing how each
+- **A declarative strategy IR.** A strategy is an S7 object describing how each
   field is normalized, tokenized, encoded, weighted, blocked, and scored. The
   same object drives every backend and verb, so what a join *is* stays separate
   from how it runs.
-* **Stepwise linkage.** Exact, fuzzy, and embedding strategies compose as an
+- **Stepwise linkage.** Exact, fuzzy, and embedding strategies compose as an
   ordered list run as successive passes, carrying residuals forward and
   resolving entities once at the end.
-* **Efficient and out-of-core.** data.table by default; the same strategy runs
+- **Efficient and out-of-core.** data.table by default; the same strategy runs
   on a DuckDB backend with batched, block-atomic execution and an always-on
   cost guard. Used to build a panel of tens of millions of rows.
-* **Explainability first-class.** `explain_match()` attributes a score token by
+- **Explainability first-class.** `explain_match()` attributes a score token by
   token, with a sum-to-score round-trip enforced as a property test, plus
   diagnostic verbs and an optional false-positive calibration filter.
 
@@ -54,10 +54,10 @@ submission" note, as this is the first submission to CRAN.
 
 ## Notes for CRAN
 
-* All packages used in examples, tests, and vignettes that are listed in
+- All packages used in examples, tests, and vignettes that are listed in
   Suggests are used conditionally (guarded by `requireNamespace()` or
   skipped in tests when absent), so the package checks cleanly when they
   are not installed.
-* The single remaining `\dontrun{}` example (`embedding_strategy()`) requires
+- The single remaining `\dontrun{}` example (`embedding_strategy()`) requires
   a running local embedding server, which cannot be provided on CRAN.
 </content>

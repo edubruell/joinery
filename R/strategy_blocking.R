@@ -339,8 +339,8 @@ block_on_tokens <- function(column,
 .apply_btok_steps <- function(values, steps) {
   out <- Reduce(
     f = function(acc, step) {
-      fn <- get(step@name, mode = "function")
-      do.call(fn, c(list(acc), step@args))
+      resolved <- .step_fn_args(step)
+      do.call(resolved$fn, c(list(acc), resolved$args))
     },
     x = steps,
     init = values

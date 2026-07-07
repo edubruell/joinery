@@ -1,7 +1,7 @@
 Package: joinery
 Type: Package
 Title: Heuristic Index-Based Record Linkage
-Version: 1.0.0
+Version: 1.0.0.9000
 Authors@R: person("Eduard", "Brüll", email = "eduard.bruell@zew.de", role = c("aut", "cre"))
 Description: Links records that refer to the same entity across sources that
     share no common key, such as people, firms, or addresses with spelling
@@ -77,6 +77,7 @@ Collate:
     'methods_duckdb_multistage.R'
     'methods_duckdb_inspect.R'
     'preparer_stopwords.R'
+    'preparer_subword.R'
     'embedding_methods_duckdb.R'
     'exact_methods_duckdb.R'
     'calibration_aip.R'
@@ -115,6 +116,7 @@ Suggests:
     tidyllm,
     tibble,
     stringdist,
+    sentencepiece,
     generics,
     parsnip,
     recipes,

@@ -1,3 +1,11 @@
+# joinery (development version)
+
+Development has started on the 1.1 "Subword" theme: a pluggable tokenizer
+protocol and a corpus-fitted subword tokenizer backed by SentencePiece
+(`sentencepiece` in Suggests). See `notes/v1.1/00_index.md` for the build queue.
+
+---
+
 # joinery 1.0.0
 
 First stable release. The token core, the DuckDB backend, embedding matching,
