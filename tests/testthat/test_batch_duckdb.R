@@ -445,3 +445,57 @@ test_that("duckdb_batch_plan: 3-row table returns single-batch plan with window 
   expect_false(any(is.na(plan$row_start)))
   expect_false(any(is.na(plan$row_end)))
 })
+
+test_that(".parse_duckdb_mem parses DuckDB memory strings", {
+  expect_equal(.parse_duckdb_mem("12.7 GiB"), 12.7 * 2^30)
+  expect_equal(.parse_duckdb_mem("512.0 MiB"), 512 * 2^20)
+  expect_equal(.parse_duckdb_mem("1.8 GiB"), 1.8 * 2^30)
+  expect_equal(.parse_duckdb_mem("2GB"), 2e9)
+  expect_equal(.parse_duckdb_mem("16.0 TiB"), 16 * 2^40)
+  expect_equal(.parse_duckdb_mem("123456"), 123456)      # plain byte count
+  expect_true(is.na(.parse_duckdb_mem("unlimited")))
+  expect_true(is.na(.parse_duckdb_mem(NA_character_)))
+  expect_true(is.na(.parse_duckdb_mem(NULL)))
+  expect_true(is.na(.parse_duckdb_mem("")))
+})
+
+test_that(".duckdb_memory_budget reads memory_limit and respects overrides", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+
+  con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  on.exit(DBI::dbDisconnect(con))
+
+  budget <- .duckdb_memory_budget(con)
+  expect_true(is.numeric(budget) && length(budget) == 1L)
+  expect_true(is.finite(budget) && budget > 0)
+
+  # a user-set memory_limit must be reflected in the budget
+  DBI::dbExecute(con, "SET memory_limit = '2GB'")
+  capped <- .duckdb_memory_budget(con)
+  expect_true(capped <= 2e9 * 1.01)
+  expect_true(capped >= 2e9 * 0.85)  # DuckDB reports in GiB, some rounding
+
+  # a dead connection falls back to the 8 GiB default instead of erroring
+  con2 <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  DBI::dbDisconnect(con2)
+  expect_equal(.duckdb_memory_budget(con2), 8 * 1024^3)
+})
+
+test_that("suggest_batch_params auto-tunes without probing the OS", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+
+  con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  on.exit(DBI::dbDisconnect(con))
+
+  data("base_example")
+  DBI::dbWriteTable(con, "test_tbl", base_example, overwrite = TRUE)
+
+  params <- suggest_batch_params(con, "test_tbl")
+  expect_s3_class(params, "data.table")
+  expect_true(all(c("target_batch_size", "min_batch_size", "mem_budget_bytes") %in% names(params)))
+  expect_true(params$target_batch_size >= 50e3)
+  expect_true(params$min_batch_size >= 1)
+  expect_true(is.finite(params$mem_budget_bytes) && params$mem_budget_bytes > 0)
+})

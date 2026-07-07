@@ -651,11 +651,11 @@ duckdb_batch_plan <- function(db_tbl,
 #' @param con DBI connection to DuckDB
 #' @param table Character. Name of the table to inspect
 #' @param block_by Optional character vector of block columns
-#' @param safety_factor Fraction of RAM to use (0.3 is safe)
+#' @param safety_factor Fraction of the DuckDB memory budget to use (0.3 is safe)
 #' @param as_tibble Logical. Return a tibble instead of data.table
 #'
 #' @return A data.table or tibble with recommended parameters:
-#'   batch_size, target_batch_size, min_batch_size, avg_row_bytes, avail_ram_bytes, notes
+#'   batch_size, target_batch_size, min_batch_size, avg_row_bytes, mem_budget_bytes, notes
 #'
 #' @noRd
 suggest_batch_params <- function(con,
@@ -663,28 +663,13 @@ suggest_batch_params <- function(con,
                                  block_by = NULL,
                                  safety_factor = 0.30,
                                  as_tibble = FALSE) {
-  
-  # RAM detection ---------------------------------------------------------
-  get_total_ram <- function() {
-    os <- Sys.info()[["sysname"]]
-    
-    if (os == "Linux") {
-      x <- readLines("/proc/meminfo")
-      line <- x[grepl("^MemTotal", x)][1]
-      kb <- as.numeric(gsub("[^0-9]", "", line))
-      return(kb * 1024)
-    }
-    
-    if (os == "Darwin") {
-      bytes <- suppressWarnings(as.numeric(system("sysctl -n hw.memsize", intern = TRUE)))
-      if (is.finite(bytes)) return(bytes)
-    }
-    
-    8 * 1024^3
-  }
-  
-  total_ram <- get_total_ram()
-  avail_ram <- total_ram * safety_factor
+
+  # Memory budget -----------------------------------------------------------
+  # DuckDB already knows how much memory the workload may use: its
+  # memory_limit setting (default 80% of system RAM, and it reflects any
+  # user override). Reading it from the connection avoids probing the OS.
+  mem_budget <- .duckdb_memory_budget(con)
+  avail_ram <- mem_budget * safety_factor
   
   # Row size estimation ----------------------------------------------------
   sample_df <- DBI::dbGetQuery(con, paste0("SELECT * FROM ", table, " LIMIT 10000"))
@@ -721,12 +706,50 @@ suggest_batch_params <- function(con,
     target_batch_size = target_rows,
     min_batch_size = min_batch_size,
     avg_row_bytes = avg_row_bytes,
-    avail_ram_bytes = avail_ram,
+    mem_budget_bytes = avail_ram,
     notes = paste0("Using safety factor ", safety_factor)
   )
-  
+
   if (as_tibble) out <- tibble::as_tibble(out)
   out
+}
+
+
+#' Memory budget of a DuckDB connection, in bytes
+#'
+#' Reads the connection's `memory_limit` setting (DuckDB's own memory budget,
+#' defaulting to 80% of system RAM and reflecting any user override) instead
+#' of probing the OS for total RAM. Falls back to 8 GiB when the setting
+#' cannot be read or parsed.
+#'
+#' @noRd
+.duckdb_memory_budget <- function(con) {
+  limit <- tryCatch(
+    DBI::dbGetQuery(con, "SELECT current_setting('memory_limit') AS x")$x[[1]],
+    error = function(e) NA_character_
+  )
+  bytes <- .parse_duckdb_mem(limit)
+  if (length(bytes) == 1L && is.finite(bytes) && bytes > 0) bytes else 8 * 1024^3
+}
+
+
+#' Parse a DuckDB memory string such as "12.7 GiB" into bytes
+#'
+#' DuckDB reports memory settings as human-readable strings in binary units
+#' ("512.0 MiB", "12.7 GiB"); decimal units and plain byte counts are accepted
+#' too. Returns `NA_real_` for anything unparseable.
+#'
+#' @noRd
+.parse_duckdb_mem <- function(x) {
+  if (!is.character(x) || length(x) != 1L || is.na(x)) return(NA_real_)
+  m <- regmatches(x, regexec("^([0-9]*\\.?[0-9]+) *([KMGTP]i?B|B)?$", trimws(x), ignore.case = TRUE))[[1]]
+  if (length(m) != 3L) return(NA_real_)
+  mult <- switch(toupper(m[3]),
+    "KB" = 1e3, "MB" = 1e6, "GB" = 1e9, "TB" = 1e12, "PB" = 1e15,
+    "KIB" = 2^10, "MIB" = 2^20, "GIB" = 2^30, "TIB" = 2^40, "PIB" = 2^50,
+    1
+  )
+  as.numeric(m[2]) * mult
 }
 
 
