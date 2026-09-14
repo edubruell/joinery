@@ -1,5 +1,13 @@
 # joinery (development version)
 
+Development has started on the 1.1 "Subword" theme: a pluggable tokenizer
+protocol and a corpus-fitted subword tokenizer backed by SentencePiece
+(`sentencepiece` in Suggests).
+
+---
+
+# joinery 1.0.1
+
 ### Bug fixes
 
 * DuckDB batch auto-tuning no longer probes the operating system for total
@@ -10,10 +18,6 @@
   CRAN M1mac check failures, where batch planning errored with "argument is
   of length zero"), and makes the budget detection work identically on all
   platforms, including Windows.
-
-Development has started on the 1.1 "Subword" theme: a pluggable tokenizer
-protocol and a corpus-fitted subword tokenizer backed by SentencePiece
-(`sentencepiece` in Suggests). See `notes/v1.1/00_index.md` for the build queue.
 
 ---
 

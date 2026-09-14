@@ -1,7 +1,7 @@
 Package: joinery
 Type: Package
 Title: Heuristic Index-Based Record Linkage
-Version: 1.0.0.9000
+Version: 1.0.1.9000
 Authors@R: person("Eduard", "Brüll", email = "eduard.bruell@zew.de", role = c("aut", "cre"))
 Description: Links records that refer to the same entity across sources that
     share no common key, such as people, firms, or addresses with spelling
