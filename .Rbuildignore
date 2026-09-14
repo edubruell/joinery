@@ -3,9 +3,8 @@
 ^\.positai$
 ^\.claude$
 ^local_tests$
-^notes$
 ^examples$
-^localwip$
+^local_context$
 ^pkgdown$
 ^_pkgdown\.yml$
 ^docs$

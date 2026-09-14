@@ -4,8 +4,7 @@
 .Ruserdata
 examples/
 joinery.Rproj
-localwip/
-notes/
+local_context/
 .positai
 .DS_Store
 .claude/
