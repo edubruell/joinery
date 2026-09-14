@@ -4,6 +4,19 @@ Development has started on the 1.1 "Subword" theme: a pluggable tokenizer
 protocol and a corpus-fitted subword tokenizer backed by SentencePiece
 (`sentencepiece` in Suggests).
 
+* `match_features()` gains `identity_by`, which names the column saying
+  which entity each candidate belongs to. Supply it when the side you search
+  has already been resolved, such as a search over one representative per
+  entity, and the features gain an `ident_cnt` column counting how many
+  distinct entities a candidate set spans. The existing `icnt` counts
+  records, which is the same number until several records stand for one
+  entity. Nothing changes when you leave the new argument out.
+
+* An empty result from `detect_duplicates()` now carries your original
+  columns on the in-memory backend, matching what the DuckDB backend always
+  returned. Code that reads a column off a dedup result no longer needs a
+  special case for the empty run.
+
 ---
 
 # joinery 1.0.1

@@ -310,6 +310,7 @@
                                      top_n = NULL,
                                      include_string_sim = TRUE,
                                      include_block_stats = TRUE,
+                                     identity_by = NULL,
                                      method = "jw") {
 
   pair_info  <- .pairs_from_matches(matches)
@@ -474,7 +475,12 @@
   }
   r_wide <- r_wide[, c(".pair", r_cols), with = FALSE]
 
-  # --- block stats (cnt/icnt/ipos) ----------------------------------
+  # --- block stats (cnt/icnt/ipos, plus ident_cnt) -------------------
+  # `icnt` counts distinct found RECORDS. The whitepaper's block statistic
+  # counts distinct identities, which is the same number whenever one record
+  # is one identity. It differs only when the found side has already been
+  # resolved into entities, as in a self-search over representatives; name
+  # that entity column with `identity_by` and `ident_cnt` counts it.
   if (include_block_stats) {
     blk <- pairs[, .(
       .pair_idx = seq_len(.N),
@@ -490,6 +496,17 @@
       icnt  = blk$icnt,
       ipos  = blk$ipos
     )
+    if (!is.null(identity_by)) {
+      found_dt <- if (is.null(target_dt)) base_dt else target_dt
+      found_id <- if (is.null(target_dt)) id else target_id
+      .assert_identity_col(identity_by, found_dt)
+      ident_vals <- as.character(
+        found_dt[[identity_by]]
+      )[match(blk$found, as.character(found_dt[[found_id]]))]
+      blk[, .ident := ident_vals]
+      blk[, ident_cnt := data.table::uniqueN(.ident), by = searched]
+      block_stats[, ident_cnt := blk$ident_cnt]
+    }
   } else {
     block_stats <- data.table::data.table(
       .pair = pair_ids,
@@ -601,6 +618,7 @@ method(
               top_n = NULL,
               include_string_sim  = TRUE,
               include_block_stats = TRUE,
+              identity_by = NULL,
               method = "jw", ...) {
 
   if (missing(base) || is.null(base)) {
@@ -608,6 +626,13 @@ method(
   }
   if (missing(id) || is.null(id)) {
     cli::cli_abort("{.arg id} is required for {.fn match_features}")
+  }
+  if (!is.null(identity_by) && !isTRUE(include_block_stats)) {
+    cli::cli_abort(c(
+      "{.arg identity_by} needs {.arg include_block_stats}.",
+      i = "{.field ident_cnt} is a block statistic; it cannot be built with
+           {.code include_block_stats = FALSE}."
+    ))
   }
 
   .match_features_dt_token(
@@ -620,6 +645,7 @@ method(
     top_n               = top_n,
     include_string_sim  = include_string_sim,
     include_block_stats = include_block_stats,
+    identity_by         = identity_by,
     method              = method
   )
 }
@@ -632,6 +658,7 @@ method(
               top_n = NULL,
               include_string_sim  = TRUE,
               include_block_stats = TRUE,
+              identity_by = NULL,
               method = "jw", ...) {
 
   matches_dt <- data.table::as.data.table(dplyr::collect(matches))
@@ -659,6 +686,7 @@ method(
     top_n               = top_n,
     include_string_sim  = include_string_sim,
     include_block_stats = include_block_stats,
+    identity_by         = identity_by,
     method              = method
   )
 }

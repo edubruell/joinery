@@ -18,7 +18,7 @@ labelled rows produced by \code{\link[=import_labels]{import_labels()}}), \code{
 Optional: \code{target}, \code{target_id} (forwarded to \code{\link[=match_features]{match_features()}}),
 \code{model}, \code{class_weighted}, \code{na_fill}, \code{threshold}, plus all
 \code{\link[=match_features]{match_features()}} tuning knobs (\code{top_n}, \code{include_string_sim},
-\code{include_block_stats}, \code{method}).}
+\code{include_block_stats}, \code{identity_by}, \code{method}).}
 }
 \value{
 A \code{Calibrated_Matches} object.

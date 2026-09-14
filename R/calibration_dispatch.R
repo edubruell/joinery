@@ -24,7 +24,8 @@
   # consumed downstream.
   mf_kwargs <- dots[intersect(
     names(dots),
-    c("top_n", "include_string_sim", "include_block_stats", "method")
+    c("top_n", "include_string_sim", "include_block_stats", "identity_by",
+      "method")
   )]
   do.call(
     match_features,

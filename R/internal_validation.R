@@ -34,6 +34,7 @@ utils::globalVariables(c(
   "_rid_", ".pair", ".pos", "..cols_pick",
   "row_id_placeholder", "aip_s", "aip_f",
   "n_cols", "max_aip", "cnt", "icnt", "ipos", "scnt", "rcnt",
+  "ident_cnt", ".ident",
   "searched", "found",
   "cosine_sim", "embedding_norm_s", "embedding_norm_f",
   # labelling.R
@@ -103,6 +104,29 @@ utils::globalVariables(c(
     i = "Materialised filtered DuckDB input as temp table {.field {tmp_in}}."
   ))
   dplyr::tbl(con, tmp_in)
+}
+
+.assert_identity_col <- function(identity_by, found_dt,
+                                 call = rlang::caller_env()) {
+  if (!rlang::is_string(identity_by)) {
+    cli::cli_abort(
+      "{.arg identity_by} must be a single column name.",
+      call = call
+    )
+  }
+  if (!identity_by %in% names(found_dt)) {
+    cli::cli_abort(
+      c(
+        "Column {.field {identity_by}} not found on the found side.",
+        i = "{.arg identity_by} names the entity column of the table the
+             candidates come from: {.arg target} for a cross-table search,
+             {.arg base} for a deduplication.",
+        i = "Available: {.field {names(found_dt)}}."
+      ),
+      call = call
+    )
+  }
+  invisible(NULL)
 }
 
 .check_reserved_names <- function(data_cols, id_col, call = rlang::caller_env()) {

@@ -1,7 +1,7 @@
 # joinery — Developer / Coding-Agent Guide
 
 **joinery** is a heuristic, token-based record linkage package for R (CRAN 1.0.1,
-main at 1.0.0.9000). Built on S7: a declarative `Search_Strategy` (how text is
+main at 1.0.1.9000). Built on S7: a declarative `Search_Strategy` (how text is
 normalized, tokenized, weighted, scored, blocked) is executed by backend-specific
 methods for data.table (tibble / data.frame defer to it) and DuckDB (batched,
 R-preprocessing pipeline). Sibling strategy classes: `Embedding_Strategy`,
@@ -34,10 +34,14 @@ on them. Vendored rlang shims are `import-standalone-*.R`.
 - Token tables are the universal interface: `id | src_column | token | row_id | <block_by>`.
 - Scoring is rIP (`rarity / sum(rarity)` per record, `score = sum(rIP * weight)`; four rarity metrics: `inverse_freq`, `smoothed_inverse_freq`, `tfidf`, `bm25`),
   thresholded after scoring. The `explain_match` round-trip
-  (`sum(contribution) × feedback_factor == score`) is a mandatory property test
-  on both backends.
-- Output schemas are fixed: dedup `duplicate_group, score, id, <cols>, rank`;
-  search `match_id, score, source, id, <cols>, rank`.
+  (`sum(contribution) × feedback_factor == score`) is a mandatory property test.
+  It is asserted at 1e-10 on data.table only; the DuckDB case compares score and
+  per-column contributions against data.table at 1e-6 and never sums them. A
+  DuckDB-side sum assertion is still owed.
+- Output schemas are fixed. The `merge(by = "id")` that attaches the original
+  data puts `id` first: dedup `id, duplicate_group, score, rank, <cols>`;
+  search `id, match_id, score, source, <cols>, rank`. Empty results keep the
+  full typed schema on DuckDB only, see wiki contention C5.
 - A matching variant is a strategy class that the standard apply verbs dispatch
   on, never a standalone verb.
 - Chunking is execution, never a strategy slot. DuckDB only.

@@ -75,8 +75,19 @@ prepare_auxiliary_registry <- new_generic(
 #'   today; the argument shape also reserves a named character vector for
 #'   per-column methods, the additive path to the per-column comparators a
 #'   future probabilistic strategy will use), and `include_block_stats` (logical; whether to
-#'   compute `cnt` / `icnt` / `ipos`). The [`Search_Strategy`] method
-#'   additionally accepts `top_n` (named integer / list controlling
+#'   compute `cnt` / `icnt` / `ipos`). `cnt` counts the candidates for a
+#'   searched record, `icnt` the distinct records among them, and `ipos`
+#'   the candidate's percentile rank by score inside that set. The
+#'   [`Search_Strategy`] method
+#'   additionally accepts `identity_by` (character scalar naming a column
+#'   that says which entity each candidate belongs to, looked up on the
+#'   `target` table for a cross-table search and on `base` for a
+#'   deduplication). Supply it when the candidate side has already been
+#'   resolved, for example a search over one representative per entity:
+#'   the extra `ident_cnt` column then counts how many distinct entities a
+#'   candidate set spans, which `icnt` cannot tell you once several
+#'   records stand for the same entity. Without it no `ident_cnt` column
+#'   is emitted. It also accepts `top_n` (named integer / list controlling
 #'   per-column top-N counts for the `m_/f_/s_` columns; use a
 #'   `default` entry as fallback; set a column to 0 to suppress its
 #'   set). The [`Embedding_Strategy`] method emits `cosine_sim`
@@ -130,7 +141,7 @@ match_features <- new_generic(
 #'   Optional: `target`, `target_id` (forwarded to [match_features()]),
 #'   `model`, `class_weighted`, `na_fill`, `threshold`, plus all
 #'   [match_features()] tuning knobs (`top_n`, `include_string_sim`,
-#'   `include_block_stats`, `method`).
+#'   `include_block_stats`, `identity_by`, `method`).
 #'
 #' @return A `Calibrated_Matches` object.
 #'

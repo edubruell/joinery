@@ -79,12 +79,23 @@ method(
   }
 
   if (nrow(scored) == 0L) {
-    return(data.table(
-      duplicate_group = integer(),
+    # Same column set and order as the populated return below: the merge that
+    # attaches the original data puts `id` first, so an empty result must go
+    # through it too rather than hand back a bare four-column frame.
+    empty <- data.table(
       id              = character(),
+      duplicate_group = integer(),
       score           = numeric(),
       rank            = integer()
-    ))
+    )
+    return(merge(
+      empty,
+      dt,
+      by.x  = "id",
+      by.y  = id,
+      all.x = TRUE,
+      sort  = FALSE
+    )[])
   }
 
   # --- 5. Resolve entities from scored edges --------------------------------

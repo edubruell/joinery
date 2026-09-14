@@ -27,8 +27,19 @@ applied to every column, default \code{"jw"}. Only a scalar is honoured
 today; the argument shape also reserves a named character vector for
 per-column methods, the additive path to the per-column comparators a
 future probabilistic strategy will use), and \code{include_block_stats} (logical; whether to
-compute \code{cnt} / \code{icnt} / \code{ipos}). The \code{\link{Search_Strategy}} method
-additionally accepts \code{top_n} (named integer / list controlling
+compute \code{cnt} / \code{icnt} / \code{ipos}). \code{cnt} counts the candidates for a
+searched record, \code{icnt} the distinct records among them, and \code{ipos}
+the candidate's percentile rank by score inside that set. The
+\code{\link{Search_Strategy}} method
+additionally accepts \code{identity_by} (character scalar naming a column
+that says which entity each candidate belongs to, looked up on the
+\code{target} table for a cross-table search and on \code{base} for a
+deduplication). Supply it when the candidate side has already been
+resolved, for example a search over one representative per entity:
+the extra \code{ident_cnt} column then counts how many distinct entities a
+candidate set spans, which \code{icnt} cannot tell you once several
+records stand for the same entity. Without it no \code{ident_cnt} column
+is emitted. It also accepts \code{top_n} (named integer / list controlling
 per-column top-N counts for the \code{m_/f_/s_} columns; use a
 \code{default} entry as fallback; set a column to 0 to suppress its
 set). The \code{\link{Embedding_Strategy}} method emits \code{cosine_sim}
