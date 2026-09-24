@@ -1,8 +1,40 @@
 # joinery (development version)
 
-Development has started on the 1.1 "Subword" theme: a pluggable tokenizer
-protocol and a corpus-fitted subword tokenizer backed by SentencePiece
-(`sentencepiece` in Suggests).
+The 1.1 "Subword" theme matches names that share no whole word. German
+compounds and scanner noise keep records apart that a reader sees at once as
+the same workshop, because `Holzbaugesellschaft` and `Holzbau` are two
+different words to a whole-word tokenizer. joinery can now learn a vocabulary
+of word pieces from your own text and match on those pieces instead.
+
+### Subword matching
+
+* `find_subwords()` learns a subword vocabulary from a character vector or from
+  columns of a table, on any backend. It returns a fitted model that carries
+  the trained vocabulary with it, so you can save it with `saveRDS()` and get
+  the same splits in a later session. Both algorithms SentencePiece offers are
+  available, byte-pair encoding and unigram.
+
+* `subword_tokens(sw)` puts that model in a strategy formula in place of
+  `word_tokens()`. The pieces are ordinary tokens, so rarity weighting,
+  blocking, thresholds and `explain_match()` behave as they did. The package's
+  acceptance test measures what this buys on twenty workshops written as one
+  compound in a register and split apart in a directory: word tokens recover
+  four pairs in ten, a fitted vocabulary recovers all of them, and neither
+  joins two different workshops.
+
+* `custom_tokens()` takes any tokenizer you like, either a plain function that
+  returns a list of token vectors or a fitted object with a `tokenize()`
+  method. `subword_tokens()` is a named shortcut for the second form.
+
+* Subword matching uses the `sentencepiece` package, a suggested dependency.
+  Install it when you want subword tokens. The rest of joinery works without
+  it.
+
+* New article on the website, "Matching compound names with subword tokens",
+  covering the fit-and-apply loop, the two settings that decide whether the
+  result is any good, and how to bring your own tokenizer.
+
+### Other changes
 
 * `match_features()` gains `identity_by`, which names the column saying
   which entity each candidate belongs to. Supply it when the side you search
@@ -188,7 +220,7 @@ A maintenance release with no new user-facing features. The goal was to harden t
 
 * `methods_duckdb.R` coverage raised from 34% to 90%; full behavioural parity with the data.table backend now exercised by tests.
 * `embedding_methods_*` coverage raised to 95%+ on both data.table and DuckDB backends.
-* Small-table `batch_duckdb` brittleness diagnosed and fixed (see `notes/batch_duckdb_brittleness.md`). User-facing impact: small inputs no longer hit pathological batching behaviour.
+* Small-table `batch_duckdb` brittleness diagnosed and fixed. User-facing impact: small inputs no longer hit pathological batching behaviour.
 * Total package coverage: 87.25%. Remaining low-coverage files are intentional: S7 dispatch boilerplate, interactive-only progress paths, and live-embedding paths reserved for `local_tests/`.
 
 ---

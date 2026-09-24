@@ -122,9 +122,10 @@ The [package website](https://edubruell.github.io/joinery/) carries the full
 guide. Start with
 [Getting started](https://edubruell.github.io/joinery/articles/joinery.html),
 which walks the whole path on a pair of built-in tables and scores the result
-against a known answer key. From there, five articles each take on one problem:
+against a known answer key. From there, six articles each take on one problem:
 
 - [Beyond the basics: fuzzy and exact strategies](https://edubruell.github.io/joinery/articles/features.html). Containment, region-free movers, phonetic matching, and staging them together.
+- [Matching compound names with subword tokens](https://edubruell.github.io/joinery/articles/subword-matching.html). Learn word pieces from your own text when compounds and scanner noise keep whole words apart.
 - [Matching across years and sources](https://edubruell.github.io/joinery/articles/staged.html). Pool a multi-year panel and follow each record through time.
 - [Calibrating a false-positive filter](https://edubruell.github.io/joinery/articles/calibration.html). Train a model on labelled pairs for when one threshold is not enough.
 - [Embedding-based matching](https://edubruell.github.io/joinery/articles/embeddings.html). Match on meaning when two records share no tokens at all.

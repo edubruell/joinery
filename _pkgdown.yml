@@ -17,6 +17,8 @@ navbar:
         - text: "Workflows"
         - text: "Beyond the basics: fuzzy and exact strategies"
           href: articles/features.html
+        - text: "Matching compound names with subword tokens"
+          href: articles/subword-matching.html
         - text: "Matching across years and sources"
           href: articles/staged.html
         - text: "Calibrating a false-positive filter"
@@ -64,6 +66,10 @@ reference:
       - numeric_tokens
       - date_tokens
       - fuzzy_tokens
+      - find_subwords
+      - subword_tokens
+      - custom_tokens
+      - tokenize
       - generate_ngrams
       - token_shapes
       - extract_initials
