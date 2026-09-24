@@ -30,7 +30,7 @@ of word pieces from your own text and match on those pieces instead.
   Install it when you want subword tokens. The rest of joinery works without
   it.
 
-* New article on the website, "Matching compound names with subword tokens",
+* New article on the website, "Subword tokenizers",
   covering the fit-and-apply loop, the two settings that decide whether the
   result is any good, and how to bring your own tokenizer.
 

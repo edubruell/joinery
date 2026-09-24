@@ -17,7 +17,7 @@ navbar:
         - text: "Workflows"
         - text: "Beyond the basics: fuzzy and exact strategies"
           href: articles/features.html
-        - text: "Matching compound names with subword tokens"
+        - text: "Subword tokenizers"
           href: articles/subword-matching.html
         - text: "Matching across years and sources"
           href: articles/staged.html

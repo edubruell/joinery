@@ -1,8 +1,8 @@
 ---
-title: "Matching compound names with subword tokens"
+title: "Subword tokenizers"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Matching compound names with subword tokens}
+  %\VignetteIndexEntry{Subword tokenizers}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -23,18 +23,18 @@ You have a chamber register and a trade directory that list the same workshops.
 The register writes each trade as one long word, `Holzbaugesellschaft Wagner
 mbH`. The directory splits that word apart and puts the proprietor first,
 `Wagner Holzbau KG`. Some directory lines went through a scanner that misread
-letters on the way. Neither record holds a typo a spelling rule would fix, and
-word tokens still cannot see the pair. `Holzbaugesellschaft` and `Holzbau` are
-two different words, so the two records share only the surname.
+letters on the way. Neither record holds a typo that a spelling rule could
+fix. Word tokens still miss the pair, because `Holzbaugesellschaft` and
+`Holzbau` are two different words and the records share only the surname.
 
-Subword tokens fix that. You learn a vocabulary of frequent word pieces from
-your own text, then split each record into those pieces. Two spellings of the
+Subword tokens close that gap. You learn a vocabulary of frequent word pieces
+from your text, then split each record into those pieces. Two spellings of the
 same name share most of their pieces even where they share no whole word, so
 they meet and score like any other pair.
 
 This article fits such a vocabulary on a small German register, measures what it
 recovers against plain word tokens, and shows the two settings that decide
-whether the result is any good.
+the quality of the result.
 
 Subword tokens use the `sentencepiece` package, which joinery loads only when
 you ask for it:
@@ -52,8 +52,8 @@ library(joinery)
 Forty workshops, in one table to deduplicate. Twenty appear twice, once in the
 register spelling and once in the directory spelling, and share at most the
 proprietor's name. Ten more appear twice in near-identical spellings. Word
-tokens already find those ten, so they are the control for what a subword run
-gives up. Ten unrelated trades appear once and have no partner.
+tokens already find those ten, so they show whether a subword run loses
+anything that word tokens had. Ten unrelated trades appear once and have no partner.
 
 ```{r data}
 register <- c(
@@ -115,8 +115,8 @@ head(workshops, 3)
 ```
 
 The ids carry the answer key: `R07` and `D07` are the same workshop, the `X`
-rows belong to nobody. Two measures score every run below, so we write them
-once. **Pair recall** is the share of the thirty known pairs whose two rows land
+rows belong to nobody. We score each run below with two measures and define
+them once here. **Pair recall** is the share of the thirty known pairs whose two rows land
 in one duplicate group. **Group purity** is the share of duplicate groups that
 hold a single workshop. Anything under 1 means two different workshops were
 joined.
@@ -141,8 +141,9 @@ group_purity <- function(dups) {
 
 ## Where word tokens stop
 
-Start with the strategy you would reach for first: clean the text, split it on
-whitespace, keep pairs that share enough rare word mass.
+Start with the strategy you would reach for first. It cleans the text, splits
+it on whitespace and keeps pairs whose shared words are rare enough to pass the
+threshold.
 
 ```{r word-run}
 words <- search_strategy(
@@ -155,11 +156,10 @@ word_dups <- detect_duplicates(workshops, id = "id", strategy = words)
 c(recall = pair_recall(word_dups), purity = group_purity(word_dups))
 ```
 
-Everything it finds is right, and it finds well under half. The ten
+Each pair it finds is correct, but it finds only twelve of the thirty. The ten
 near-identical pairs come back, plus two compound pairs carried by the surname
-alone. The other eighteen register rows do not meet their directory entry,
-because the trade word the two records have in common sits buried inside a
-longer word on one side.
+alone. The other eighteen register rows miss their directory entry, because the
+trade word the two records share sits inside a longer word on one side.
 
 ## Learning a vocabulary
 
@@ -196,8 +196,9 @@ subword_tokens(normalize_text("Holzbaugesellschaft Wagner mbH"), sw)
 subword_tokens(normalize_text("Wagner Holzbau KG"), sw)
 ```
 
-Both records now carry the piece `HOLZ`, and the directory record carries `BAU`
-as well. That is enough shared mass for the pair to meet.
+Both records now carry the piece `HOLZ` next to `WAGNER`. The two records thus
+share two tokens instead of one, which is enough for the pair to pass the
+threshold.
 
 ## What subword tokens find
 
@@ -224,16 +225,17 @@ pair_recall(sub_dups, which = sprintf("%02d", 21:30))
 ```
 
 That formula also drops pieces under three characters. A learned vocabulary
-contains one- and two-letter pieces, and those turn up in most records, so they
-cost compute and blur the score. Dropping them is the cheapest improvement you
-can make to a subword run.
+contains one- and two-letter pieces. These turn up in most records, so they
+cost compute and blur the score. Dropping them takes one step in the formula,
+and in the grid below it lifts recall at 340 pieces from 0.97 to 1.
 
 ## Two settings, pulling against each other
 
 `vocab_size` decides how finely text is cut. A small vocabulary has few pieces
 to work with, so it cuts words into short fragments that many workshops share. A
 large one keeps frequent words whole and cuts only the rare ones, which brings
-you back towards word tokens. The minimum piece length pulls the other way.
+you back towards word tokens. The minimum piece length works against the first
+failure, since it drops the shortest fragments before they are scored.
 
 ```{r grid}
 grid <- expand.grid(vocab_size = c(200, 340, 400), min_nchar = c(2, 3))
@@ -260,8 +262,8 @@ result
 One corner of the grid is clean, 340 pieces with a three-character minimum. At
 `vocab_size = 200` the recall holds and the purity falls, because the fragments
 get short enough for unrelated workshops to share them. That is the failure to
-watch for. A mixed duplicate group costs more to undo than a missed pair costs
-to find. At 400 the vocabulary keeps the compounds whole again and pairs go
+watch for, because a mixed duplicate group costs more to undo than a missed
+pair costs to find. At 400 the vocabulary keeps the compounds whole again and pairs go
 missing.
 
 `rarity_distribution()` is how you judge a fitted vocabulary where you have no
@@ -298,8 +300,8 @@ line and reproduces the same splits.
 ## Bringing your own tokenizer
 
 `subword_tokens()` is a named shortcut for a more general step. `custom_tokens()`
-takes any tokenizer and puts it in a strategy formula, so a rule you have written
-yourself scores exactly like a built-in one.
+takes any tokenizer and puts it in a strategy formula. A rule you have written
+yourself then scores like a built-in one.
 
 The tokenizer can be a plain function that takes a character vector and returns a
 list of token vectors, one per input record:
@@ -315,5 +317,6 @@ tokenizer with learned state enters a strategy, and it is what a `Subword_Model`
 is. `custom_tokens(text, sw)` and `subword_tokens(text, sw)` do the same work.
 
 Whichever form you pass, the result needs one element per input record, each a
-character vector of that record's tokens. A result of the wrong shape stops the
-run with a clear message before any of it reaches the scorer.
+character vector of that record's tokens. If the result has the wrong shape,
+joinery stops with an error that names the problem, before any tokens reach the
+scorer.
