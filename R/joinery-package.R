@@ -34,8 +34,8 @@
 
 ## usethis namespace: start
 #' @import stringi
-#' @rawNamespace import(rlang, except = `:=`)
-#' @import data.table
+#' @import rlang, except = ":="
+#' @import data.table, except = ":="
 #' @import S7
 ## usethis namespace: end
 NULL
@@ -44,7 +44,11 @@ NULL
 # Plain `plot.ClassName` methods don't dispatch for those.
 # registerS3method wires them up correctly.
 .onLoad <- function(libname, pkgname) {
-  S7::methods_register()
+  if ("S7_on_load" %in% getNamespaceExports("S7")) {
+    getExportedValue("S7", "S7_on_load")()
+  } else {
+    S7::methods_register()
+  }
   pkg <- asNamespace(pkgname)
   registerS3method("plot", "joinery::Match_Overview",    plot.Match_Overview,    envir = pkg)
   registerS3method("plot", "joinery::Strategy_Audit",    plot.Strategy_Audit,    envir = pkg)

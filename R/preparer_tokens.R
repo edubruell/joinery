@@ -298,7 +298,7 @@ word_tokens <- function(text,min_nchar=0){
 #' @family token generators
 #' @seealso [word_tokens()] for whole-word tokens.
 #' @export
-#' @import data.table
+#' @import data.table, except = ":="
 #' @import stringi
 generate_ngrams <- function(text, n) {
   check_character(text)
