@@ -720,76 +720,6 @@
     "code": "@Manual{,   title = {joinery: Heuristic Index-Based Record Linkage},   author = {Eduard Brüll},   year = {2026},   note = {R package version 1.1.0},   url = {https://edubruell.github.io/joinery/}, }"
   },
   {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": null,
-    "dir": "",
-    "previous_headings": "",
-    "what": "joinery — Developer / Coding-Agent Guide",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "joinery heuristic, token-based record linkage package R (CRAN 1.0.1, main 1.0.1.9000). Built S7: declarative Search_Strategy (text normalized, tokenized, weighted, scored, blocked) executed backend-specific methods data.table (tibble / data.frame defer ) DuckDB (batched, R-preprocessing pipeline). Sibling strategy classes: Embedding_Strategy, Exact_Strategy. Architecture, verbs, schemas design history live wiki (); file map.",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "file-layout-r-prefixes",
-    "dir": "",
-    "previous_headings": "",
-    "what": "File layout (R/ prefixes)",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "DESCRIPTION’s Collate: hand-maintained: new renamed file needs manual entry, class definitions generics precede files methods . Vendored rlang shims import-standalone-*.R.",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "key-principles",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Key principles",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "assume backend. Add methods generics; keep data.table, DuckDB tibble lockstep parity tests. Token tables universal interface: id | src_column | token | row_id | <block_by>. Scoring rIP (rarity / sum(rarity) per record, score = sum(rIP * weight); four rarity metrics: inverse_freq, smoothed_inverse_freq, tfidf, bm25), thresholded scoring. explain_match round-trip (sum(contribution) × feedback_factor == score) mandatory property test. asserted 1e-10 data.table ; DuckDB case compares score per-column contributions data.table 1e-6 never sums . DuckDB-side sum assertion still owed. Output schemas fixed. merge(= \"id\") attaches original data puts id first: dedup id, duplicate_group, score, rank, <cols>; search id, match_id, score, source, <cols>, rank. Empty results keep full typed schema DuckDB , see wiki contention C5. matching variant strategy class standard apply verbs dispatch , never standalone verb. Chunking execution, never strategy slot. DuckDB . Public API frozen since 1.0: add, never rename break. 1.0 rule clean-break renames deprecation shims, lifecycle; keep spirit internals.",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "testing-policy",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Testing policy",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Rscript -e \"devtools::test()\" suite; covr::package_coverage() installed. Small deterministic cases, validation errors, backend parity, scoring branches, output schemas go tests/testthat/. Large DuckDB jobs, stress tests, provider-dependent embedding tests, benchmarks go local_tests/ (tracked, .Rbuildignored, run hand). sentencepiece tidymodels packages Suggests: every touch point gets requireNamespace() guard tests use skip_if_not_installed().",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "working-rules-maintainer-feedback",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Working rules (maintainer feedback)",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Docs voice per-change gate: em dashes anywhere prose roxygen, plain language, problem-first, architecture jargon (dispatch, IR, stage numbers, file paths) anything user reads. Light woodworking motif seams. README pkgdown home page; include every doc pass. Commit messages carry co-author attribution lines. stage lands, fresh-context panel audits ; self-evaluate. Five lanes plus wiki lint, pre-checks verdict folder specified local_context/wiki/11_audit_protocol.md. convention, skill: run fan-hand note. internal_progress.R deliberate wrapper cli; flag redundant. Drop orphan _joinery_* DuckDB temp tables periodically; backend leaks crash. tinyplot xaxl takes mapper function, never character vector. Firm-panel calibration: prefer recall-favouring cut near 0.30 Youden’s J. Cross-year self-search: first (exact) stage must rarity-free, persistent entities suppress tokens.",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "local-folders-untracked",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Local folders (untracked)",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "local_context/wiki/ agent-facing memory (). local_context/notes/ dated journal entries. local_context/legacy/ pre-wiki planning notes (notes/, 80 notes) loose scratch (localwip/); indexed wiki note 09. Read-history. local_context/yp_panel/ Yellow Pages panel workbench (6.3 GB: v1 script series, calibration CSVs, second_pass/ declarative rebuild, parquet files). examples/, local_tests/, docs/ stay .",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "project-memory-llmwiki",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Project memory (llmwiki)",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Wiki root: local_context/wiki Journal: local_context/notes Kind: software Sweep cutoff: 2026-09-14 Trigger cutoff: 2026-09-14 Trigger: audit | local_context/audits/* | marker:verdict.md Schema + workflows: /llmwiki skill. Read local_context/wiki/00_state.md first every session. Open numbered notes demand via pointers; re-derive settled design. touching design: check local_context/wiki/contentions.md; never silently resolve open contention, never sit ripe one: close brings contentions whose resolve-condition met (3 sessions moved) back user recommendation. Corrections: edit owning note FIRST stamp (<!-- swept: anchor date -->), register line receipt (Affects: [[NN_note#anchor]]). Session end / compact: run /llmwiki close; first thing /clear, run /llmwiki next pick 00_state.md’s Next list. Artefacts land (payload rounds, exports, transcripts) can nag wiki : /llmwiki trigger sets one, close discharges . Run /llmwiki lint : design adoption/supersession, results round, payload round returning, CLAUDE.md edits, 5+ sessions without one.",
-    "code": ""
-  },
-  {
     "path": "https://edubruell.github.io/joinery/index.html",
     "id": "joinery-",
     "dir": "",
@@ -2127,7 +2057,7 @@
     "what": "Examples",
     "title": "Drop all temporary DuckDB tables created by joinery — drop_joinery_temp_tables",
     "text": "",
-    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   # A stray joinery temp table left behind by an interrupted run:   DBI::dbWriteTable(con, \"_joinery_tmp_demo\", data.frame(x = 1))    drop_joinery_temp_tables(con)  # removes it, returns its name invisibly   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/RtmpydRXaA/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. # }"
+    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   # A stray joinery temp table left behind by an interrupted run:   DBI::dbWriteTable(con, \"_joinery_tmp_demo\", data.frame(x = 1))    drop_joinery_temp_tables(con)  # removes it, returns its name invisibly   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/Rtmpaxi8oN/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/drop_numeric_tokens.html",
@@ -2293,7 +2223,7 @@
     "what": "Examples",
     "title": "Create a Batch Plan for DuckDB Table Processing — duckdb_batch_plan",
     "text": "",
-    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(     con, \"data\",     data.frame(id = 1:1000, region = rep(LETTERS[1:5], length.out = 1000))   )   tbl_ref <- dplyr::tbl(con, \"data\")    # Unblocked, even row-number chunking   plan1 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, chunk_strategy = \"even\"   )    # Blocked, consolidated strategy (default, respects regions)   plan2 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, block_by = \"region\"   )   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/RtmpydRXaA/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  # }"
+    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(     con, \"data\",     data.frame(id = 1:1000, region = rep(LETTERS[1:5], length.out = 1000))   )   tbl_ref <- dplyr::tbl(con, \"data\")    # Unblocked, even row-number chunking   plan1 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, chunk_strategy = \"even\"   )    # Blocked, consolidated strategy (default, respects regions)   plan2 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, block_by = \"region\"   )   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/Rtmpaxi8oN/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/duckdb_control.html",
@@ -2346,7 +2276,7 @@
     "what": "Examples",
     "title": "DuckDB Execution Control — duckdb_control",
     "text": "",
-    "code": "# The control object just bundles execution knobs; it carries no data. ctrl <- duckdb_control(target_batch_size = 5e5, on_error = \"skip\") ctrl #> <joinery::Duckdb_Control> #>  #> target_batch_size: 5e+05 #> min_batch_size: auto #> chunk_strategy: block_consolidated #> chunk_by: auto #> on_error: skip #> progress: auto  # \\donttest{ # Pass it to a verb running on a DuckDB table. if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(con, \"reg\", as.data.frame(workshop_register))   strat <- search_strategy(     workshop ~ normalize_text() + word_tokens(min_nchar = 3),     block_by  = c(\"postcode_area\", \"trade\"),     threshold = 0.7   )   detect_duplicates(dplyr::tbl(con, \"reg\"), \"reg_no\", strat, control = ctrl)   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/RtmpydRXaA/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. #> Preparing search token table in batches #> ℹ Auto-tuned batch sizes: target 500,000, min 500,000 #>  #> Processing batch 1 of 1 (1052 rows) #>  # }"
+    "code": "# The control object just bundles execution knobs; it carries no data. ctrl <- duckdb_control(target_batch_size = 5e5, on_error = \"skip\") ctrl #> <joinery::Duckdb_Control> #>  #> target_batch_size: 5e+05 #> min_batch_size: auto #> chunk_strategy: block_consolidated #> chunk_by: auto #> on_error: skip #> progress: auto  # \\donttest{ # Pass it to a verb running on a DuckDB table. if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(con, \"reg\", as.data.frame(workshop_register))   strat <- search_strategy(     workshop ~ normalize_text() + word_tokens(min_nchar = 3),     block_by  = c(\"postcode_area\", \"trade\"),     threshold = 0.7   )   detect_duplicates(dplyr::tbl(con, \"reg\"), \"reg_no\", strat, control = ctrl)   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/Rtmpaxi8oN/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. #> Preparing search token table in batches #> ℹ Auto-tuned batch sizes: target 500,000, min 500,000 #>  #> Processing batch 1 of 1 (1052 rows) #>  # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/embedding_strategy.html",
