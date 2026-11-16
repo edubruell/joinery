@@ -1,4 +1,4 @@
-# joinery (development version)
+# joinery 1.1.0
 
 The 1.1 "Subword" theme matches names that share no whole word. German
 compounds and scanner noise keep records apart that a reader sees at once as
@@ -35,6 +35,13 @@ of word pieces from your own text and match on those pieces instead.
   result is any good, and how to bring your own tokenizer.
 
 ### Other changes
+
+* joinery now works with the next release of S7, which adds package lifecycle
+  hooks. joinery registers the hooks when S7 offers them and falls back to the
+  old setup otherwise, so it also loads with current S7. `:=` now comes from
+  data.table alone, which avoids import clashes with the `:=` that the
+  development S7 exports. Thanks to
+  Tomasz Kalinowski for the patch.
 
 * `match_features()` gains `identity_by`, which names the column saying
   which entity each candidate belongs to. Supply it when the side you search

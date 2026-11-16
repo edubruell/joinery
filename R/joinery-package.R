@@ -34,9 +34,9 @@
 
 ## usethis namespace: start
 #' @import stringi
-#' @import rlang, except = ":="
-#' @import data.table, except = ":="
-#' @import S7
+#' @rawNamespace import(rlang, except = ":=")
+#' @import data.table
+#' @rawNamespace import(S7, except = ":=")
 ## usethis namespace: end
 NULL
 
