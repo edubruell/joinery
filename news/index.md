@@ -1,6 +1,97 @@
 # Changelog
 
+## joinery 1.1.0
+
+The 1.1 “Subword” theme matches names that share no whole word. German
+compounds and scanner noise keep records apart that a reader sees at
+once as the same workshop, because `Holzbaugesellschaft` and `Holzbau`
+are two different words to a whole-word tokenizer. joinery can now learn
+a vocabulary of word pieces from your own text and match on those pieces
+instead.
+
+#### Subword matching
+
+- [`find_subwords()`](https://edubruell.github.io/joinery/reference/find_subwords.md)
+  learns a subword vocabulary from a character vector or from columns of
+  a table, on any backend. It returns a fitted model that carries the
+  trained vocabulary with it, so you can save it with
+  [`saveRDS()`](https://rdrr.io/r/base/readRDS.html) and get the same
+  splits in a later session. Both algorithms SentencePiece offers are
+  available, byte-pair encoding and unigram.
+
+- `subword_tokens(sw)` puts that model in a strategy formula in place of
+  [`word_tokens()`](https://edubruell.github.io/joinery/reference/word_tokens.md).
+  The pieces are ordinary tokens, so rarity weighting, blocking,
+  thresholds and
+  [`explain_match()`](https://edubruell.github.io/joinery/reference/explain_match.md)
+  behave as they did. The package’s acceptance test measures what this
+  buys on twenty workshops written as one compound in a register and
+  split apart in a directory: word tokens recover four pairs in ten, a
+  fitted vocabulary recovers all of them, and neither joins two
+  different workshops.
+
+- [`custom_tokens()`](https://edubruell.github.io/joinery/reference/custom_tokens.md)
+  takes any tokenizer you like, either a plain function that returns a
+  list of token vectors or a fitted object with a
+  [`tokenize()`](https://edubruell.github.io/joinery/reference/tokenize.md)
+  method.
+  [`subword_tokens()`](https://edubruell.github.io/joinery/reference/subword_tokens.md)
+  is a named shortcut for the second form.
+
+- Subword matching uses the `sentencepiece` package, a suggested
+  dependency. Install it when you want subword tokens. The rest of
+  joinery works without it.
+
+- New article on the website, “Subword tokenizers”, covering the
+  fit-and-apply loop, the two settings that decide whether the result is
+  any good, and how to bring your own tokenizer.
+
+#### Other changes
+
+- joinery now works with the next release of S7, which adds package
+  lifecycle hooks. joinery registers the hooks when S7 offers them and
+  falls back to the old setup otherwise, so it also loads with current
+  S7. `:=` now comes from data.table alone, which avoids import clashes
+  with the `:=` that the development S7 exports. Thanks to Tomasz
+  Kalinowski for the patch.
+
+- [`match_features()`](https://edubruell.github.io/joinery/reference/match_features.md)
+  gains `identity_by`, which names the column saying which entity each
+  candidate belongs to. Supply it when the side you search has already
+  been resolved, such as a search over one representative per entity,
+  and the features gain an `ident_cnt` column counting how many distinct
+  entities a candidate set spans. The existing `icnt` counts records,
+  which is the same number until several records stand for one entity.
+  Nothing changes when you leave the new argument out.
+
+- An empty result from
+  [`detect_duplicates()`](https://edubruell.github.io/joinery/reference/detect_duplicates.md)
+  now carries your original columns on the in-memory backend, matching
+  what the DuckDB backend always returned. Code that reads a column off
+  a dedup result no longer needs a special case for the empty run.
+
+------------------------------------------------------------------------
+
+## joinery 1.0.1
+
+CRAN release: 2026-07-07
+
+#### Bug fixes
+
+- DuckDB batch auto-tuning no longer probes the operating system for
+  total RAM (`sysctl` on macOS, `/proc/meminfo` on Linux). It now reads
+  the memory budget straight from the connection’s own `memory_limit`
+  setting, which defaults to 80% of system RAM and reflects any user
+  override. This removes the shell call that broke on systems without
+  `sysctl` on the `PATH` (the CRAN M1mac check failures, where batch
+  planning errored with “argument is of length zero”), and makes the
+  budget detection work identically on all platforms, including Windows.
+
+------------------------------------------------------------------------
+
 ## joinery 1.0.0
+
+CRAN release: 2026-07-07
 
 First stable release. The token core, the DuckDB backend, embedding
 matching, diagnostics, and calibration are feature-complete and the
@@ -316,9 +407,9 @@ work on embeddings and diagnostics.
   parity with the data.table backend now exercised by tests.
 - `embedding_methods_*` coverage raised to 95%+ on both data.table and
   DuckDB backends.
-- Small-table `batch_duckdb` brittleness diagnosed and fixed (see
-  `notes/batch_duckdb_brittleness.md`). User-facing impact: small inputs
-  no longer hit pathological batching behaviour.
+- Small-table `batch_duckdb` brittleness diagnosed and fixed.
+  User-facing impact: small inputs no longer hit pathological batching
+  behaviour.
 - Total package coverage: 87.25%. Remaining low-coverage files are
   intentional: S7 dispatch boilerplate, interactive-only progress paths,
   and live-embedding paths reserved for `local_tests/`.

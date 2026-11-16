@@ -147,7 +147,7 @@ head(grouping, 4)
 #> 1      1 YR-00001 YR-00001     1    NA 2023                 1           1 NA   
 #> 2      2 YR-00002 YR-00002     1    NA 2019                 1           1 NA   
 #> 3      3 YR-00003 YR-00003     1     1 2020                 4           4 exact
-#> 4      3 YR-00004 YR-00003     2     1 2021                 4           4 exact
+#> 4      3 YR-00006 YR-00003     2     1 2023                 4           4 fuzzy
 ```
 
 The columns are exactly the ones the in-memory backend returns: `entity`

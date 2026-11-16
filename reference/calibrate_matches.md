@@ -40,7 +40,7 @@ calibrate_matches(matches, strategy, ...)
   `model`, `class_weighted`, `na_fill`, `threshold`, plus all
   [`match_features()`](https://edubruell.github.io/joinery/reference/match_features.md)
   tuning knobs (`top_n`, `include_string_sim`, `include_block_stats`,
-  `method`).
+  `identity_by`, `method`).
 
 ## Value
 

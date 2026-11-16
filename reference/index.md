@@ -40,6 +40,14 @@ Turn a column’s text into tokens. Used inside a strategy formula (column
   : Extract date components as tokens
 - [`fuzzy_tokens()`](https://edubruell.github.io/joinery/reference/fuzzy_tokens.md)
   : Collapse near-duplicate tokens to a canonical form
+- [`find_subwords()`](https://edubruell.github.io/joinery/reference/find_subwords.md)
+  : Learn a subword vocabulary from your text
+- [`subword_tokens()`](https://edubruell.github.io/joinery/reference/subword_tokens.md)
+  : Split text into learned subword tokens
+- [`custom_tokens()`](https://edubruell.github.io/joinery/reference/custom_tokens.md)
+  : Tokenize with your own tokenizer
+- [`tokenize()`](https://edubruell.github.io/joinery/reference/tokenize.md)
+  : Tokenize Text with a Fitted Tokenizer
 - [`generate_ngrams()`](https://edubruell.github.io/joinery/reference/generate_ngrams.md)
   : Generate character n-grams from text
 - [`token_shapes()`](https://edubruell.github.io/joinery/reference/token_shapes.md)

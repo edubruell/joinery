@@ -157,7 +157,7 @@
     "what": "The same verbs, unchanged",
     "title": "Working at scale with DuckDB",
     "text": "three staged strategies, identical staged-search article. Now run staged search. multi_stage_search() call -memory article, one addition: control = duckdb_control() says run carved database. look object moment; default fine panel size. result lazy DuckDB table, data frame. Nothing pulled R yet. entity grouping lives database ask collect(), moment plan runs uses memory. corpus millions collect() grouping (one row per record, small) rather intermediate joins, comes back R stays modest matter big input . columns exactly ones -memory backend returns: entity recovered identity, source covered_sources carry year trajectory length, stage records pass attached record. ordinary collected table, score exactly -memory article , checking many true workshops land single entity. result matters whole article: identical -memory run, per-stage counts. backend changed work happened, found. diagnostic verbs follow table , compare_stages() reads DuckDB result special handling. finished, close connection. file-backed database also flushes disk .",
-    "code": "exact <- exact_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by = c(\"postcode_area\", \"trade\") )  fuzzy <- search_strategy(   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),   block_by  = c(\"postcode_area\", \"trade\"),   threshold = 0.55 )  mover <- search_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by     = list(block_on_tokens(\"workshop\", max_df = 50, min_nchar = 4),                       \"trade\"),   rarity_scope = \"global\",   threshold    = 0.6 ) g <- multi_stage_search(   panel_db, panel_db,   base_id = \"record_id\", target_id = \"record_id\",   list(exact = exact, fuzzy = fuzzy, mover = mover),   self = TRUE, source_by = \"year\", collapse = \"rep\",   control = duckdb_control(progress = FALSE) ) grouping <- collect(g) head(grouping, 4) #> # A tibble: 4 × 9 #>   entity id       rep       rank score source covered_sources n_in_entity stage #>    <int> <chr>    <chr>    <int> <dbl> <chr>            <int>       <int> <chr> #> 1      1 YR-00001 YR-00001     1    NA 2023                 1           1 NA    #> 2      2 YR-00002 YR-00002     1    NA 2019                 1           1 NA    #> 3      3 YR-00003 YR-00003     1     1 2020                 4           4 exact #> 4      3 YR-00004 YR-00003     2     1 2021                 4           4 exact intact <- as.data.table(grouping)[, .(record_id = id, entity)] |>   merge(as.data.table(workshop_panel)[, .(record_id, true_entity)],         by = \"record_id\") intact[, .(n_entities = uniqueN(entity)), by = true_entity][   , .(intact = sum(n_entities == 1), total = .N)] #>    intact total #>     <int> <int> #> 1:    314   320 compare_stages(g, base = panel_db, target = panel_db) dbDisconnect(con, shutdown = TRUE)"
+    "code": "exact <- exact_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by = c(\"postcode_area\", \"trade\") )  fuzzy <- search_strategy(   workshop   ~ normalize_text() + word_tokens(min_nchar = 3),   proprietor ~ normalize_text() + word_tokens(min_nchar = 2),   block_by  = c(\"postcode_area\", \"trade\"),   threshold = 0.55 )  mover <- search_strategy(   workshop ~ normalize_text() + word_tokens(min_nchar = 3),   block_by     = list(block_on_tokens(\"workshop\", max_df = 50, min_nchar = 4),                       \"trade\"),   rarity_scope = \"global\",   threshold    = 0.6 ) g <- multi_stage_search(   panel_db, panel_db,   base_id = \"record_id\", target_id = \"record_id\",   list(exact = exact, fuzzy = fuzzy, mover = mover),   self = TRUE, source_by = \"year\", collapse = \"rep\",   control = duckdb_control(progress = FALSE) ) grouping <- collect(g) head(grouping, 4) #> # A tibble: 4 × 9 #>   entity id       rep       rank score source covered_sources n_in_entity stage #>    <int> <chr>    <chr>    <int> <dbl> <chr>            <int>       <int> <chr> #> 1      1 YR-00001 YR-00001     1    NA 2023                 1           1 NA    #> 2      2 YR-00002 YR-00002     1    NA 2019                 1           1 NA    #> 3      3 YR-00003 YR-00003     1     1 2020                 4           4 exact #> 4      3 YR-00006 YR-00003     2     1 2023                 4           4 fuzzy intact <- as.data.table(grouping)[, .(record_id = id, entity)] |>   merge(as.data.table(workshop_panel)[, .(record_id, true_entity)],         by = \"record_id\") intact[, .(n_entities = uniqueN(entity)), by = true_entity][   , .(intact = sum(n_entities == 1), total = .N)] #>    intact total #>     <int> <int> #> 1:    314   320 compare_stages(g, base = panel_db, target = panel_db) dbDisconnect(con, shutdown = TRUE)"
   },
   {
     "path": "https://edubruell.github.io/joinery/articles/duckdb.html",
@@ -630,6 +630,76 @@
     "code": ""
   },
   {
+    "path": "https://edubruell.github.io/joinery/articles/subword-matching.html",
+    "id": "the-data",
+    "dir": "Articles",
+    "previous_headings": "",
+    "what": "The data",
+    "title": "Subword tokenizers",
+    "text": "Forty workshops, one table deduplicate. Twenty appear twice, register spelling directory spelling, share proprietor’s name. Ten appear twice near-identical spellings. Word tokens already find ten, show whether subword run loses anything word tokens . Ten unrelated trades appear partner. ids carry answer key: R07 D07 workshop, X rows belong nobody. score run two measures define . Pair recall share thirty known pairs whose two rows land one duplicate group. Group purity share duplicate groups hold single workshop. Anything 1 means two different workshops joined.",
+    "code": "register <- c(   \"Holzbaugesellschaft Wagner mbH\",  \"Moebelwerkstatt Brandt\",   \"Tischlereibetrieb Kaufmann\",      \"Fensterbaugesellschaft Lehmann\",   \"Treppenbauwerkstatt Ritter\",      \"Parkettlegerbetrieb Sommer\",   \"Innenausbaugesellschaft Naumann\", \"Kuechenmoebelfabrik Wendt\",   \"Holzhandelsgesellschaft Gerlach\", \"Schreinereibetrieb Hoffmann\",   \"Dachstuhlbaugesellschaft Kolbe\",  \"Bautischlereibetrieb Reuter\",   \"Ladenbaugesellschaft Piotrowski\", \"Gartenmoebelwerkstatt Ebeling\",   \"Massivholzmoebelfabrik Stein\",    \"Trockenbaugesellschaft Amrein\",   \"Furnierhandelsgesellschaft Zorn\", \"Bootsbauwerkstatt Marquardt\",   \"Saegewerksgesellschaft Uhlig\",    \"Restaurierungswerkstatt Thiele\" )  directory <- c(   \"Wagner Holzbau KG\",              \"Werkstatt fuer Moebel Brandt\",   \"Kaufmann Tischlerei\",            \"Lehmann Fensterbau GmbH\",   \"Ritter Treppenbau Werkstatt\",    \"Sommer Parkettleger\",   \"Naumann Innenausbau GmbH\",       \"Wendt Kuechenmoebel Fabrik\",   \"Gerlach Holzhandel\",             \"Hoffmann Schreinerei\",   \"Kolbe Dachstuhlbau\",             \"Reuter Bautischlerei\",   \"Piotrowski Ladenbau GmbH\",       \"Ebeling Gartenmoebel Werkstatt\",   \"Stein Massivholzmoebel\",         \"Amrein Trockenbau GmbH\",   \"Zorn Furnierhandel\",             \"Marquardt Bootsbau\",   \"Uhlig Saegewerk\",                \"Thiele Restaurierung\" )  # The scanner misread every third directory line: rn as m, O as zero, ll as 11. scanned <- seq(3, length(directory), by = 3) directory[scanned] <- sub(\"ll\", \"11\",   sub(\"O\", \"0\", sub(\"rn\", \"m\", directory[scanned])))  # Ten workshops the directory copies almost verbatim. plain <- c(   \"Tischlerei Baumgartner\", \"Schreinerei Kowalczyk\",   \"Zimmerei Oberlaender\",   \"Drechslerei Feldmann\",   \"Boettcherei Hanselmann\", \"Parkettstudio Vranken\",   \"Holzwerkstatt Dallmann\", \"Moebelbau Steinhauser\",   \"Treppenstudio Wendland\", \"Holzdesign Kretschmar\" )  # Ten trades that appear once and belong to nobody else. others <- c(   \"Malerbetrieb Kessler\",    \"Dachdeckerei Vogt\",   \"Elektrotechnik Sander\",   \"Sanitaertechnik Brunner\",   \"Metallbau Hartwig\",       \"Steinmetzbetrieb Gruber\",   \"Glaserei Wiedemann\",      \"Polsterei Nehring\",   \"Zimmerei Achenbach\",      \"Schlosserei Berndt\" )  workshops <- rbind(   data.frame(id = sprintf(\"R%02d\", 1:30), firm = c(register, plain)),   data.frame(id = sprintf(\"D%02d\", 1:30), firm = c(directory, paste(plain, \"GmbH\"))),   data.frame(id = sprintf(\"X%02d\", 1:10), firm = others) )  head(workshops, 3) #>    id                           firm #> 1 R01 Holzbaugesellschaft Wagner mbH #> 2 R02         Moebelwerkstatt Brandt #> 3 R03     Tischlereibetrieb Kaufmann entities <- sprintf(\"%02d\", 1:30)  pair_recall <- function(dups, which = entities) {   if (nrow(dups) == 0) return(0)   groups <- split(dups$id, dups$duplicate_group)   mean(vapply(which, function(e) {     any(vapply(groups, function(ids) all(paste0(c(\"R\", \"D\"), e) %in% ids), logical(1)))   }, logical(1))) }  group_purity <- function(dups) {   if (nrow(dups) == 0) return(NA_real_)   groups <- split(sub(\"^[RD]\", \"\", dups$id), dups$duplicate_group)   mean(vapply(groups, function(e) length(unique(e)) == 1, logical(1))) }"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/articles/subword-matching.html",
+    "id": "where-word-tokens-stop",
+    "dir": "Articles",
+    "previous_headings": "",
+    "what": "Where word tokens stop",
+    "title": "Subword tokenizers",
+    "text": "Start strategy reach first. cleans text, splits whitespace keeps pairs whose shared words rare enough pass threshold. pair finds correct, finds twelve thirty. ten near-identical pairs come back, plus two compound pairs carried surname alone. eighteen register rows miss directory entry, trade word two records share sits inside longer word one side.",
+    "code": "words <- search_strategy(   firm ~ normalize_text() + word_tokens(),   threshold = 0.5 )  word_dups <- detect_duplicates(workshops, id = \"id\", strategy = words)  c(recall = pair_recall(word_dups), purity = group_purity(word_dups)) #> recall purity  #>    0.4    1.0"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/articles/subword-matching.html",
+    "id": "learning-a-vocabulary",
+    "dir": "Articles",
+    "previous_headings": "",
+    "what": "Learning a vocabulary",
+    "title": "Subword tokenizers",
+    "text": "find_subwords() learns pieces. Feed text strategy see : cleaning steps come tokenizer formula, normalize_text(). Fitting raw text applying cleaned text gives worse splits. corpus names file plus trade words words mean company. vocabulary learns pieces text sees, short word want compounds cut worth feeding separately. One record shows model compound: records now carry piece HOLZ next WAGNER. two records thus share two tokens instead one, enough pair pass threshold.",
+    "code": "corpus <- normalize_text(c(   register, plain, others,   \"Holzbau Wagner\", \"Moebel Brandt\", \"Tischlerei Kaufmann\",   \"Fensterbau Lehmann\", \"Treppenbau Ritter\", \"Parkettleger Sommer\",   \"Innenausbau Naumann\", \"Kuechenmoebel Wendt\", \"Holzhandel Gerlach\",   \"Schreinerei Hoffmann\", \"Dachstuhlbau Kolbe\", \"Bautischlerei Reuter\",   \"Ladenbau Piotrowski\", \"Gartenmoebel Ebeling\", \"Massivholzmoebel Stein\",   \"Trockenbau Amrein\", \"Furnierhandel Zorn\", \"Bootsbau Marquardt\",   \"Saegewerk Uhlig\", \"Restaurierung Thiele\",   \"Werkstatt\", \"Gesellschaft\", \"Betrieb\", \"Fabrik\", \"Handel\", \"GmbH\", \"KG\" ))  sw <- find_subwords(corpus, vocab_size = 340) sw #> <joinery::Subword_Model> #>   Algorithm:  bpe #>   Vocabulary: 340 subwords #>   Boundary markers: stripped subword_tokens(normalize_text(\"Holzbaugesellschaft Wagner mbH\"), sw) #> [[1]] #> [1] \"HOLZ\"            \"BAUGESELLSCHAFT\" \"WAGNER\"          \"MBH\" subword_tokens(normalize_text(\"Wagner Holzbau KG\"), sw) #> [[1]] #> [1] \"WAGNER\" \"HOLZ\"   \"BAU\"    \"KG\""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/articles/subword-matching.html",
+    "id": "what-subword-tokens-find",
+    "dir": "Articles",
+    "previous_headings": "",
+    "what": "What subword tokens find",
+    "title": "Subword tokenizers",
+    "text": "Put fitted model formula place word_tokens(). Nothing else strategy changes. Pieces ordinary tokens, weighted rarity, threshold means meant . thirty pairs come back, duplicate group holds single workshop. ten pairs word tokens already still : formula also drops pieces three characters. learned vocabulary contains one- two-letter pieces. turn records, cost compute blur score. Dropping takes one step formula, grid lifts recall 340 pieces 0.97 1.",
+    "code": "subwords <- search_strategy(   firm ~ normalize_text() + subword_tokens(sw) + drop_short_tokens(min_nchar = 3),   threshold = 0.5 )  sub_dups <- detect_duplicates(workshops, id = \"id\", strategy = subwords)  c(recall = pair_recall(sub_dups), purity = group_purity(sub_dups)) #> recall purity  #>      1      1 pair_recall(sub_dups, which = sprintf(\"%02d\", 21:30)) #> [1] 1"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/articles/subword-matching.html",
+    "id": "two-settings-pulling-against-each-other",
+    "dir": "Articles",
+    "previous_headings": "",
+    "what": "Two settings, pulling against each other",
+    "title": "Subword tokenizers",
+    "text": "vocab_size decides finely text cut. small vocabulary pieces work , cuts words short fragments many workshops share. large one keeps frequent words whole cuts rare ones, brings back towards word tokens. minimum piece length works first failure, since drops shortest fragments scored. One corner grid clean, 340 pieces three-character minimum. vocab_size = 200 recall holds purity falls, fragments get short enough unrelated workshops share . failure watch , mixed duplicate group costs undo missed pair costs find. 400 vocabulary keeps compounds whole pairs go missing. rarity_distribution() judge fitted vocabulary ground truth score . lists pieces turn records. list mixes whole words WERKSTATT fragments EREI MANN, unrelated workshops share. fragments crowd words top, vocabulary cuts finely. corpus millions rows, fit sample. find_subwords(x, sample_n = 2e5) learns equivalent vocabulary fraction time, frequent pieces large corpus already frequent pieces large sample .",
+    "code": "grid <- expand.grid(vocab_size = c(200, 340, 400), min_nchar = c(2, 3))  result <- do.call(rbind, lapply(seq_len(nrow(grid)), function(i) {   model <- find_subwords(corpus, vocab_size = grid$vocab_size[i])   strat <- search_strategy(     firm ~ normalize_text() + subword_tokens(model) +       drop_short_tokens(min_nchar = grid$min_nchar[i]),     threshold = 0.5   )   dups <- detect_duplicates(workshops, id = \"id\", strategy = strat)   data.frame(     vocab_size = grid$vocab_size[i],     min_nchar  = grid$min_nchar[i],     recall     = pair_recall(dups),     purity     = group_purity(dups)   ) }))  result #>   vocab_size min_nchar    recall    purity #> 1        200         2 1.0000000 0.7666667 #> 2        340         2 0.9666667 1.0000000 #> 3        400         2 0.9000000 1.0000000 #> 4        200         3 1.0000000 0.7058824 #> 5        340         3 1.0000000 1.0000000 #> 6        400         3 0.9000000 1.0000000 rarity_distribution(workshops, id = \"id\", strategy = subwords) #>  #> ── Rarity_Distribution ───────────────────────────────────────────────────────── #> rarity method: \"inverse_freq\" #> per-column distribution #> firm: 105 tokens, df_max=14 (GMBH), rarity p50=0.5, suggested min_rarity >~ #> 0.07143 #> top-df offenders (fan-out drivers) #> firm: 'GMBH' df=14, rarity=0.07143 #> firm: 'WERKSTATT' df=10, rarity=0.1 #> firm: 'EREI' df=8, rarity=0.125 #> firm: 'BAU' df=7, rarity=0.1429 #> firm: 'MANN' df=7, rarity=0.1429 #> firm: 'HOLZ' df=6, rarity=0.1667 #> firm: 'MOEBEL' df=6, rarity=0.1667 #> firm: 'BETRIEB' df=6, rarity=0.1667 #> firm: 'STEIN' df=5, rarity=0.2 #> firm: 'TISCHLEREI' df=4, rarity=0.25"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/articles/subword-matching.html",
+    "id": "keeping-the-model",
+    "dir": "Articles",
+    "previous_headings": "",
+    "what": "Keeping the model",
+    "title": "Subword tokenizers",
+    "text": "fitted vocabulary plain R object carries trained model raw bytes, saves reloads like anything else splits text way every time. Save model rebuild formula around . strategy formula carries environment written , makes much larger less predictable thing put disk. Rebuilding around saved model costs one line reproduces splits.",
+    "code": "saveRDS(sw, \"workshop_subwords.rds\") sw <- readRDS(\"workshop_subwords.rds\")"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/articles/subword-matching.html",
+    "id": "bringing-your-own-tokenizer",
+    "dir": "Articles",
+    "previous_headings": "",
+    "what": "Bringing your own tokenizer",
+    "title": "Subword tokenizers",
+    "text": "subword_tokens() named shortcut general step. custom_tokens() takes tokenizer puts strategy formula. rule written scores like built-one. tokenizer can plain function takes character vector returns list token vectors, one per input record: can also fitted object tokenize() method. tokenizer learned state enters strategy, Subword_Model . custom_tokens(text, sw) subword_tokens(text, sw) work. Whichever form pass, result needs one element per input record, character vector record’s tokens. result wrong shape, joinery stops error names problem, tokens reach scorer.",
+    "code": "split_runs <- function(text) strsplit(text, \"[^a-z]+\")  custom_tokens(c(\"holzbau wagner\", \"wagner-holzbau\"), split_runs) #> [[1]] #> [1] \"holzbau\" \"wagner\"  #>  #> [[2]] #> [1] \"wagner\"  \"holzbau\""
+  },
+  {
     "path": "https://edubruell.github.io/joinery/authors.html",
     "id": null,
     "dir": "",
@@ -646,166 +716,77 @@
     "previous_headings": "",
     "what": "Citation",
     "title": "Authors and Citation",
-    "text": "Brüll E (2026). joinery: Heuristic Index-Based Record Linkage. R package version 1.0.0, https://edubruell.github.io/joinery/.",
-    "code": "@Manual{,   title = {joinery: Heuristic Index-Based Record Linkage},   author = {Eduard Brüll},   year = {2026},   note = {R package version 1.0.0},   url = {https://edubruell.github.io/joinery/}, }"
-  },
-  {
-    "path": []
+    "text": "Brüll E (2026). joinery: Heuristic Index-Based Record Linkage. R package version 1.1.0, https://edubruell.github.io/joinery/.",
+    "code": "@Manual{,   title = {joinery: Heuristic Index-Based Record Linkage},   author = {Eduard Brüll},   year = {2026},   note = {R package version 1.1.0},   url = {https://edubruell.github.io/joinery/}, }"
   },
   {
     "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "overview",
+    "id": null,
     "dir": "",
     "previous_headings": "",
-    "what": "Overview",
+    "what": "joinery — Developer / Coding-Agent Guide",
     "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "joinery heuristic, token-based record linkage system R. integrates cleanly tidyverse workflows supports: data.table (main -memory backend) tibbles (defers data.table backend) base data.frames (defers data.table backend) DuckDB tables (batch-based, R-preprocessing pipeline) package built S7 class system, separating linkage : declarative search strategy — defines text fields normalized, tokenized, encoded, weighted, scored, blocked. Backend-specific execution — defines data matched using IR.",
+    "text": "joinery heuristic, token-based record linkage package R (CRAN 1.0.1, main 1.0.1.9000). Built S7: declarative Search_Strategy (text normalized, tokenized, weighted, scored, blocked) executed backend-specific methods data.table (tibble / data.frame defer ) DuckDB (batched, R-preprocessing pipeline). Sibling strategy classes: Embedding_Strategy, Exact_Strategy. Architecture, verbs, schemas design history live wiki (); file map.",
     "code": ""
   },
   {
     "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "file-layout",
+    "id": "file-layout-r-prefixes",
     "dir": "",
     "previous_headings": "",
-    "what": "File layout",
+    "what": "File layout (R/ prefixes)",
     "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Every file R/ carries one eight prefixes maps role. Use directory listing navigation tool — prefix tells kind code inside open file. DuckDB execution control (duckdb_control(), v0.8 Stage 05). DuckDB backend tuning — batch sizes, scoring chunk key, per-chunk failure policy, progress — lives one Duckdb_Control object (R/duckdb_control.R), passed control = DuckDB prepare_search_data() / detect_duplicates() / search_candidates() methods. replaced old loose target_batch_size / min_batch_size / chunk_strategy args (clean break). Chunking execution, semantics — never Search_Strategy slot. DuckDB-: -memory data.table backend never needed chunking (old chunk_by matchmaker-era artefact). Two stages, two atomicity rules: preprocess batching (tokenization) per-row (duckdb_batch_plan(atomic_blocks = FALSE), split safe); scoring chunking (overlap join search_candidates) block-atomic (atomic_blocks = TRUE — block indivisible; splitting one drops cross-pairs). search_candidates streams block-atomic chunks per-chunk tryCatch boundary (on_error = skip|retry|stop), globally re-keyed match_id, §33 chunk /N progress, compact attr(result, \"failed_chunks\") record. Shared chunk-key resolution / failure-log helpers live R/internal_chunking.R (reused multi_stage_search, Stage 07). | diagnostic_*.R | Diagnostic verbs (diagnostic_audit.R, _summarise.R, _explain.R, _sample.R, _compare.R), result S7 classes (diagnostic_classes.R), recommendations catalog (diagnostic_recommendations.R), plot family (diagnostic_plots.R). | | calibration_*.R | Calibration verbs, helpers, result S7 classes — calibration_features.R + _features_embedding.R (match_features()), calibration_filter.R + _tidymodels.R (fit_filter() / apply_filter()), calibration_calibrate.R + _recipe.R (calibrate() / joinery_recipe()), calibration_dispatch.R (calibrate_matches()), calibration_labelling.R (CSV round-trip), calibration_aip.R (aIP primitive), calibration_classes.R (Match_Features, Filter_Model, Calibrated_Matches, Filter_Calibration). | | internal_*.R | Cross-cutting utilities — internal_validation.R (validation helpers + cli_abort exemplar), internal_progress.R (progress bars), internal_chunking.R (DuckDB chunk-key / failure-log helpers), internal_staging.R (shared staged-linkage engine multi_stage_dedup multi_stage_search wrap: strategy-list gate, per-stage edge accumulation original ids, residual/collapse carry-forward, search-grouping finalizer). | Conventional names stay outside schema: joinery-package.R, data.R, vendored rlang shims (import-standalone-*.R). DESCRIPTION’s Collate: field hand-maintained. file rename, split, new file requires manual Collate: update; S7 class definitions external generics must precede files declare methods .",
+    "text": "DESCRIPTION’s Collate: hand-maintained: new renamed file needs manual entry, class definitions generics precede files methods . Vendored rlang shims import-standalone-*.R.",
     "code": ""
   },
   {
     "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "where-to-look-for-x",
-    "dir": "",
-    "previous_headings": "File layout",
-    "what": "Where to look for X",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Add new preparer function → preparer_word.R function maps strings strings, preparer_tokens.R produces operates tokens. Document via roxygen; generic catalog lives notes/preparers_reference.md. Add new diagnostic verb → new generic generics_diagnostic.R, new result class diagnostic_classes.R, new verb file diagnostic_<verb>.R, plot helpers diagnostic_plots.R, threshold rules diagnostic_recommendations.R. Add new backend → six methods_<backend>_<stage>.R files (prepare, resolve, dedup, search, multistage, inspect) plus optionally embedding_methods_<backend>.R. Add Collate: entries existing methods blocks (resolve dedup, since dedup delegates ). Extend calibration → verb code calibration_<verb>.R; result classes calibration_classes.R; generic declarations generics_calibration.R. Tidymodels-specific code isolated calibration_tidymodels.R / calibration_recipe.R Suggests dependency boundary visible. Change error message style → internal_validation.R carries cli::cli_abort() exemplar; new code follow style. Exact (score-1.0) token-set matching → strategy, verb: exact_strategy() builds Exact_Strategy (class + constructor R/strategy_exact.R), standard apply verbs dispatch — detect_duplicates() (dedup face) search_candidates() (cross face), implemented per-backend R/exact_methods_datatable.R / R/exact_methods_duckdb.R, also hold shared fingerprint/containment kernel. return standard schema score == 1.0. fingerprint rides prepare_search_data() (never parallel fingerprint); residual existing extract_unmatched(), staging multi_stage_dedup / multi_stage_search composing list(exact_strategy(...), search_strategy(...)). Exact_Strategy mirrors Embedding_Strategy sibling strategy class.",
-    "code": ""
-  },
-  {
-    "path": []
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "step",
-    "dir": "",
-    "previous_headings": "Core S7 Classes",
-    "what": "Step",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Represents one preprocessing step (e.g., normalize_text(), word_tokens(min_nchar=3), as_metaphone(), filter_stopwords()). Stores: - name – function name string - args – list unevaluated expressions",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "search_preparer",
-    "dir": "",
-    "previous_headings": "Core S7 Classes",
-    "what": "Search_Preparer",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Represents preprocessing pipeline one column. Holds: - column – column name - steps – ordered list Step objects (pipeline order matters)",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "search_strategy",
-    "dir": "",
-    "previous_headings": "Core S7 Classes",
-    "what": "Search_Strategy",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Top-level IR object defining matching works. Contains: - preparers – named list Search_Preparer - weights – named numeric vector (optional) - block_by – character vector (optional), list mixing column names block_on_tokens() specs (v0.9; R/strategy_blocking.R). block_on_tokens(column, max_df, min_rarity, preparer, min_nchar) spec makes record block rare tokens column (region-free, drift-tolerant): prepare_search_data() token table exploded surviving rare blocking-tokens derived ._btok block column, two records sharing rare token co-block. .block_cols() / .plain_block_cols() resolver R/strategy_blocking.R single source truth: token-overlap join, rarity, fan-guard, scoring see ._btok (via .block_cols()); entity resolution DuckDB batch/chunk slicing stay plain columns (via .plain_block_cols()) record matched several block-tokens resolves one entity. max_df (global df cap selecting eligible block keys) reuses Feature B’s df_global; capless token block warns. Plain character block_by unchanged. - rarity – \"inverse_freq\" (default) \"tfidf\" - rarity_scope – \"block\" (default) \"global\" (v0.9; notes/region_free_linking.md). Selects whether token rarity measured within block corpus-wide. cost axis stays block-local regardless: df, max_token_df, fan-guard always read block-local df; rarity metric (min_rarity distinctiveness floor) follows rarity_scope. \"global\", compute_rarity() also computes freq_global/df_global/N_global (grouped without block columns) rarity formula reads . Global rarity lets distinctive brand read strong signal anywhere chain defense (globally common name gets low global rarity, dropped min_rarity). backends; explain_match round-trip holds global scope. - min_rarity / max_token_df – two pre-join cut levers (default 0 / Inf). Applied one predicate token table (column, token, block) overlap join backends (.rarity_prefilter_dt / .rarity_prefilter_sql): min_rarity floors rarity metric, max_token_df caps raw document frequency. rarity_distribution() reads distribution set . - max_fanout / on_fanout – always-fan-guard (default 5e7 / \"cap\"; v0.9, R/internal_fanout.R). min_rarity/max_token_df opt-, default protection hot/boilerplate token fanning dense block quadratic overlap join (v0.9 audit’s recurring CRITICAL; notes/v09_performance/). estimates join’s intermediate-row count (Σ df·(df−1) self / Σ df_b·df_t cross) pairs-free df histogram , busts max_fanout, auto-derives df ≤ cut ceiling dropping smallest set near-zero-rarity hot tokens (on_fanout=\"cap\", loud cli_warn) aborts (\"abort\"); \"\" disables. cut df axis max_token_df identical backends (.fanout_guard_dt / .fanout_guard_sql), applied right .rarity_prefilter_* dedup + search. superseded old dedup-max_comparisons method arg (clean break — block-level Σ n(n−1)/2 estimate replaced true token-level cost). - threshold – default match threshold Constructed via:",
-    "code": "search_strategy(   column ~ step1 + step2 + step3,   ...,   weights = c(),   block_by = NULL,   rarity = \"inverse_freq\",   threshold = 0.9 )"
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "backend-generics",
+    "id": "key-principles",
     "dir": "",
     "previous_headings": "",
-    "what": "Backend Generics",
+    "what": "Key principles",
     "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "generics dispatch backend class: multi_stage_dedup() dedup face staged layer (single table, within-table residual-reblocking passes, one final connected-components via resolve_entities()); multi_stage_search() search face (hard-rename former multi_stage_match). thin configs shared staged engine R/internal_staging.R; see §34 dedup/search naming axis. multi_stage_dedup()’s residual carry-forward keeps found group’s representative (real id) plus singletons, record drifts away cluster still bridges later, looser stage. prepare_search_data() central interpreter IR everything else builds output.",
-    "code": "prepare_search_data(data, id, strategy) compute_rarity(tokens, strategy) detect_duplicates(base_table, id, strategy, threshold = NULL) search_candidates(base_table, target_table, base_id, target_id, strategy,                   threshold = NULL, weights = NULL) deduplicate_table(base_table, duplicates, id) extract_unmatched(data, id, matches) materialize_records(data, id, ids) resolve_entities(edges, id_a, id_b, score = NULL, vertices = NULL, rep_by = NULL) multi_stage_dedup(table, id, strategies, rep_by = NULL, edge_filter = NULL) multi_stage_search(base_table, target_table, base_id, target_id, strategies)"
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "search-workflow-7-core-steps",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Search Workflow (7 Core Steps)",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Preprocessing — prepare_search_data() interprets Step objects, produces long-form tokens, attaches block variables. Rarity Computation — measures token informativeness per column/block using inverse frequency, TF-IDF, metrics. Token Overlap Join — self-join (duplicates) cross-join (candidates) (column, token, block_by) find record pairs. Scoring (rIP) — relative identification potential: rIP = rarity / sum(rarity) per record, score = sum(rIP * weight). Thresholding — keep pairs score >= threshold (argument strategy default). Residual Generation — extract unmatched records via extract_unmatched() multi-pass workflows. Staged entity resolution — ordered strategy list run successive passes, accumulating links resolving connected components via resolve_entities(). Two faces (§34): multi_stage_dedup() (within one table, one final CC, residual carry-forward keeps group’s representative bridge) multi_stage_search() (cross-source directed search → entity grouping + directed ledger, generic source_by, collapse=\"rep\" collapse--continue bridging). wrap shared engine R/internal_staging.R.",
+    "text": "assume backend. Add methods generics; keep data.table, DuckDB tibble lockstep parity tests. Token tables universal interface: id | src_column | token | row_id | <block_by>. Scoring rIP (rarity / sum(rarity) per record, score = sum(rIP * weight); four rarity metrics: inverse_freq, smoothed_inverse_freq, tfidf, bm25), thresholded scoring. explain_match round-trip (sum(contribution) × feedback_factor == score) mandatory property test. asserted 1e-10 data.table ; DuckDB case compares score per-column contributions data.table 1e-6 never sums . DuckDB-side sum assertion still owed. Output schemas fixed. merge(= \"id\") attaches original data puts id first: dedup id, duplicate_group, score, rank, <cols>; search id, match_id, score, source, <cols>, rank. Empty results keep full typed schema DuckDB , see wiki contention C5. matching variant strategy class standard apply verbs dispatch , never standalone verb. Chunking execution, never strategy slot. DuckDB . Public API frozen since 1.0: add, never rename break. 1.0 rule clean-break renames deprecation shims, lifecycle; keep spirit internals.",
     "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "diagnostics",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Diagnostics",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Five diagnostic verbs, organised around four user questions (Q1 --work, Q2 --work, Q3 --pair, Q4 --look) plus multi-stage: audit_strategy() → Strategy_Audit (token strategies) Embedding_Audit (embedding strategies) — dispatches strategy class summarise_matches() → Match_Overview (unified across dedup/candidates via match_type slot) explain_match() → Match_Explanation (per-token attribution Search_Strategy; pair+score Embedding_Strategy) sample_matches() → Match_Sample (modes: high, low, borderline, ambiguous, top_gap, random; also stratify_by expand_to_block stratified labelling-set construction) compare_stages() → Stage_Comparison (multi-stage diagnostics) rarity_distribution() → Rarity_Distribution (pre-match, read-side; v0.8 Stage 04). Scoring-free prepare_search_data() + compute_rarity() — overlap join — reporting per-(column[, block]) df/rarity distribution top-df offender list (fan-drivers), plus suggested_min_rarity per column. Use set min_rarity / max_token_df levers real token distribution. Lives R/diagnostic_rarity.R; cheap seed plan_strategy() subsumes. plan_strategy(base, strategy, target = NULL, block_candidates, base_id, target_id) → Strategy_Plan (pre-match, pre-strategy; v0.8 Stage 08). verb helps find strategy rather grade one — upstream distinct audit_strategy() (multi-block, scoring-free, dispatches c(\"base\", \"strategy\"); strategy supplies preparer pipeline, block_by ignored — block_candidates thing chosen). Deliberately scoring-free: overlap join, .score_*; every probe O(rows)/O(blocks) arithmetic. Four reads: (1) blocking-resolution frontier — per candidate: #blocks, size distribution, Σ(na·nb) brute-pair count (cost axis, arithmetic), share exact-token-set twins stay co-blocked (recall axis), using A2’s faithful fingerprint (.exact_fp_wide_dt via exact proxy, never re-rolled); (2) exact-set persister rate (A2 yield — exact_strategy() front absorb enough stage?); (3) residual structure (matchable / one-sided / per-column partial-recoverable); (4) per-column discriminativeness — .rarity_distribution_core + min_rarity → intermediate-overlap-row cost curve (pure df-histogram math; matches independent overlap-row count exactly) + §25 empty-column score-ceiling read (1 − normalized weight(col)) + opt-§22 containment share (containment = TRUE — one read bounded structural join; NA default scoring-free guarantee holds). DuckDB samples SELECT * delegates data.table (pairs touch connection — scoring-free guard). Lives R/plan_strategy.R (class colocated, like diagnostic_rarity.R); default plot() frontier_plot(). Part-spine’s final stage. Recommendations live R/diagnostics_recommendations.R (signal → threshold → message), surfaced via inline cli warnings print() recommendations(x) accessor. plan_strategy() adds four: blocking_knee (coarser candidate near-lossless twins materially cheaper), empty_column_ceiling (§25), consider_containment (§22, opt-), est_comparisons_too_high (cheapest candidate still dense). Plotting first-class via tinyplot (hard Imports dependency). Diagnostic verbs return data . plot separately named function (plot(x, type=...)); pipe-composable: summarise_matches(m) |> score_histogram(). Default plot() methods per class call -useful single view. explain_match round-trip contract (sum(per_column_contrib$contribution) × feedback_factor == score, exact 1e-10 feedback) mandatory backends — property test prevents scoring drift.",
-    "code": ""
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "calibration-primitives",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Calibration Primitives",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "prepare_auxiliary_registry() — internal generic. Builds per-column token-occurrence registry auxiliary (search / target) side. Block-agnostic cross-table construction (distinct per-block retrieval-time compute_rarity()). compute_aip() — internal helper. Implements Doherr (2023) eq. (9) pair registries, producing aip per (src_column, token). Consumed match_features(). Lives R/aip.R; design notes/calibration_design.md. export_for_labelling() / import_labels() — exported verbs. CSV round-trip manual labelling Match_Sample. export_for_labelling() pre-fills equal block-header rows (base-side rows candidates, rank-1 rows dedup) using default_label = 1L (use 0L inverse workflow); writes flat CSV equal placed first. import_labels() reads back, propagates block-default equal onto unmarked rows, validates schema, returns data.table ready fit_filter() / calibrate_matches(). Format-agnostic; UI shipped. Lives R/labelling.R; design notes/calibration_design.md. match_features() — exported verb. Builds wide one-row-per-pair feature data.table joinery match result. Dispatches strategy class. Search_Strategy returns full token schema (searched, found, match_id, stage, score, cnt, icnt, ipos, stage_*, scnt, rcnt, r1..rn, m_<col>_*, f_<col>_*, s_<col>_*, sim_sf_<col>, sim_fs_<col>). Embedding_Strategy returns reduced schema (core + stage_* + sim_sf_* / sim_fs_* + cosine_sim + embedding_norm_s + embedding_norm_f). String similarity uses stringdist::stringsim() single global method = argument (default \"jw\"); pass include_string_sim = FALSE opt minimal installs. Embedding norms L2 norms pre-normalization embeddings, recomputed matched subset temporary strategy normalize = FALSE. Column order public API — additions , never reorder rename. Lives R/match_features.R; schema notes/calibration_design.md. fit_filter() / apply_filter() / calibrate_matches() — exported verbs. Post-retrieval false-positive filter. fit_filter(features, labels, model = \"logistic\", class_weighted = FALSE, na_fill = 0) joins Match_Features labels data.table (match_id, found), fits logistic glm, returns Filter_Model carrying fitted model plus training probabilities / labels / per-stage distribution. apply_filter(features, filter_model, threshold = NULL, matches = NULL) scores features, picks threshold via Youden’s J training data threshold NULL, returns Calibrated_Matches whose @matches slot either holds enriched features table — matches = supplied — original raw matches table tp_prob / predicted_tp broadcast onto every row pair (candidates: match_id; duplicates: (duplicate_group, id == found) rank-k rows ). calibrate_matches(matches, strategy, labels, base, id, target, target_id, ...) high-level verb composes match_features() → fit_filter() → apply_filter(); dispatches (matches, strategy) data.table, DuckDB (collect--delegate), tibble / data.frame inputs. Threshold selection defaults Youden’s J; user supplies threshold = override. Lives R/fit_filter.R R/calibrate_matches.R; design notes/calibration_design.md. calibrate() / Filter_Calibration — exported verb. Evaluates fitted Filter_Model (carried Calibrated_Matches) labelled set returns Filter_Calibration reliability table, Brier score, log-loss, per-class confusion matrix, threshold sweep curve. calibrate(cm) uses training labels stored Filter_Model; calibrate(cm, labels) evaluates independent labelled set (dispatches candidates vs duplicates inspecting @matches). Surfaces calibration_low_n_warning recommendations catalog. Lives R/calibrate.R. joinery_recipe() + tidymodels fit_filter() path — exported. joinery_recipe(features, labels) returns recipes::recipe searched / found / match_id tagged role \"id\" equal outcome. fit_filter(model = <parsnip spec | fitted parsnip | (un)fitted workflow>) accepts tidymodels objects wraps Filter_Model (backend = \"parsnip\" / \"workflow\"); fitted workflows detected via workflows::is_trained_workflow() re-fit. apply_filter() scores via predict(type = \"prob\") reads .pred_1 column (training fixes equal factor(c(0L, 1L))). tidymodels packages Suggests; requireNamespace() guards keep baseline glm path dependency-free. Calibration-related recommendations — four entries R/diagnostics_recommendations.R: consider_calibration_borderline (fires summarise_matches(matches, threshold = ...) pct_pairs_borderline > 0.10), consider_calibration_ambiguity (fires Match_Overview pct_records_with_ge3_matches > 0.20), calibration_low_n_warning (fires Filter_Calibration training_n < 500), calibration_drift_warning (fires apply_filter() stage-distribution TV distance vs training > 0.15). summarise_matches(threshold = NULL, borderline_epsilon = 0.05) entry point data.table DuckDB backends.",
-    "code": ""
-  },
-  {
-    "path": []
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "duplicate-detection",
-    "dir": "",
-    "previous_headings": "Expected Output Schemas",
-    "what": "Duplicate Detection",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "",
-    "code": "duplicate_group score id <original columns of base_table> rank"
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "cross-table-candidate-matches",
-    "dir": "",
-    "previous_headings": "Expected Output Schemas",
-    "what": "Cross-Table Candidate Matches",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "",
-    "code": "match_id score source     # \"base\" or \"target\" id <original columns> rank"
-  },
-  {
-    "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "key-principles-for-coding-in-joinery",
-    "dir": "",
-    "previous_headings": "",
-    "what": "Key Principles for Coding in joinery",
-    "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "assume specific backend. Use generics; implement new methods needed. Token tables universal interface: Scoring uses rIP internally — sum(rarity * weight). Thresholding applied scoring. Output must follow schemas . Multi-stage matching sequential — matches → extract residuals → next strategy. Clean break 1.0 — deprecation shims. joinery pre-1.0, unreleased, solo-developed; external callers. Renames signature changes made outright: rename thing, update every internal reference (including untracked localwip/yp_panel/ scripts), delete old name. deprecated aliases, lifecycle::deprecate_warn(), lifecycle dependency, “kept compat” code paths, back-compat/deprecation-warning tests. rename, grep -r <old_name> R/ tests/ man/ must empty. goal clean, stable 1.0; every alias kept now @deprecated ’d carry past 1.0.",
-    "code": "id | column | token | row_id | <block_by>"
   },
   {
     "path": "https://edubruell.github.io/joinery/claude.html",
     "id": "testing-policy",
     "dir": "",
     "previous_headings": "",
-    "what": "Testing Policy",
+    "what": "Testing policy",
     "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "Run normal package tests Rscript -e \"devtools::test()\". Run coverage Rscript -e \"covr::package_coverage()\" covr installed. Add ordinary testthat tests small deterministic cases, validation errors, backend parity, scoring branches, output schemas. put large DuckDB jobs, stress tests, provider-dependent embedding tests, expensive benchmarks tests/testthat/. Put larger checks local_tests/; intentionally local excluded package builds/checks via .Rbuildignore. Keep examples/, localwip/, notes/, joinery.Rproj local unless explicitly requested otherwise.",
+    "text": "Rscript -e \"devtools::test()\" suite; covr::package_coverage() installed. Small deterministic cases, validation errors, backend parity, scoring branches, output schemas go tests/testthat/. Large DuckDB jobs, stress tests, provider-dependent embedding tests, benchmarks go local_tests/ (tracked, .Rbuildignored, run hand). sentencepiece tidymodels packages Suggests: every touch point gets requireNamespace() guard tests use skip_if_not_installed().",
     "code": ""
   },
   {
     "path": "https://edubruell.github.io/joinery/claude.html",
-    "id": "reference-documentation",
+    "id": "working-rules-maintainer-feedback",
     "dir": "",
     "previous_headings": "",
-    "what": "Reference Documentation",
+    "what": "Working rules (maintainer feedback)",
     "title": "joinery — Developer / Coding-Agent Guide",
-    "text": "detailed guidance specific topics, consult: Core Architecture: - notes/architecture.md — Data.table backend internals, token table schema, rarity & scoring details. - notes/preparers_reference.md — Complete catalog text normalization, phonetic encoding, token generation, token transformation functions. DuckDB Backend: - notes/duckdb_status.md — Implementation status, completed features, test coverage, known limitations. - notes/duckdb_coding_guide.md — Practical guide using extending DuckDB backend. - notes/duckdb_backend.md — Design philosophy, batch execution architecture, -SQL-translation approach. - notes/duckdb_performance.md — Performance tuning guide, batch size recommendations, optimization strategies. Current Work (v0.9 — documentation push 1.0): - notes/v09/ — docs build queue (current focus). notes/v08/ build queue code, build queue docs: public surface (README, getting-started vignette, articles, reference pages, pkgdown site) gating 1.0 release. 00_index.md single-source--truth status table (Diátaxis frame, house-voice rules); TODO_docs_pass.md live checklist. Shipped far: pkgdown skeleton, getting-started vignette (vignettes/joinery.Rmd), README refresh, workshop example data (workshop_register/workshop_listings), features article, embeddings article (drafted), v0.9 NEWS.md. Remaining 1.0 gates: P1 example data (workshop_panel + match_labels_example), calibration DuckDB articles, glossary render, navbar wiring, docs-QA pass. House voice mandatory ([[feedback_docs_writing_style]], [[feedback_woodworking_voice]]): em dashes, problem-first, plain language, internal jargon (§/file-path/ stage refs) user prose. Start docs work. - notes/post_release/ — Forward-looking scoping notes 1.0 (ecosystem/positioning, engine/algorithm extensions, backends/scale/interop, probabilistic-strategy addendum, implementation roadmap). 1.0 work; read planning beyond release. Background — v0.8 (now-shipped Part-code spine + YP stress test): - notes/yp_panel_joinery_plan.md — Plan full German Yellow-Pages panel (years, branches) joinery’s DuckDB backend, blocked (plz2, wz08_3). first real-life stress test v0.8. frozen v1 hand-rolled baseline panel now exists — built localwip/yp_panel/ scripts (single-shot → fuzzy dedup → Stage-E one-year extra-merge → 48_build_panel.R): 51,315,109 rows | 7,468,975 entities | 2.0% imputed (K=5). v1 comparison target declarative rebuild ([[v08_second_pass_yp]]). Read YP-related work. - notes/v08/ — build queue. Turns v08_implementation_plan.md Part ordered set PR-sized, buildable implementation stages (00_index.md single-source--truth status table + conventions; 01–08 staged plans). stage carries exact file:line targets, new signatures, Collate edits, test plan, fresh-context audit prompt. spine (01 resolve_entities → … → 08 plan_strategy) complete: 01–08 implemented fresh-context audited (GO) 2026-06-12. naming axis (§34): staged verbs pair dedup/search — multi_stage_dedup (06) / multi_stage_search (07, hard-rename former multi_stage_match), thin configs R/internal_staging.R. One carried-forward follow-stays open: Stage-01 #2 (DuckDB resolve_entities coverage gap empty-without-vertices type + untested vertices singleton-fold INSERT). remaining v0.8 work independent Part B–D track (calibration/preparer/recommendation polish) Part-acceptance test. Start implementing Part-verb. - notes/v08_lessons.md — Running log design-relevant insights surfaced running YP build. Captures rough edges block_by, audit verbs, progress reporting, docs framing. arc lands §29–§35: §29–§31 named one feature (staged entity resolution) became now-shipped Part-spine; §32 (dedup & search two tails one scoring kernel), §33 (chunked processing must announce current chunk), §34 (composite verbs name along dedup/search axis), §35 (cross-year self-search exact front must rarity-free, [[feedback_self_search_rarity_free_front]]). actionable items landed (Part 01–08); doc now mostly historical design log plus live §35 lever. - notes/v08_implementation_plan.md — Consolidated, actionable v0.8 package plan distilled full YP build. Opens status ledger already shipped (§10–§16 / §18-core dedup pass: empty-result schema, filtered-lazy materialise, block-aware CC, cardinality recommendation, token-set scoring, non-unique-id crash). live backlog regrouped around one insight (§29/§30): open findings scattered bugs one feature — staged entity resolution (exact → fuzzy → residual → resolve) YP scripts hand-rolled. Part headline kernel (resolve_entities, exact_strategy(), bounded/failure-isolated search_candidates, rarity prefilter, materialize_records, multi_stage_dedup, multi_stage_search, plan_strategy) — now fully shipped & audited (01–08, see notes/v08/00_index.md); Part B scorer/calibration correctness; Part C preparer vectorization; Part D recommendations/guardrails. staged, buildable form Part lives notes/v08/. item names exemplar localwip/yp_panel/ script absorb, plus fix shape, test plan, fresh-context audit prompt. Read touching R/methods_duckdb_*, R/methods_datatable_*, R/calibration_*, R/diagnostic_recommendations.R. - notes/v08_second_pass_yp.md — Blueprint clean rebuild YP panel Part-verbs (“first merge, learn, redo simpler”). Now implemented localwip/yp_panel/second_pass/ (yp00_common.R + yp01–yp04), slice-validated; full-corpus run staged big-disk laptop (localwip/yp_panel/MIGRATION.md). Per-listing year_row nodes carrying full payload (coords, raw branche, contact) end--end → late raw-data restitch. Three phases: (1) within-year dedup (year-blocked) → independent within-year entities; (2) multi-stage search_candidates years pooled, within block, collapse--continue stages (matched groups collapse one rep, shrinking search space later looser stages) — multi_stage_dedup (cross-year directed search, containment asymmetry + year-pair-per-edge live); (3) within-trajectory imputation (K=5). Core design points: typed membership ledger (year_row → entity, within_year/cross_year) caller’s artifact source covered-years/n_listings; -stage transition (collapse / rebind / direction) shared machinery (§32: dedup & search two tails one kernel); rebind = accumulate path incremental panel updates. Read designing rerun touching staged verbs. - notes/yp_panel_legacy_workflow.md — Retrospective legacy MatchMakeR pipeline built existing Hausärzte panel; raw-data layout, blocking decisions, output schemas, legacy decisions carry revisit. Source data lives /Users/ebr/Dropbox/medlaborsupply/gelbe_seiten_raw/ (raw text + cached parquet .../pqt/); legacy scripts /Users/ebr/Dropbox/medlaborsupply/gelbe_seiten_raw/read_yellow_pages.R /Users/ebr/Dropbox/medlaborsupply/entry_regulations_R/{deduplicate_yp_data,create_yp_panel}.R. - Working folder YP-test scripts intermediates: localwip/yp_panel/ (untracked; localwip/ .gitignore .Rbuildignore). Already contains wz08_3_labels.csv (274 WZ08-3 group codes + English labels, extracted localwip/Labels_SIAB_7523_v2_btr_basis_en.log). Branche → WZ08-3 classifier (Phase 1) built (localwip/yp_panel/build_wz08_map.R, tidyllm/Claude) baked DuckDB atom_map table build reads. Project Planning: - notes/code_quality_pass.md — Completed code-quality refactor (May 2026): unified naming schema error/validation styles now place across package. Reference conventions new code follow. - notes/roadmap.md — Strategic roadmap, feature priorities, current phase. - notes/embedding_design.md — Implementation design embedding-based matching. - notes/diagnostics_design.md — Design notes diagnostics verbs. - notes/region_free_linking.md — Plan region-free linking (chains & movers): token-blocking (block_on_tokens), rarity_scope = \"global\", temporal-overlap edge_filter guard. Three jobs — reachability / selectivity / disambiguation — file:line anchors, df-decoupling subtlety (block-local cost df vs global rarity df), phased rollout. Motivated YP cross-year mover/chain recall tail (localwip/yp_panel/yp05–yp09). - notes/calibration_design.md — Calibration design: post-match false-positive filter, aIP primitive, match_features() schema, calibrate_matches() verb, tidymodels boundary. - notes/searchengine_lessons_for_v07.md — Distilled lessons Doherr’s SearchEngine whitepaper informed calibration design. - notes/HolisticMatching.md — OCR’d full text SearchEngine whitepaper (Doherr 2023) reference. - notes/batch_duckdb_brittleness.md — Investigation fix notes small-table batch_map brittleness.",
+    "text": "Docs voice per-change gate: em dashes anywhere prose roxygen, plain language, problem-first, architecture jargon (dispatch, IR, stage numbers, file paths) anything user reads. Light woodworking motif seams. README pkgdown home page; include every doc pass. Commit messages carry co-author attribution lines. stage lands, fresh-context panel audits ; self-evaluate. Five lanes plus wiki lint, pre-checks verdict folder specified local_context/wiki/11_audit_protocol.md. convention, skill: run fan-hand note. internal_progress.R deliberate wrapper cli; flag redundant. Drop orphan _joinery_* DuckDB temp tables periodically; backend leaks crash. tinyplot xaxl takes mapper function, never character vector. Firm-panel calibration: prefer recall-favouring cut near 0.30 Youden’s J. Cross-year self-search: first (exact) stage must rarity-free, persistent entities suppress tokens.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/claude.html",
+    "id": "local-folders-untracked",
+    "dir": "",
+    "previous_headings": "",
+    "what": "Local folders (untracked)",
+    "title": "joinery — Developer / Coding-Agent Guide",
+    "text": "local_context/wiki/ agent-facing memory (). local_context/notes/ dated journal entries. local_context/legacy/ pre-wiki planning notes (notes/, 80 notes) loose scratch (localwip/); indexed wiki note 09. Read-history. local_context/yp_panel/ Yellow Pages panel workbench (6.3 GB: v1 script series, calibration CSVs, second_pass/ declarative rebuild, parquet files). examples/, local_tests/, docs/ stay .",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/claude.html",
+    "id": "project-memory-llmwiki",
+    "dir": "",
+    "previous_headings": "",
+    "what": "Project memory (llmwiki)",
+    "title": "joinery — Developer / Coding-Agent Guide",
+    "text": "Wiki root: local_context/wiki Journal: local_context/notes Kind: software Sweep cutoff: 2026-09-14 Trigger cutoff: 2026-09-14 Trigger: audit | local_context/audits/* | marker:verdict.md Schema + workflows: /llmwiki skill. Read local_context/wiki/00_state.md first every session. Open numbered notes demand via pointers; re-derive settled design. touching design: check local_context/wiki/contentions.md; never silently resolve open contention, never sit ripe one: close brings contentions whose resolve-condition met (3 sessions moved) back user recommendation. Corrections: edit owning note FIRST stamp (<!-- swept: anchor date -->), register line receipt (Affects: [[NN_note#anchor]]). Session end / compact: run /llmwiki close; first thing /clear, run /llmwiki next pick 00_state.md’s Next list. Artefacts land (payload rounds, exports, transcripts) can nag wiki : /llmwiki trigger sets one, close discharges . Run /llmwiki lint : design adoption/supersession, results round, payload round returning, CLAUDE.md edits, 5+ sessions without one.",
     "code": ""
   },
   {
@@ -875,7 +856,7 @@
     "previous_headings": "",
     "what": "Documentation",
     "title": "Heuristic Index-Based Record Linkage",
-    "text": "package website carries full guide. Start Getting started, walks whole path pair built-tables scores result known answer key. , five articles take one problem: Beyond basics: fuzzy exact strategies. Containment, region-free movers, phonetic matching, staging together. Matching across years sources. Pool multi-year panel follow record time. Calibrating false-positive filter. Train model labelled pairs one threshold enough. Embedding-based matching. Match meaning two records share tokens . Working scale DuckDB. Run strategies database backend table fit memory. tutorial also ships vignette:",
+    "text": "package website carries full guide. Start Getting started, walks whole path pair built-tables scores result known answer key. , six articles take one problem: Beyond basics: fuzzy exact strategies. Containment, region-free movers, phonetic matching, staging together. Subword tokenizers. Learn word pieces text compounds scanner noise keep whole words apart. Matching across years sources. Pool multi-year panel follow record time. Calibrating false-positive filter. Train model labelled pairs one threshold enough. Embedding-based matching. Match meaning two records share tokens . Working scale DuckDB. Run strategies database backend table fit memory. tutorial also ships vignette:",
     "code": "vignette(\"joinery\", package = \"joinery\")"
   },
   {
@@ -1530,7 +1511,7 @@
     "previous_headings": "",
     "what": "Arguments",
     "title": "Calibrate matches end-to-end (features -> filter -> apply) — calibrate_matches",
-    "text": "matches Match output table (data.table / tibble / data.frame / DuckDB lazy tbl). strategy search_strategy() embedding_strategy() used produce matches. ... Method-specific arguments. Required: labels (manually labelled rows produced import_labels()), base, id. Optional: target, target_id (forwarded match_features()), model, class_weighted, na_fill, threshold, plus match_features() tuning knobs (top_n, include_string_sim, include_block_stats, method).",
+    "text": "matches Match output table (data.table / tibble / data.frame / DuckDB lazy tbl). strategy search_strategy() embedding_strategy() used produce matches. ... Method-specific arguments. Required: labels (manually labelled rows produced import_labels()), base, id. Optional: target, target_id (forwarded match_features()), model, class_weighted, na_fill, threshold, plus match_features() tuning knobs (top_n, include_string_sim, include_block_stats, identity_by, method).",
     "code": ""
   },
   {
@@ -1860,6 +1841,69 @@
     "code": ""
   },
   {
+    "path": "https://edubruell.github.io/joinery/reference/custom_tokens.html",
+    "id": null,
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Tokenize with your own tokenizer — custom_tokens",
+    "title": "Tokenize with your own tokenizer — custom_tokens",
+    "text": "built-tokenizers split text words, n-grams, dates. none fits data, write place strategy formula custom_tokens(): name ~ normalize_text() + custom_tokens(my_tokenizer).",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/custom_tokens.html",
+    "id": "ref-usage",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Usage",
+    "title": "Tokenize with your own tokenizer — custom_tokens",
+    "text": "",
+    "code": "custom_tokens(text, tokenizer)"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/custom_tokens.html",
+    "id": "arguments",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Arguments",
+    "title": "Tokenize with your own tokenizer — custom_tokens",
+    "text": "text character vector tokenize. tokenizer plain function, object tokenize() method.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/custom_tokens.html",
+    "id": "value",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Value",
+    "title": "Tokenize with your own tokenizer — custom_tokens",
+    "text": "list character vectors, one per input element.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/custom_tokens.html",
+    "id": "details",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Details",
+    "title": "Tokenize with your own tokenizer — custom_tokens",
+    "text": "tokenizer can plain function takes character vector returns list token vectors. can also fitted tokenizer object tokenize() method, tokenizer learned state, trained subword vocabulary, enters strategy. Whichever form pass, must return list one element per input string, element character vector record's tokens (character(0) record none). custom_tokens() checks stops clear error result fit.",
+    "code": ""
+  },
+  {
+    "path": []
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/custom_tokens.html",
+    "id": "ref-examples",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Examples",
+    "title": "Tokenize with your own tokenizer — custom_tokens",
+    "text": "",
+    "code": "# A bare-function tokenizer: split on vowels split_vowels <- function(text) strsplit(text, \"[aeiou]+\") custom_tokens(c(\"plexiglas\", \"brandenburg\"), split_vowels) #> [[1]] #> [1] \"pl\" \"x\"  \"gl\" \"s\"  #>  #> [[2]] #> [1] \"br\" \"nd\" \"nb\" \"rg\" #>"
+  },
+  {
     "path": "https://edubruell.github.io/joinery/reference/date_tokens.html",
     "id": null,
     "dir": "Reference",
@@ -2083,7 +2127,7 @@
     "what": "Examples",
     "title": "Drop all temporary DuckDB tables created by joinery — drop_joinery_temp_tables",
     "text": "",
-    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   # A stray joinery temp table left behind by an interrupted run:   DBI::dbWriteTable(con, \"_joinery_tmp_demo\", data.frame(x = 1))    drop_joinery_temp_tables(con)  # removes it, returns its name invisibly   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb: caching downloaded extensions in the package library: #> ℹ /home/runner/work/_temp/Library/duckdb/extensions #> ℹ This is removed when the package is re-installed; see `?duckdb_storage` to choose a different location. # }"
+    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   # A stray joinery temp table left behind by an interrupted run:   DBI::dbWriteTable(con, \"_joinery_tmp_demo\", data.frame(x = 1))    drop_joinery_temp_tables(con)  # removes it, returns its name invisibly   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/RtmpydRXaA/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/drop_numeric_tokens.html",
@@ -2249,7 +2293,7 @@
     "what": "Examples",
     "title": "Create a Batch Plan for DuckDB Table Processing — duckdb_batch_plan",
     "text": "",
-    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(     con, \"data\",     data.frame(id = 1:1000, region = rep(LETTERS[1:5], length.out = 1000))   )   tbl_ref <- dplyr::tbl(con, \"data\")    # Unblocked, even row-number chunking   plan1 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, chunk_strategy = \"even\"   )    # Blocked, consolidated strategy (default, respects regions)   plan2 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, block_by = \"region\"   )   DBI::dbDisconnect(con, shutdown = TRUE) } #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  # }"
+    "code": "# \\donttest{ if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(     con, \"data\",     data.frame(id = 1:1000, region = rep(LETTERS[1:5], length.out = 1000))   )   tbl_ref <- dplyr::tbl(con, \"data\")    # Unblocked, even row-number chunking   plan1 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, chunk_strategy = \"even\"   )    # Blocked, consolidated strategy (default, respects regions)   plan2 <- duckdb_batch_plan(     tbl_ref, id = \"id\",     target_batch_size = 200, block_by = \"region\"   )   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/RtmpydRXaA/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  #> ℹ Auto-tuned batch sizes: target 200, min 500,000 #>  # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/duckdb_control.html",
@@ -2302,7 +2346,7 @@
     "what": "Examples",
     "title": "DuckDB Execution Control — duckdb_control",
     "text": "",
-    "code": "# The control object just bundles execution knobs; it carries no data. ctrl <- duckdb_control(target_batch_size = 5e5, on_error = \"skip\") ctrl #> <joinery::Duckdb_Control> #>  #> target_batch_size: 5e+05 #> min_batch_size: auto #> chunk_strategy: block_consolidated #> chunk_by: auto #> on_error: skip #> progress: auto  # \\donttest{ # Pass it to a verb running on a DuckDB table. if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(con, \"reg\", as.data.frame(workshop_register))   strat <- search_strategy(     workshop ~ normalize_text() + word_tokens(min_nchar = 3),     block_by  = c(\"postcode_area\", \"trade\"),     threshold = 0.7   )   detect_duplicates(dplyr::tbl(con, \"reg\"), \"reg_no\", strat, control = ctrl)   DBI::dbDisconnect(con, shutdown = TRUE) } #> Preparing search token table in batches #> ℹ Auto-tuned batch sizes: target 500,000, min 500,000 #>  #> Processing batch 1 of 1 (1052 rows) #>  # }"
+    "code": "# The control object just bundles execution knobs; it carries no data. ctrl <- duckdb_control(target_batch_size = 5e5, on_error = \"skip\") ctrl #> <joinery::Duckdb_Control> #>  #> target_batch_size: 5e+05 #> min_batch_size: auto #> chunk_strategy: block_consolidated #> chunk_by: auto #> on_error: skip #> progress: auto  # \\donttest{ # Pass it to a verb running on a DuckDB table. if (requireNamespace(\"duckdb\", quietly = TRUE) &&     requireNamespace(\"DBI\", quietly = TRUE) &&     requireNamespace(\"dplyr\", quietly = TRUE)) {   con <- DBI::dbConnect(duckdb::duckdb(), \":memory:\")   DBI::dbWriteTable(con, \"reg\", as.data.frame(workshop_register))   strat <- search_strategy(     workshop ~ normalize_text() + word_tokens(min_nchar = 3),     block_by  = c(\"postcode_area\", \"trade\"),     threshold = 0.7   )   detect_duplicates(dplyr::tbl(con, \"reg\"), \"reg_no\", strat, control = ctrl)   DBI::dbDisconnect(con, shutdown = TRUE) } #> duckdb keeps downloaded extensions and secrets in a temporary directory: #> ℹ /tmp/RtmpydRXaA/duckdb #> This is removed when the R session ends. #> • Extensions are re-downloaded each session. #> • Secrets are lost. #> ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users). #> ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message). #> ℹ See ?duckdb_storage for details and alternatives. #> Preparing search token table in batches #> ℹ Auto-tuned batch sizes: target 500,000, min 500,000 #>  #> Processing batch 1 of 1 (1052 rows) #>  # }"
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/embedding_strategy.html",
@@ -2730,6 +2774,69 @@
     "path": []
   },
   {
+    "path": "https://edubruell.github.io/joinery/reference/find_subwords.html",
+    "id": null,
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Learn a subword vocabulary from your text — find_subwords",
+    "title": "Learn a subword vocabulary from your text — find_subwords",
+    "text": "Word tokens fail quietly compound words misspellings: \"Maschinenbaugesellschaft\" \"Maschinenbau GmbH\" share word, never meet word-token match. Subword tokens fix learning, data, vocabulary frequent word pieces splitting every record pieces. Two spellings name share pieces even share whole word. find_subwords() learning step. Run text column (cleaning use strategy), place fitted model strategy formula subword_tokens():   fitted model self-contained: can save saveRDS() reuse later session, model always splits text way.",
+    "code": "sw <- find_subwords(normalize_text(register$name)) strat <- search_strategy(   name ~ normalize_text() + subword_tokens(sw) )"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/find_subwords.html",
+    "id": "ref-usage",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Usage",
+    "title": "Learn a subword vocabulary from your text — find_subwords",
+    "text": "",
+    "code": "find_subwords(   x,   vocab_size = 500L,   algorithm = c(\"bpe\", \"unigram\"),   keep_boundary = FALSE,   sample_n = NULL,   columns = NULL )"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/find_subwords.html",
+    "id": "arguments",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Arguments",
+    "title": "Learn a subword vocabulary from your text — find_subwords",
+    "text": "x training text: character vector, table (data frame, tibble, data.table, DuckDB table) together columns. vocab_size Number subword pieces learn. Default 500. algorithm \"bpe\" (default) \"unigram\", two learning algorithms SentencePiece offers. Start \"bpe\"; try \"unigram\" splits look better data. keep_boundary Keep word-boundary marker piece? default FALSE strips , piece matches whether starts word ; usually record linkage wants. sample_n Optional cap number rows used training. corpus millions rows uniform sample hundred thousand fits equivalent vocabulary fraction time. columns table input: character vector naming text column(s) train .",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/find_subwords.html",
+    "id": "value",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Value",
+    "title": "Learn a subword vocabulary from your text — find_subwords",
+    "text": "fitted Subword_Model, ready subword_tokens().",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/find_subwords.html",
+    "id": "details",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Details",
+    "title": "Learn a subword vocabulary from your text — find_subwords",
+    "text": "Fit model text strategy see : apply cleaning steps (example normalize_text()) training text precede subword_tokens() formula. Training raw text applying cleaned text (way round) degrades splits. vocab_size sets fine splits . Small vocabularies split aggressively short pieces; large ones keep frequent words whole split rare ones. default 500 suits mid-sized name corpora; large corpora often support 1000 8000. small corpus fitted vocabulary can come smaller requested; model records size actually fitted. rarity_distribution() prepared tokens read judging result. frequent single-character pieces normal mostly harmless: carry almost rarity, contribute little score. Compose subword_tokens(sw) + drop_short_tokens(2) drop outright.",
+    "code": ""
+  },
+  {
+    "path": []
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/find_subwords.html",
+    "id": "ref-examples",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Examples",
+    "title": "Learn a subword vocabulary from your text — find_subwords",
+    "text": "",
+    "code": "# \\donttest{ if (requireNamespace(\"sentencepiece\", quietly = TRUE)) {   firms <- rep(c(     \"maschinenbau mueller\", \"tischlerei schmidt\",     \"holzbau wagner\", \"metallbau krause\"   ), 40)   sw <- find_subwords(firms, vocab_size = 60)   sw   subword_tokens(\"maschinenbaugesellschaft mueller\", sw) } #> [[1]] #>  [1] \"ma\"   \"sch\"  \"inen\" \"bau\"  \"g\"    \"e\"    \"se\"   \"ll\"   \"sch\"  \"a\"    #> [11] \"f\"    \"t\"    \"mue\"  \"ller\" #>  # }"
+  },
+  {
     "path": "https://edubruell.github.io/joinery/reference/fit_filter.html",
     "id": null,
     "dir": "Reference",
@@ -3128,7 +3235,7 @@
     "previous_headings": "",
     "what": "Arguments",
     "title": "Build a per-pair feature table for calibration — match_features",
-    "text": "matches match result table (data.table / tibble / data.frame / DuckDB lazy tbl) detect_duplicates() search_candidates(). strategy Search_Strategy Embedding_Strategy used produce matches. ... Method-specific arguments. strategy methods accept: base (base table used input matching), id (character scalar naming ID column base), target (optional target table cross-table candidate matches), target_id (ID column target, defaults id), include_string_sim (logical; TRUE (default) emits sim_sf_<col> / sim_fs_<col> per column via stringdist::stringsim() - requires stringdist suggested package), method (stringdist method applied every column, default \"jw\". scalar honoured today; argument shape also reserves named character vector per-column methods, additive path per-column comparators future probabilistic strategy use), include_block_stats (logical; whether compute cnt / icnt / ipos). Search_Strategy method additionally accepts top_n (named integer / list controlling per-column top-N counts m_/f_/s_ columns; use default entry fallback; set column 0 suppress set). Embedding_Strategy method emits cosine_sim (pass-score) embedding_norm_s / embedding_norm_f (L2 norms pre-normalization embeddings, recomputed matched record subset).",
+    "text": "matches match result table (data.table / tibble / data.frame / DuckDB lazy tbl) detect_duplicates() search_candidates(). strategy Search_Strategy Embedding_Strategy used produce matches. ... Method-specific arguments. strategy methods accept: base (base table used input matching), id (character scalar naming ID column base), target (optional target table cross-table candidate matches), target_id (ID column target, defaults id), include_string_sim (logical; TRUE (default) emits sim_sf_<col> / sim_fs_<col> per column via stringdist::stringsim() - requires stringdist suggested package), method (stringdist method applied every column, default \"jw\". scalar honoured today; argument shape also reserves named character vector per-column methods, additive path per-column comparators future probabilistic strategy use), include_block_stats (logical; whether compute cnt / icnt / ipos). cnt counts candidates searched record, icnt distinct records among , ipos candidate's percentile rank score inside set. Search_Strategy method additionally accepts identity_by (character scalar naming column says entity candidate belongs , looked target table cross-table search base deduplication). Supply candidate side already resolved, example search one representative per entity: extra ident_cnt column counts many distinct entities candidate set spans, icnt tell several records stand entity. Without ident_cnt column emitted. also accepts top_n (named integer / list controlling per-column top-N counts m_/f_/s_ columns; use default entry fallback; set column 0 suppress set). Embedding_Strategy method emits cosine_sim (pass-score) embedding_norm_s / embedding_norm_f (L2 norms pre-normalization embeddings, recomputed matched record subset).",
     "code": ""
   },
   {
@@ -4587,6 +4694,69 @@
     "code": "strip_vowels(\"Mueller\")   # \"MLLR\" #> [1] \"MLLR\" strip_vowels(\"Cafe Noir\") # \"CF NR\" #> [1] \"CF NR\" strip_vowels(c(\"Anna\", \"Peter\")) #> [1] \"NN\"  \"PTR\""
   },
   {
+    "path": "https://edubruell.github.io/joinery/reference/subword_tokens.html",
+    "id": null,
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Split text into learned subword tokens — subword_tokens",
+    "title": "Split text into learned subword tokens — subword_tokens",
+    "text": "apply half subword pair: place model fitted find_subwords() strategy formula every record split learned word pieces: name ~ normalize_text() + subword_tokens(sw).",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/subword_tokens.html",
+    "id": "ref-usage",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Usage",
+    "title": "Split text into learned subword tokens — subword_tokens",
+    "text": "",
+    "code": "subword_tokens(text, model)"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/subword_tokens.html",
+    "id": "arguments",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Arguments",
+    "title": "Split text into learned subword tokens — subword_tokens",
+    "text": "text character vector tokenize. model fitted Subword_Model find_subwords().",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/subword_tokens.html",
+    "id": "value",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Value",
+    "title": "Split text into learned subword tokens — subword_tokens",
+    "text": "list character vectors, one per input element, holding element's subword tokens.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/subword_tokens.html",
+    "id": "details",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Details",
+    "title": "Split text into learned subword tokens — subword_tokens",
+    "text": "Use word tokens brittle: compound words (\"Maschinenbaugesellschaft\" never word-matches \"Maschinenbau\"), frequent misspellings, OCR noise. Two spellings name share pieces even share whole word, can still meet score. Scoring unchanged: subword pieces ordinary tokens, weighted rarity. model decides text split, pass text cleaning steps model fitted (see find_subwords()).",
+    "code": ""
+  },
+  {
+    "path": []
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/subword_tokens.html",
+    "id": "ref-examples",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Examples",
+    "title": "Split text into learned subword tokens — subword_tokens",
+    "text": "",
+    "code": "# \\donttest{ if (requireNamespace(\"sentencepiece\", quietly = TRUE)) {   firms <- rep(c(     \"maschinenbau mueller\", \"tischlerei schmidt\",     \"holzbau wagner\", \"metallbau krause\"   ), 40)   sw <- find_subwords(firms, vocab_size = 60)   subword_tokens(c(\"maschinenbaugesellschaft\", \"holzbau wagner kg\"), sw) } #> [[1]] #>  [1] \"ma\"   \"sch\"  \"inen\" \"bau\"  \"g\"    \"e\"    \"se\"   \"ll\"   \"sch\"  \"a\"    #> [11] \"f\"    \"t\"    #>  #> [[2]] #> [1] \"ho\"    \"lz\"    \"bau\"   \"w\"     \"agner\" \"k\"     \"g\"     #>  # }"
+  },
+  {
     "path": "https://edubruell.github.io/joinery/reference/summarise_matches.html",
     "id": null,
     "dir": "Reference",
@@ -4818,6 +4988,49 @@
     "title": "Convert tokens to shape signatures — token_shapes",
     "text": "",
     "code": "token_shapes(list(c(\"MUELLER\", \"A12B\"))) #> [[1]] #> [1] \"AAAAAAA\" \"ANNA\"    #>  # list(c(\"AAAAAAA\", \"ANNA\"))"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/tokenize.html",
+    "id": null,
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Tokenize Text with a Fitted Tokenizer — tokenize",
+    "title": "Tokenize Text with a Fitted Tokenizer — tokenize",
+    "text": "tokenizers joinery plain functions, like word_tokens(). tokenizers instead carry fitted state, example subword vocabulary learned corpus. tokenizer object, tokenize() object turns text tokens. rarely call : place object strategy formula custom_tokens() joinery calls tokenize() . bring tokenizer, write tokenize() method class S7::method(). method must return list one element per element text, element character vector record's tokens (character(0) record none).",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/tokenize.html",
+    "id": "ref-usage",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Usage",
+    "title": "Tokenize Text with a Fitted Tokenizer — tokenize",
+    "text": "",
+    "code": "tokenize(tokenizer, text, ...)"
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/tokenize.html",
+    "id": "arguments",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Arguments",
+    "title": "Tokenize Text with a Fitted Tokenizer — tokenize",
+    "text": "tokenizer fitted tokenizer object. text character vector, one element per record. ... Additional arguments passed methods.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/reference/tokenize.html",
+    "id": "value",
+    "dir": "Reference",
+    "previous_headings": "",
+    "what": "Value",
+    "title": "Tokenize Text with a Fitted Tokenizer — tokenize",
+    "text": "list character vectors, one per element text.",
+    "code": ""
+  },
+  {
+    "path": []
   },
   {
     "path": "https://edubruell.github.io/joinery/reference/top_gap_density.html",
@@ -5156,12 +5369,62 @@
   },
   {
     "path": "https://edubruell.github.io/joinery/news/index.html",
+    "id": "joinery-110",
+    "dir": "Changelog",
+    "previous_headings": "",
+    "what": "joinery 1.1.0",
+    "title": "joinery 1.1.0",
+    "text": "1.1 “Subword” theme matches names share whole word. German compounds scanner noise keep records apart reader sees workshop, Holzbaugesellschaft Holzbau two different words whole-word tokenizer. joinery can now learn vocabulary word pieces text match pieces instead.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/news/index.html",
+    "id": "subword-matching-1-1-0",
+    "dir": "Changelog",
+    "previous_headings": "",
+    "what": "Subword matching",
+    "title": "joinery 1.1.0",
+    "text": "find_subwords() learns subword vocabulary character vector columns table, backend. returns fitted model carries trained vocabulary , can save saveRDS() get splits later session. algorithms SentencePiece offers available, byte-pair encoding unigram. subword_tokens(sw) puts model strategy formula place word_tokens(). pieces ordinary tokens, rarity weighting, blocking, thresholds explain_match() behave . package’s acceptance test measures buys twenty workshops written one compound register split apart directory: word tokens recover four pairs ten, fitted vocabulary recovers , neither joins two different workshops. custom_tokens() takes tokenizer like, either plain function returns list token vectors fitted object tokenize() method. subword_tokens() named shortcut second form. Subword matching uses sentencepiece package, suggested dependency. Install want subword tokens. rest joinery works without . New article website, “Subword tokenizers”, covering fit--apply loop, two settings decide whether result good, bring tokenizer.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/news/index.html",
+    "id": "other-changes-1-1-0",
+    "dir": "Changelog",
+    "previous_headings": "",
+    "what": "Other changes",
+    "title": "joinery 1.1.0",
+    "text": "joinery now works next release S7, adds package lifecycle hooks. joinery registers hooks S7 offers falls back old setup otherwise, also loads current S7. := now comes data.table alone, avoids import clashes := development S7 exports. Thanks Tomasz Kalinowski patch. match_features() gains identity_by, names column saying entity candidate belongs . Supply side search already resolved, search one representative per entity, features gain ident_cnt column counting many distinct entities candidate set spans. existing icnt counts records, number several records stand one entity. Nothing changes leave new argument . empty result detect_duplicates() now carries original columns -memory backend, matching DuckDB backend always returned. Code reads column dedup result longer needs special case empty run.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/news/index.html",
+    "id": "joinery-101",
+    "dir": "Changelog",
+    "previous_headings": "",
+    "what": "joinery 1.0.1",
+    "title": "joinery 1.0.1",
+    "text": "CRAN release: 2026-07-07",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/news/index.html",
+    "id": "bug-fixes-1-0-1",
+    "dir": "Changelog",
+    "previous_headings": "",
+    "what": "Bug fixes",
+    "title": "joinery 1.0.1",
+    "text": "DuckDB batch auto-tuning longer probes operating system total RAM (sysctl macOS, /proc/meminfo Linux). now reads memory budget straight connection’s memory_limit setting, defaults 80% system RAM reflects user override. removes shell call broke systems without sysctl PATH (CRAN M1mac check failures, batch planning errored “argument length zero”), makes budget detection work identically platforms, including Windows.",
+    "code": ""
+  },
+  {
+    "path": "https://edubruell.github.io/joinery/news/index.html",
     "id": "joinery-100",
     "dir": "Changelog",
     "previous_headings": "",
     "what": "joinery 1.0.0",
     "title": "joinery 1.0.0",
-    "text": "First stable release. token core, DuckDB backend, embedding matching, diagnostics, calibration feature-complete public API stable. release adds documentation makes package usable end end.",
+    "text": "CRAN release: 2026-07-07 First stable release. token core, DuckDB backend, embedding matching, diagnostics, calibration feature-complete public API stable. release adds documentation makes package usable end end.",
     "code": ""
   },
   {
@@ -5349,7 +5612,7 @@
     "previous_headings": "",
     "what": "Phase 0.4: Stability & Test-Quality Hardening",
     "title": "joinery 0.4.0",
-    "text": "maintenance release new user-facing features. goal harden test suite close coverage gaps resuming feature work embeddings diagnostics. methods_duckdb.R coverage raised 34% 90%; full behavioural parity data.table backend now exercised tests. embedding_methods_* coverage raised 95%+ data.table DuckDB backends. Small-table batch_duckdb brittleness diagnosed fixed (see notes/batch_duckdb_brittleness.md). User-facing impact: small inputs longer hit pathological batching behaviour. Total package coverage: 87.25%. Remaining low-coverage files intentional: S7 dispatch boilerplate, interactive-progress paths, live-embedding paths reserved local_tests/.",
+    "text": "maintenance release new user-facing features. goal harden test suite close coverage gaps resuming feature work embeddings diagnostics. methods_duckdb.R coverage raised 34% 90%; full behavioural parity data.table backend now exercised tests. embedding_methods_* coverage raised 95%+ data.table DuckDB backends. Small-table batch_duckdb brittleness diagnosed fixed. User-facing impact: small inputs longer hit pathological batching behaviour. Total package coverage: 87.25%. Remaining low-coverage files intentional: S7 dispatch boilerplate, interactive-progress paths, live-embedding paths reserved local_tests/.",
     "code": ""
   },
   {

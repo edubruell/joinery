@@ -1,5 +1,5 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   articles/calibration: calibration.html
@@ -9,7 +9,8 @@ articles:
   articles/glossary: glossary.html
   joinery: joinery.html
   articles/staged: staged.html
-last_built: 2026-07-01T07:37Z
+  articles/subword-matching: subword-matching.html
+last_built: 2026-11-16T13:04Z
 urls:
   reference: https://edubruell.github.io/joinery/reference
   article: https://edubruell.github.io/joinery/articles

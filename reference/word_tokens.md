@@ -41,8 +41,10 @@ the usual preceding step;
 to drop common words by name.
 
 Other token generators:
+[`custom_tokens()`](https://edubruell.github.io/joinery/reference/custom_tokens.md),
 [`generate_ngrams()`](https://edubruell.github.io/joinery/reference/generate_ngrams.md),
-[`numeric_tokens()`](https://edubruell.github.io/joinery/reference/numeric_tokens.md)
+[`numeric_tokens()`](https://edubruell.github.io/joinery/reference/numeric_tokens.md),
+[`subword_tokens()`](https://edubruell.github.io/joinery/reference/subword_tokens.md)
 
 ## Examples
 

@@ -15,3 +15,5 @@
   joinery](https://edubruell.github.io/joinery/articles/joinery.md):
 - [Matching across years and
   sources](https://edubruell.github.io/joinery/articles/staged.md):
+- [Subword
+  tokenizers](https://edubruell.github.io/joinery/articles/subword-matching.md):

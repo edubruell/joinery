@@ -9,6 +9,7 @@
 <url><loc>https://edubruell.github.io/joinery/articles/index.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/articles/joinery.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/articles/staged.html</loc></url>
+<url><loc>https://edubruell.github.io/joinery/articles/subword-matching.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/authors.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/claude.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/index.html</loc></url>
@@ -33,6 +34,7 @@
 <url><loc>https://edubruell.github.io/joinery/reference/compute_rarity.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/contribution_plot.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/coverage_plot.html</loc></url>
+<url><loc>https://edubruell.github.io/joinery/reference/custom_tokens.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/date_tokens.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/deduplicate_table.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/detect_duplicates.html</loc></url>
@@ -49,6 +51,7 @@
 <url><loc>https://edubruell.github.io/joinery/reference/extract_unmatched.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/filter_stopwords.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/find_stopwords.html</loc></url>
+<url><loc>https://edubruell.github.io/joinery/reference/find_subwords.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/fit_filter.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/frontier_plot.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/fuzzy_tokens.html</loc></url>
@@ -87,11 +90,13 @@
 <url><loc>https://edubruell.github.io/joinery/reference/street_stopwords.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/street_types.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/strip_vowels.html</loc></url>
+<url><loc>https://edubruell.github.io/joinery/reference/subword_tokens.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/summarise_matches.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/target_example.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/token_contribution_plot.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/token_frequency_plot.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/token_shapes.html</loc></url>
+<url><loc>https://edubruell.github.io/joinery/reference/tokenize.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/top_gap_density.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/use_dictionary.html</loc></url>
 <url><loc>https://edubruell.github.io/joinery/reference/vocab_overlap_plot.html</loc></url>

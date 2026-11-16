@@ -42,7 +42,9 @@ Larger `n` is sharper and cheaper, smaller `n` is fuzzier and denser.
 for whole-word tokens.
 
 Other token generators:
+[`custom_tokens()`](https://edubruell.github.io/joinery/reference/custom_tokens.md),
 [`numeric_tokens()`](https://edubruell.github.io/joinery/reference/numeric_tokens.md),
+[`subword_tokens()`](https://edubruell.github.io/joinery/reference/subword_tokens.md),
 [`word_tokens()`](https://edubruell.github.io/joinery/reference/word_tokens.md)
 
 ## Examples

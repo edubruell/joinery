@@ -53,9 +53,19 @@ match_features(matches, strategy, ...)
   vector for per-column methods, the additive path to the per-column
   comparators a future probabilistic strategy will use), and
   `include_block_stats` (logical; whether to compute `cnt` / `icnt` /
-  `ipos`). The
+  `ipos`). `cnt` counts the candidates for a searched record, `icnt` the
+  distinct records among them, and `ipos` the candidate's percentile
+  rank by score inside that set. The
   [`Search_Strategy`](https://edubruell.github.io/joinery/reference/search_strategy.md)
-  method additionally accepts `top_n` (named integer / list controlling
+  method additionally accepts `identity_by` (character scalar naming a
+  column that says which entity each candidate belongs to, looked up on
+  the `target` table for a cross-table search and on `base` for a
+  deduplication). Supply it when the candidate side has already been
+  resolved, for example a search over one representative per entity: the
+  extra `ident_cnt` column then counts how many distinct entities a
+  candidate set spans, which `icnt` cannot tell you once several records
+  stand for the same entity. Without it no `ident_cnt` column is
+  emitted. It also accepts `top_n` (named integer / list controlling
   per-column top-N counts for the `m_/f_/s_` columns; use a `default`
   entry as fallback; set a column to 0 to suppress its set). The
   [`Embedding_Strategy`](https://edubruell.github.io/joinery/reference/embedding_strategy.md)

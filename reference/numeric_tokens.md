@@ -38,7 +38,9 @@ numeric tokens, with ranges expanded into sequences.
 its inverse, to discard numbers from a token column instead.
 
 Other token generators:
+[`custom_tokens()`](https://edubruell.github.io/joinery/reference/custom_tokens.md),
 [`generate_ngrams()`](https://edubruell.github.io/joinery/reference/generate_ngrams.md),
+[`subword_tokens()`](https://edubruell.github.io/joinery/reference/subword_tokens.md),
 [`word_tokens()`](https://edubruell.github.io/joinery/reference/word_tokens.md)
 
 ## Examples
